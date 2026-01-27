@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="manifest.json">
+<title>Zaman Etüdü</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #242424;
+    --bg-card: #2a2a2a;
+    --text-primary: #f0f0f0;
+    --text-secondary: #999999;
+    --text-muted: #666666;
+    --accent: #00c853;
+    --accent-dim: rgba(0,200,83,0.15);
+    --accent-glow: rgba(0,200,83,0.3);
+    --danger: #ff3d00;
+    --danger-dim: rgba(255,61,0,0.15);
+    --warning: #ffab00;
+    --warning-dim: rgba(255,171,0,0.15);
+    --info: #2979ff;
+    --info-dim: rgba(41,121,255,0.15);
+    --purple: #aa00ff;
+    --purple-dim: rgba(170,0,255,0.15);
+    --tag-bekleme: #ffab00;
+    --tag-hurda: #ff3d00;
+    --tag-ariza: #aa00ff;
+    --tag-ayar: #2979ff;
+    --ring-bg: #333333;
+    --ring-active: #00c853;
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --radius-pill: 50px;
+    --shadow-card: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-elevated: 0 8px 32px rgba(0,0,0,0.5);
+    --font-mono: 'SF Mono', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html, body {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    will-change: opacity, transform;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; transform: scale(0.96); }
+  .screen.visible { opacity: 1; pointer-events: auto; transform: scale(1); }
+
+  /* ===== ENTRY SCREEN ===== */
+  #entryScreen {
+    justify-content: center;
+    align-items: center;
+    padding: clamp(16px, 5vh, 40px) 24px;
+    background: var(--bg-primary);
+  }
+
+  .entry-logo {
+    width: clamp(56px, 12vw, 80px);
+    height: clamp(56px, 12vw, 80px);
+    border-radius: 50%;
+    background: var(--accent-dim);
+    border: 3px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: clamp(16px, 3vh, 28px);
+  }
+  .entry-logo svg { width: 50%; height: 50%; fill: var(--accent); }
+
+  .entry-title {
+    font-size: clamp(18px, 5vw, 24px);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+  .entry-subtitle {
+    font-size: clamp(12px, 3.5vw, 15px);
+    color: var(--text-secondary);
+    margin-bottom: clamp(24px, 5vh, 48px);
+  }
+
+  .entry-form {
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(12px, 2vh, 18px);
+  }
+
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group label {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .input-group input {
+    width: 100%; padding: clamp(12px, 2vh, 18px) 16px;
+    font-size: clamp(15px, 4vw, 18px); font-family: var(--font-sans);
+    background: var(--bg-secondary); border: 2px solid #333;
+    border-radius: var(--radius-md); color: var(--text-primary); outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus { border-color: var(--accent); }
+  .input-group input::placeholder { color: var(--text-muted); }
+
+  .btn-start {
+    margin-top: 12px; padding: clamp(16px, 2.5vh, 22px);
+    font-size: clamp(16px, 4.5vw, 20px); font-weight: 700;
+    font-family: var(--font-sans); letter-spacing: 0.5px;
+    background: var(--accent); color: #000; border: none;
+    border-radius: var(--radius-md); cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .btn-start:active { transform: scale(0.97); }
+
+  /* ===== MEASUREMENT SCREEN ===== */
+  #measureScreen { background: var(--bg-primary); overflow: hidden; }
+
+  /* -- Top Bar -- */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px 4px; flex-shrink: 0;
+  }
+  .top-bar-info { display: flex; flex-direction: column; gap: 1px; }
+  .top-bar-info .job-name {
+    font-size: clamp(12px, 3.5vw, 15px); font-weight: 700;
+    color: var(--text-primary); max-width: 55vw;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .top-bar-info .operator-name {
+    font-size: clamp(10px, 2.5vw, 12px); color: var(--text-secondary);
+  }
+  .top-bar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn-icon {
+    width: clamp(38px, 10vw, 46px); height: clamp(38px, 10vw, 46px);
+    border-radius: 50%; background: var(--bg-secondary); border: 2px solid #333;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: background 0.15s; flex-shrink: 0;
+  }
+  .btn-icon:active { background: #444; }
+  .btn-icon svg { width: 20px; height: 20px; fill: var(--text-secondary); }
+  .btn-icon.danger svg { fill: var(--danger); }
+
+  /* -- Tag Strip -- */
+  .tag-strip {
+    display: flex; gap: clamp(4px, 1.5vw, 8px);
+    padding: 4px clamp(8px, 2vw, 16px) 8px;
+    flex-shrink: 0; flex-wrap: wrap; justify-content: center;
+  }
+
+  .tag-btn {
+    flex: 1 1 auto; min-width: 0;
+    display: flex; align-items: center; justify-content: center;
+    gap: clamp(3px, 1vw, 6px);
+    padding: clamp(8px, 1.5vh, 12px) clamp(8px, 2vw, 16px);
+    font-size: clamp(11px, 3vw, 14px); font-weight: 700;
+    font-family: var(--font-sans); border: 2px solid;
+    border-radius: var(--radius-pill); background: transparent;
+    cursor: pointer; transition: transform 0.12s, background 0.15s, box-shadow 0.2s;
+    white-space: nowrap;
+  }
+  .tag-btn:active { transform: scale(0.93); }
+  .tag-btn.tag-pulse { animation: tagPulse 0.4s ease; }
+  .tag-btn svg { width: clamp(12px, 3.5vw, 16px); height: clamp(12px, 3.5vw, 16px); flex-shrink: 0; }
+
+  .tag-btn[data-tag="Bekleme"] { color: var(--tag-bekleme); border-color: var(--tag-bekleme); }
+  .tag-btn[data-tag="Bekleme"]:active, .tag-btn[data-tag="Bekleme"].tag-pulse {
+    background: var(--warning-dim); box-shadow: 0 0 16px rgba(255,171,0,0.3);
+  }
+  .tag-btn[data-tag="Hurda"] { color: var(--tag-hurda); border-color: var(--tag-hurda); }
+  .tag-btn[data-tag="Hurda"]:active, .tag-btn[data-tag="Hurda"].tag-pulse {
+    background: var(--danger-dim); box-shadow: 0 0 16px rgba(255,61,0,0.3);
+  }
+  .tag-btn[data-tag="Arıza"] { color: var(--tag-ariza); border-color: var(--tag-ariza); }
+  .tag-btn[data-tag="Arıza"]:active, .tag-btn[data-tag="Arıza"].tag-pulse {
+    background: var(--purple-dim); box-shadow: 0 0 16px rgba(170,0,255,0.3);
+  }
+  .tag-btn[data-tag="Ayar"] { color: var(--tag-ayar); border-color: var(--tag-ayar); }
+  .tag-btn[data-tag="Ayar"]:active, .tag-btn[data-tag="Ayar"].tag-pulse {
+    background: var(--info-dim); box-shadow: 0 0 16px rgba(41,121,255,0.3);
+  }
+
+  @keyframes tagPulse {
+    0% { transform: scale(1); } 30% { transform: scale(1.08); } 100% { transform: scale(1); }
+  }
+
+  /* -- Timer Area -- */
+  .timer-area {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: clamp(4px, 1vh, 12px) 0 clamp(2px, 0.5vh, 8px);
+    flex-shrink: 0; position: relative; cursor: pointer;
+  }
+
+  .timer-ring {
+    position: relative;
+    width: clamp(130px, 38vw, 210px); height: clamp(130px, 38vw, 210px);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .timer-ring-svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    transform: rotate(-90deg);
+  }
+  .timer-ring-bg { fill: none; stroke: var(--ring-bg); stroke-width: 4; }
+  .timer-ring-progress {
+    fill: none; stroke: var(--ring-active); stroke-width: 4;
+    stroke-linecap: round; stroke-dasharray: 565.48; stroke-dashoffset: 565.48;
+    transition: stroke-dashoffset 0.3s linear;
+    filter: drop-shadow(0 0 6px var(--accent-glow));
+  }
+
+  .timer-display {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+  }
+  .timer-time {
+    font-family: var(--font-mono);
+    font-size: clamp(36px, 11vw, 56px); font-weight: 700;
+    letter-spacing: -1px; color: var(--text-primary); line-height: 1;
+    text-shadow: 0 0 30px rgba(0,200,83,0.15);
+  }
+  .timer-ms {
+    font-family: var(--font-mono);
+    font-size: clamp(18px, 5vw, 26px); font-weight: 600;
+    color: var(--accent); line-height: 1;
+  }
+  .timer-state {
+    font-size: clamp(10px, 2.5vw, 13px); font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 1.5px; margin-top: 4px;
+  }
+
+  .timer-area.running .timer-ring-progress { animation: ringBreathe 2.5s ease-in-out infinite; }
+  @keyframes ringBreathe {
+    0%, 100% { filter: drop-shadow(0 0 6px var(--accent-glow)); stroke-width: 4; }
+    50% { filter: drop-shadow(0 0 14px var(--accent-glow)); stroke-width: 5; }
+  }
+
+  @keyframes lapPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.06); opacity: 0.85; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .timer-area.pulse { animation: lapPulse 0.25s ease-out; }
+
+  .timer-area.paused .timer-time { animation: pausedBlink 1.2s ease-in-out infinite; }
+  @keyframes pausedBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .tap-hint {
+    font-size: clamp(11px, 3vw, 14px); color: var(--text-muted);
+    margin-top: 2px; letter-spacing: 0.3px;
+  }
+
+  .lap-counter {
+    display: flex; align-items: center; gap: 5px; margin-top: 4px;
+    padding: 3px 12px; background: var(--bg-secondary);
+    border-radius: var(--radius-pill);
+    font-size: clamp(11px, 2.8vw, 13px); font-weight: 600; color: var(--text-secondary);
+  }
+  .lap-counter .count { color: var(--accent); font-family: var(--font-mono); }
+
+  /* -- Lap List -- */
+  .lap-list-container {
+    flex: 1; min-height: 0;
+    overflow-y: auto; overflow-x: hidden;
+    padding: 6px 10px;
+    padding-bottom: calc(12px + var(--safe-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .lap-list { display: flex; flex-direction: column; gap: 5px; }
+
+  .lap-card {
+    position: relative; background: var(--bg-card);
+    border-radius: var(--radius-md); overflow: hidden;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.15s ease, opacity 0.2s;
+    will-change: transform;
+  }
+  .lap-card.new-lap { animation: slideIn 0.3s ease-out; }
+  @keyframes slideIn {
+    0% { transform: translateY(-20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  .lap-card-swipe-bg {
+    position: absolute; inset: 0; display: flex; align-items: center;
+    padding: 0 20px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .lap-card-swipe-bg.swipe-right-bg {
+    background: var(--warning-dim); justify-content: flex-start; color: var(--tag-bekleme);
+  }
+  .lap-card-swipe-bg.swipe-left-bg {
+    background: var(--danger-dim); justify-content: flex-end; color: var(--danger);
+  }
+  .lap-card-swipe-bg svg { width: 22px; height: 22px; margin: 0 6px; }
+
+  .lap-card-content {
+    position: relative; z-index: 1;
+    display: flex; align-items: center;
+    padding: clamp(10px, 2vh, 16px) clamp(10px, 2.5vw, 16px);
+    background: var(--bg-card); gap: clamp(8px, 2vw, 14px);
+    transition: transform 0.2s ease; will-change: transform;
+  }
+
+  .lap-tag-stripe {
+    width: 4px; height: clamp(28px, 5vh, 40px);
+    border-radius: 2px; flex-shrink: 0;
+  }
+
+  .lap-number {
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 3vw, 15px); font-weight: 700;
+    color: var(--text-muted); min-width: 26px;
+    text-align: center; flex-shrink: 0;
+  }
+
+  .lap-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .lap-info-top { display: flex; align-items: center; gap: 8px; }
+  .lap-time {
+    font-family: var(--font-mono);
+    font-size: clamp(16px, 4.5vw, 22px); font-weight: 700;
+    color: var(--text-primary); letter-spacing: -0.5px;
+  }
+  .lap-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 8px; border-radius: var(--radius-pill);
+    font-size: clamp(9px, 2.5vw, 11px); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .lap-badge svg { width: 11px; height: 11px; }
+  .lap-badge.badge-Bekleme { background: var(--warning-dim); color: var(--tag-bekleme); }
+  .lap-badge.badge-Hurda { background: var(--danger-dim); color: var(--tag-hurda); }
+  .lap-badge.badge-Arıza { background: var(--purple-dim); color: var(--tag-ariza); }
+  .lap-badge.badge-Ayar { background: var(--info-dim); color: var(--tag-ayar); }
+
+  .lap-cumulative {
+    font-family: var(--font-mono);
+    font-size: clamp(10px, 2.5vw, 12px); color: var(--text-muted);
+  }
+  .lap-note-text {
+    font-size: clamp(10px, 2.5vw, 12px); color: var(--text-secondary);
+    font-style: italic; margin-top: 1px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* -- Tag Picker (Long Press) -- */
+  .tag-picker-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 150; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .tag-picker-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .tag-picker {
+    position: fixed; left: 50%; bottom: 0;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%; max-width: 420px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    z-index: 151; padding: 14px 16px calc(20px + var(--safe-bottom));
+    box-shadow: var(--shadow-elevated);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tag-picker.open { transform: translateX(-50%) translateY(0); }
+
+  .tag-picker-handle {
+    width: 36px; height: 4px; background: #555;
+    border-radius: 2px; margin: 0 auto 12px;
+  }
+  .tag-picker-title {
+    font-size: 14px; font-weight: 700; color: var(--text-secondary);
+    text-align: center; margin-bottom: 14px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .tag-picker-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .tag-picker-btn {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: clamp(14px, 2.5vh, 20px) 12px;
+    font-size: clamp(14px, 3.8vw, 17px); font-weight: 700;
+    font-family: var(--font-sans); border: 2px solid;
+    border-radius: var(--radius-md); background: transparent;
+    cursor: pointer; transition: transform 0.1s, background 0.15s;
+  }
+  .tag-picker-btn:active { transform: scale(0.95); }
+  .tag-picker-btn svg { width: 20px; height: 20px; }
+  .tag-picker-btn[data-tag="Bekleme"] { color: var(--tag-bekleme); border-color: var(--tag-bekleme); }
+  .tag-picker-btn[data-tag="Bekleme"]:active { background: var(--warning-dim); }
+  .tag-picker-btn[data-tag="Hurda"] { color: var(--tag-hurda); border-color: var(--tag-hurda); }
+  .tag-picker-btn[data-tag="Hurda"]:active { background: var(--danger-dim); }
+  .tag-picker-btn[data-tag="Arıza"] { color: var(--tag-ariza); border-color: var(--tag-ariza); }
+  .tag-picker-btn[data-tag="Arıza"]:active { background: var(--purple-dim); }
+  .tag-picker-btn[data-tag="Ayar"] { color: var(--tag-ayar); border-color: var(--tag-ayar); }
+  .tag-picker-btn[data-tag="Ayar"]:active { background: var(--info-dim); }
+  .tag-picker-btn.picker-selected {
+    background: rgba(255,255,255,0.08);
+    box-shadow: inset 0 0 0 2px currentColor;
+  }
+  .tag-picker-remove {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 12px;
+    font-size: 14px; font-weight: 600;
+    font-family: var(--font-sans);
+    color: var(--text-muted); background: var(--bg-card);
+    border: 1px solid #444; border-radius: var(--radius-md);
+    cursor: pointer; transition: transform 0.1s;
+  }
+  .tag-picker-remove:active { transform: scale(0.96); }
+
+  /* -- Note Panel -- */
+  .note-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .note-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .note-panel {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    z-index: 101; transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 14px 20px calc(24px + var(--safe-bottom));
+    max-height: 70vh; box-shadow: var(--shadow-elevated);
+  }
+  .note-panel.open { transform: translateY(0); }
+
+  .note-handle {
+    width: 36px; height: 4px; background: #555;
+    border-radius: 2px; margin: 0 auto 14px;
+  }
+  .note-panel-title {
+    font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;
+  }
+  .note-select-lap {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .note-lap-chip {
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+    font-family: var(--font-mono); background: var(--bg-card);
+    border: 2px solid #444; border-radius: var(--radius-pill);
+    color: var(--text-secondary); cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .note-lap-chip.selected {
+    border-color: var(--accent); color: var(--accent); background: var(--accent-dim);
+  }
+  .note-textarea {
+    width: 100%; min-height: 90px; padding: 14px;
+    font-size: 16px; font-family: var(--font-sans);
+    background: var(--bg-primary); border: 2px solid #444;
+    border-radius: var(--radius-md); color: var(--text-primary);
+    outline: none; resize: none; transition: border-color 0.2s;
+  }
+  .note-textarea:focus { border-color: var(--accent); }
+  .note-textarea::placeholder { color: var(--text-muted); }
+  .note-save-btn {
+    margin-top: 10px; width: 100%; padding: 15px;
+    font-size: 16px; font-weight: 700; font-family: var(--font-sans);
+    background: var(--accent); color: #000; border: none;
+    border-radius: var(--radius-md); cursor: pointer;
+  }
+  .note-save-btn:active { transform: scale(0.97); }
+
+  /* -- Toast -- */
+  .toast-container {
+    position: fixed; bottom: 80px; left: 50%;
+    transform: translateX(-50%); z-index: 200;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; pointer-events: none;
+  }
+  .toast {
+    padding: 10px 20px; background: var(--bg-card);
+    border: 1px solid #444; border-radius: var(--radius-pill);
+    font-size: 13px; font-weight: 600; color: var(--text-primary);
+    box-shadow: var(--shadow-elevated); opacity: 0;
+    transform: translateY(10px);
+    animation: toastIn 0.25s ease forwards, toastOut 0.25s ease 1.5s forwards;
+    white-space: nowrap;
+  }
+  .toast.toast-danger { border-color: var(--danger); color: var(--danger); }
+  .toast.toast-success { border-color: var(--accent); color: var(--accent); }
+  .toast.toast-warning { border-color: var(--warning); color: var(--warning); }
+
+  @keyframes toastIn { to { opacity: 1; transform: translateY(0); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateY(-10px); } }
+
+  /* -- Finish Modal -- */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 300; display: flex; align-items: center;
+    justify-content: center; padding: 24px;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal-box {
+    background: var(--bg-secondary); border-radius: var(--radius-lg);
+    padding: 24px 20px; width: 100%; max-width: 340px;
+    box-shadow: var(--shadow-elevated); transform: scale(0.92);
+    transition: transform 0.25s;
+  }
+  .modal-overlay.open .modal-box { transform: scale(1); }
+  .modal-title { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+  .modal-text { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 12px; }
+  .modal-btn {
+    flex: 1; padding: 14px; font-size: 15px; font-weight: 700;
+    font-family: var(--font-sans); border: none;
+    border-radius: var(--radius-md); cursor: pointer;
+  }
+  .modal-btn:active { transform: scale(0.96); }
+  .modal-btn-cancel { background: var(--bg-card); color: var(--text-secondary); }
+  .modal-btn-confirm { background: var(--danger); color: #fff; }
+
+  /* -- Summary Screen -- */
+  #summaryScreen {
+    padding: 20px 16px; background: var(--bg-primary);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .summary-header { text-align: center; margin-bottom: 20px; }
+  .summary-header h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  .summary-header p { font-size: 13px; color: var(--text-secondary); }
+  .summary-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 20px;
+  }
+  .stat-card { background: var(--bg-card); border-radius: var(--radius-md); padding: 14px; text-align: center; }
+  .stat-value { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px; }
+  .summary-laps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+  .summary-lap-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: var(--bg-card);
+    border-radius: var(--radius-sm); font-size: 14px;
+  }
+  .summary-lap-row .slr-num { font-family: var(--font-mono); font-weight: 700; color: var(--text-muted); min-width: 24px; text-align: center; }
+  .summary-lap-row .slr-time { font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); flex: 1; }
+  .summary-lap-row .slr-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .btn-new-study {
+    width: 100%; padding: 18px; font-size: 17px; font-weight: 700;
+    font-family: var(--font-sans); background: var(--accent); color: #000;
+    border: none; border-radius: var(--radius-md); cursor: pointer;
+    margin-bottom: calc(16px + var(--safe-bottom));
+  }
+  .btn-new-study:active { transform: scale(0.97); }
+
+  /* -- Double-tap overlay -- */
+  .doubletap-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity 0.2s;
+  }
+  .doubletap-overlay.show { opacity: 1; }
+  .doubletap-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(0,0,0,0.7); border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    animation: dtPop 0.3s ease;
+  }
+  .doubletap-icon.paused-icon { border-color: var(--warning); }
+  .doubletap-icon svg { width: 32px; height: 32px; }
+  @keyframes dtPop { 0% { transform: scale(0.5); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+  /* ===== SCROLLBAR ===== */
+  .lap-list-container::-webkit-scrollbar { width: 3px; }
+  .lap-list-container::-webkit-scrollbar-track { background: transparent; }
+  .lap-list-container::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+  @media (prefers-contrast: more) {
+    :root {
+      --bg-primary: #000; --bg-secondary: #111; --bg-card: #1a1a1a;
+      --text-primary: #fff; --text-secondary: #ccc;
+    }
+  }
+
+  /* Extra-small screens (SE, etc.) tighten spacing */
+  @media (max-height: 600px) {
+    .timer-ring { width: 110px; height: 110px; }
+    .timer-time { font-size: 32px; }
+    .timer-ms { font-size: 16px; }
+    .timer-area { padding: 2px 0; }
+    .tag-btn { padding: 7px 8px; font-size: 11px; }
+    .lap-card-content { padding: 8px 10px; }
+    .lap-time { font-size: 15px; }
+    .tap-hint, .timer-state { font-size: 10px; }
+    .lap-counter { font-size: 10px; margin-top: 2px; padding: 2px 8px; }
+  }
+
+  /* Tall screens: let timer breathe more */
+  @media (min-height: 800px) {
+    .timer-area { padding: 16px 0 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== ENTRY SCREEN ==================== -->
+<div id="entryScreen" class="screen visible">
+  <div class="entry-logo">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+  </div>
+  <div class="entry-title">Zaman Etüdü</div>
+  <div class="entry-subtitle">Saha Kronometresi</div>
+  <form class="entry-form" id="entryForm">
+    <div class="input-group">
+      <label>Operatör Adı</label>
+      <input type="text" id="operatorInput" placeholder="Adınızı girin" autocomplete="off" required>
+    </div>
+    <div class="input-group">
+      <label>İş / Proses Adı</label>
+      <input type="text" id="jobInput" placeholder="İş tanımını girin" autocomplete="off" required>
+    </div>
+    <button type="submit" class="btn-start" id="btnStart">ZAMAN TUT</button>
+  </form>
+</div>
+
+<!-- ==================== MEASUREMENT SCREEN ==================== -->
+<div id="measureScreen" class="screen hidden">
+  <div class="top-bar">
+    <div class="top-bar-info">
+      <div class="job-name" id="displayJob">—</div>
+      <div class="operator-name" id="displayOperator">—</div>
+    </div>
+    <div class="top-bar-actions">
+      <button class="btn-icon" id="btnNote" title="Not Ekle">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6zm2-7h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+      </button>
+      <button class="btn-icon danger" id="btnFinish" title="Bitir">
+        <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="tag-strip" id="tagStrip">
+    <button class="tag-btn" data-tag="Bekleme">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+      Bekleme
+    </button>
+    <button class="tag-btn" data-tag="Hurda">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+      Hurda
+    </button>
+    <button class="tag-btn" data-tag="Arıza">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+      Arıza
+    </button>
+    <button class="tag-btn" data-tag="Ayar">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+      Ayar
+    </button>
+  </div>
+
+  <div class="timer-area" id="timerArea">
+    <div class="timer-ring">
+      <svg class="timer-ring-svg" viewBox="0 0 200 200">
+        <circle class="timer-ring-bg" cx="100" cy="100" r="90"/>
+        <circle class="timer-ring-progress" id="timerRingProgress" cx="100" cy="100" r="90"/>
+      </svg>
+      <div class="timer-display">
+        <div class="timer-time" id="timerTime">00:00</div>
+        <div class="timer-ms" id="timerMs">.00</div>
+        <div class="timer-state" id="timerState">Başlamak için dokun</div>
+      </div>
+    </div>
+    <div class="tap-hint" id="tapHint">Ekrana dokun = Tur kaydet</div>
+    <div class="lap-counter" id="lapCounter" style="display:none;">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/></svg>
+      <span class="count" id="lapCountNum">0</span> tur
+    </div>
+  </div>
+
+  <div class="lap-list-container" id="lapListContainer">
+    <div class="lap-list" id="lapList"></div>
+  </div>
+</div>
+
+<!-- ==================== SUMMARY SCREEN ==================== -->
+<div id="summaryScreen" class="screen hidden"></div>
+
+<!-- ==================== NOTE PANEL ==================== -->
+<div class="note-overlay" id="noteOverlay"></div>
+<div class="note-panel" id="notePanel">
+  <div class="note-handle"></div>
+  <div class="note-panel-title">Not Ekle</div>
+  <div class="note-select-lap" id="noteLapSelect"></div>
+  <textarea class="note-textarea" id="noteTextarea" placeholder="Notunuzu yazın..."></textarea>
+  <button class="note-save-btn" id="noteSaveBtn">KAYDET</button>
+</div>
+
+<!-- ==================== TAG PICKER (Long Press) ==================== -->
+<div class="tag-picker-overlay" id="tagPickerOverlay"></div>
+<div class="tag-picker" id="tagPicker">
+  <div class="tag-picker-handle"></div>
+  <div class="tag-picker-title" id="tagPickerTitle">Etiket Seç — Tur #1</div>
+  <div class="tag-picker-grid" id="tagPickerGrid">
+    <button class="tag-picker-btn" data-tag="Bekleme">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
+      Bekleme
+    </button>
+    <button class="tag-picker-btn" data-tag="Hurda">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+      Hurda
+    </button>
+    <button class="tag-picker-btn" data-tag="Arıza">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+      Arıza
+    </button>
+    <button class="tag-picker-btn" data-tag="Ayar">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>
+      Ayar
+    </button>
+    <button class="tag-picker-remove" id="tagPickerRemove">Etiketi Kaldır</button>
+  </div>
+</div>
+
+<!-- ==================== TOAST CONTAINER ==================== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ==================== DOUBLE-TAP OVERLAY ==================== -->
+<div class="doubletap-overlay" id="dtOverlay">
+  <div class="doubletap-icon" id="dtIcon"></div>
+</div>
+
+<!-- ==================== FINISH MODAL ==================== -->
+<div class="modal-overlay" id="finishModal">
+  <div class="modal-box">
+    <div class="modal-title">Ölçümü Bitir</div>
+    <div class="modal-text">Tüm tur verileri kaydedilecek ve özet gösterilecek. Devam etmek istiyor musunuz?</div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" id="modalCancel">Vazgeç</button>
+      <button class="modal-btn modal-btn-confirm" id="modalConfirm">Bitir</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== STATE =====
+  const TAGS = ['Bekleme', 'Hurda', 'Arıza', 'Ayar'];
+
+  const state = {
+    operator: '',
+    job: '',
+    running: false,
+    paused: false,
+    started: false,
+    startTime: 0,
+    elapsed: 0,
+    pauseStart: 0,
+    totalPaused: 0,
+    laps: [],
+    lastLapTime: 0,
+    timerRAF: null,
+    defaultTag: 'Bekleme'
+  };
+
+  // ===== ELEMENTS =====
+  const $ = id => document.getElementById(id);
+  const entryScreen = $('entryScreen');
+  const measureScreen = $('measureScreen');
+  const summaryScreen = $('summaryScreen');
+  const entryForm = $('entryForm');
+  const operatorInput = $('operatorInput');
+  const jobInput = $('jobInput');
+  const displayJob = $('displayJob');
+  const displayOperator = $('displayOperator');
+  const timerArea = $('timerArea');
+  const timerTime = $('timerTime');
+  const timerMs = $('timerMs');
+  const timerState = $('timerState');
+  const timerRingProgress = $('timerRingProgress');
+  const tapHint = $('tapHint');
+  const lapCounter = $('lapCounter');
+  const lapCountNum = $('lapCountNum');
+  const lapList = $('lapList');
+  const lapListContainer = $('lapListContainer');
+  const tagStrip = $('tagStrip');
+  const noteOverlay = $('noteOverlay');
+  const notePanel = $('notePanel');
+  const noteLapSelect = $('noteLapSelect');
+  const noteTextarea = $('noteTextarea');
+  const noteSaveBtn = $('noteSaveBtn');
+  const toastContainer = $('toastContainer');
+  const dtOverlay = $('dtOverlay');
+  const dtIcon = $('dtIcon');
+  const finishModal = $('finishModal');
+  const modalCancel = $('modalCancel');
+  const modalConfirm = $('modalConfirm');
+  const btnNote = $('btnNote');
+  const btnFinish = $('btnFinish');
+  const tagPickerOverlay = $('tagPickerOverlay');
+  const tagPicker = $('tagPicker');
+  const tagPickerTitle = $('tagPickerTitle');
+  const tagPickerGrid = $('tagPickerGrid');
+  const tagPickerRemove = $('tagPickerRemove');
+
+  // ===== HELPERS =====
+  function formatTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+  }
+  function formatMs(ms) {
+    return '.' + String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+  }
+  function formatFull(ms) {
+    return formatTime(ms) + formatMs(ms);
+  }
+
+  // ===== NAVIGATION & BACK BUTTON =====
+  let currentScreen = 'entry';
+  const screenMap = { entry: entryScreen, measure: measureScreen, summary: summaryScreen };
+
+  function showScreen(target, pushHistory = true) {
+    const screenName = target === entryScreen ? 'entry' :
+                       target === measureScreen ? 'measure' : 'summary';
+
+    [entryScreen, measureScreen, summaryScreen].forEach(s => {
+      s.classList.remove('visible');
+      s.classList.add('hidden');
+    });
+    target.classList.remove('hidden');
+    target.classList.add('visible');
+
+    if (pushHistory && screenName !== currentScreen) {
+      history.pushState({ screen: screenName }, '', '#' + screenName);
+    }
+    currentScreen = screenName;
+  }
+
+  // Push initial state
+  history.replaceState({ screen: 'entry' }, '', '#entry');
+
+  // Panels tracking for back button
+  function isAnyPanelOpen() {
+    return notePanel.classList.contains('open') ||
+           tagPicker.classList.contains('open') ||
+           finishModal.classList.contains('open');
+  }
+
+  function closeAllPanels() {
+    if (tagPicker.classList.contains('open')) { closeTagPicker(); return true; }
+    if (notePanel.classList.contains('open')) { closeNotePanel(); return true; }
+    if (finishModal.classList.contains('open')) { finishModal.classList.remove('open'); return true; }
+    return false;
+  }
+
+  function pushPanelState() {
+    history.pushState({ panel: true, screen: currentScreen }, '');
+  }
+
+  window.addEventListener('popstate', (e) => {
+    // First priority: close open panels
+    if (isAnyPanelOpen()) {
+      closeAllPanels();
+      // Stay on current screen — re-push screen state
+      history.replaceState({ screen: currentScreen }, '', '#' + currentScreen);
+      return;
+    }
+
+    const target = e.state?.screen;
+    if (target && screenMap[target]) {
+      showScreen(screenMap[target], false);
+    } else {
+      // No valid state — push entry to prevent exiting
+      if (currentScreen === 'entry') {
+        // Already at entry, push a dummy state to trap back button
+        history.pushState({ screen: 'entry' }, '', '#entry');
+        showToast('Çıkmak için ana ekran tuşunu kullanın', 'warning');
+      } else {
+        showScreen(entryScreen, false);
+        history.replaceState({ screen: 'entry' }, '', '#entry');
+      }
+    }
+  });
+
+  function showToast(msg, type = '') {
+    const t = document.createElement('div');
+    t.className = 'toast' + (type ? ' toast-' + type : '');
+    t.textContent = msg;
+    toastContainer.appendChild(t);
+    setTimeout(() => t.remove(), 2000);
+  }
+
+  function vibrate(ms = 15) {
+    if (navigator.vibrate) navigator.vibrate(ms);
+  }
+
+  const tagIcons = {
+    'Bekleme': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>',
+    'Hurda': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
+    'Arıza': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>',
+    'Ayar': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>'
+  };
+
+  const tagColors = {
+    'Bekleme': 'var(--tag-bekleme)',
+    'Hurda': 'var(--tag-hurda)',
+    'Arıza': 'var(--tag-ariza)',
+    'Ayar': 'var(--tag-ayar)'
+  };
+
+  // ===== ENTRY FORM =====
+  entryForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const op = operatorInput.value.trim();
+    const job = jobInput.value.trim();
+    if (!op || !job) return;
+    state.operator = op;
+    state.job = job;
+    displayJob.textContent = job;
+    displayOperator.textContent = op;
+    showScreen(measureScreen);
+  });
+
+  // ===== TIMER LOGIC =====
+  function getNow() { return performance.now(); }
+
+  function getElapsed() {
+    if (!state.started) return 0;
+    if (state.paused) return state.pauseStart - state.startTime - state.totalPaused;
+    return getNow() - state.startTime - state.totalPaused;
+  }
+
+  function updateTimerDisplay() {
+    const elapsed = getElapsed();
+    timerTime.textContent = formatTime(elapsed);
+    timerMs.textContent = formatMs(elapsed);
+    const progress = (elapsed / 60000) % 1;
+    const circumference = 2 * Math.PI * 90;
+    timerRingProgress.style.strokeDashoffset = circumference * (1 - progress);
+  }
+
+  function timerTick() {
+    updateTimerDisplay();
+    state.timerRAF = requestAnimationFrame(timerTick);
+  }
+
+  function startTimer() {
+    state.started = true;
+    state.running = true;
+    state.paused = false;
+    state.startTime = getNow();
+    state.totalPaused = 0;
+    state.lastLapTime = 0;
+    timerState.textContent = 'Çalışıyor';
+    tapHint.textContent = 'Ekrana dokun = Tur kaydet';
+    timerArea.classList.add('running');
+    timerArea.classList.remove('paused');
+    timerTick();
+    vibrate(30);
+  }
+
+  function pauseTimer() {
+    if (!state.running || state.paused) return;
+    state.paused = true;
+    state.running = false;
+    state.pauseStart = getNow();
+    cancelAnimationFrame(state.timerRAF);
+    timerState.textContent = 'Duraklatıldı';
+    timerArea.classList.remove('running');
+    timerArea.classList.add('paused');
+    showDoubleTapFeedback(true);
+    vibrate([20, 50, 20]);
+  }
+
+  function resumeTimer() {
+    if (!state.paused) return;
+    state.totalPaused += getNow() - state.pauseStart;
+    state.paused = false;
+    state.running = true;
+    timerState.textContent = 'Çalışıyor';
+    timerArea.classList.add('running');
+    timerArea.classList.remove('paused');
+    timerTick();
+    showDoubleTapFeedback(false);
+    vibrate(30);
+  }
+
+  function stopTimer() {
+    state.running = false;
+    state.paused = false;
+    state.started = false;
+    cancelAnimationFrame(state.timerRAF);
+    timerArea.classList.remove('running', 'paused');
+  }
+
+  function showDoubleTapFeedback(isPaused) {
+    dtIcon.className = 'doubletap-icon' + (isPaused ? ' paused-icon' : '');
+    if (isPaused) {
+      dtIcon.innerHTML = '<svg viewBox="0 0 24 24" width="32" height="32" fill="var(--warning)"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+    } else {
+      dtIcon.innerHTML = '<svg viewBox="0 0 24 24" width="32" height="32" fill="var(--accent)"><path d="M8 5v14l11-7z"/></svg>';
+    }
+    dtOverlay.classList.add('show');
+    setTimeout(() => dtOverlay.classList.remove('show'), 600);
+  }
+
+  // ===== LAP RECORDING =====
+  function recordLap(tag = null) {
+    if (!state.started || state.paused) return;
+
+    const cumulative = getElapsed();
+    const lapTime = cumulative - state.lastLapTime;
+    state.lastLapTime = cumulative;
+
+    const lap = {
+      id: Date.now() + Math.random(),
+      num: state.laps.length + 1,
+      lapTime,
+      cumulative,
+      tag: tag || null,
+      note: ''
+    };
+    state.laps.push(lap);
+
+    timerArea.classList.remove('pulse');
+    void timerArea.offsetWidth;
+    timerArea.classList.add('pulse');
+
+    lapCounter.style.display = 'flex';
+    lapCountNum.textContent = state.laps.length;
+
+    renderLapCard(lap, true);
+    vibrate(15);
+  }
+
+  // ===== LAP CARD RENDERING =====
+  function renderLapCard(lap, isNew = false) {
+    const card = document.createElement('div');
+    card.className = 'lap-card' + (isNew ? ' new-lap' : '');
+    card.dataset.lapId = lap.id;
+
+    const stripeColor = lap.tag ? (tagColors[lap.tag] || '#555') : '#555';
+    const badgeHTML = lap.tag && tagColors[lap.tag] ?
+      `<span class="lap-badge badge-${lap.tag}">${tagIcons[lap.tag] || ''}${lap.tag}</span>` : '';
+    const noteHTML = lap.note ?
+      `<div class="lap-note-text">${escapeHtml(lap.note)}</div>` : '';
+
+    // Swipe right shows the default tag name
+    const swipeRightLabel = state.defaultTag;
+
+    card.innerHTML = `
+      <div class="lap-card-swipe-bg swipe-right-bg">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+        ${swipeRightLabel}
+      </div>
+      <div class="lap-card-swipe-bg swipe-left-bg">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        Sil
+      </div>
+      <div class="lap-card-content">
+        <div class="lap-tag-stripe" style="background:${stripeColor}"></div>
+        <div class="lap-number">#${lap.num}</div>
+        <div class="lap-info">
+          <div class="lap-info-top">
+            <span class="lap-time">${formatFull(lap.lapTime)}</span>
+            ${badgeHTML}
+          </div>
+          <div class="lap-cumulative">Toplam: ${formatFull(lap.cumulative)}</div>
+          ${noteHTML}
+        </div>
+      </div>
+    `;
+
+    // Insert at top (newest first)
+    lapList.insertBefore(card, lapList.firstChild);
+
+    setupSwipe(card, lap);
+    setupLongPress(card, lap);
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // FIX: rebuild list correctly — oldest first into insertBefore so newest ends up on top
+  function refreshLapList() {
+    lapList.innerHTML = '';
+    for (let i = 0; i < state.laps.length; i++) {
+      renderLapCard(state.laps[i], false);
+    }
+  }
+
+  // ===== SWIPE GESTURE =====
+  function setupSwipe(card, lap) {
+    const content = card.querySelector('.lap-card-content');
+    let startX = 0, startY = 0, currentX = 0, dragging = false, isHorizontal = null;
+    const threshold = 80;
+
+    content.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      currentX = startX;
+      dragging = true;
+      isHorizontal = null;
+      content.style.transition = 'none';
+    }, { passive: true });
+
+    content.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      currentX = e.touches[0].clientX;
+      const dx = currentX - startX;
+      const dy = e.touches[0].clientY - startY;
+
+      // Determine direction once
+      if (isHorizontal === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+        isHorizontal = Math.abs(dx) > Math.abs(dy);
+      }
+      if (!isHorizontal) return;
+
+      const clamped = Math.max(-120, Math.min(120, dx));
+      content.style.transform = `translateX(${clamped}px)`;
+    }, { passive: true });
+
+    content.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      if (!isHorizontal) {
+        content.style.transition = 'transform 0.2s ease';
+        content.style.transform = 'translateX(0)';
+        return;
+      }
+      const dx = currentX - startX;
+      content.style.transition = 'transform 0.2s ease';
+
+      if (dx > threshold) {
+        applyDefaultTag(lap, card);
+        content.style.transform = 'translateX(0)';
+      } else if (dx < -threshold) {
+        deleteLap(lap, card);
+        return;
+      } else {
+        content.style.transform = 'translateX(0)';
+      }
+    });
+  }
+
+  function applyDefaultTag(lap, card) {
+    lap.tag = state.defaultTag;
+    // Update only this card instead of full refresh
+    updateCardVisual(card, lap);
+    showToast('Etiket: ' + state.defaultTag, 'success');
+    vibrate(15);
+  }
+
+  function updateCardVisual(card, lap) {
+    const stripeColor = lap.tag ? (tagColors[lap.tag] || '#555') : '#555';
+    const stripe = card.querySelector('.lap-tag-stripe');
+    if (stripe) stripe.style.background = stripeColor;
+
+    const infoTop = card.querySelector('.lap-info-top');
+    if (infoTop) {
+      // Remove old badge
+      const oldBadge = infoTop.querySelector('.lap-badge');
+      if (oldBadge) oldBadge.remove();
+
+      // Add new badge
+      if (lap.tag && tagColors[lap.tag]) {
+        const badge = document.createElement('span');
+        badge.className = `lap-badge badge-${lap.tag}`;
+        badge.innerHTML = `${tagIcons[lap.tag] || ''}${lap.tag}`;
+        infoTop.appendChild(badge);
+      }
+    }
+
+    // Update note display
+    const lapInfo = card.querySelector('.lap-info');
+    const oldNote = card.querySelector('.lap-note-text');
+    if (oldNote) oldNote.remove();
+    if (lap.note && lapInfo) {
+      const noteEl = document.createElement('div');
+      noteEl.className = 'lap-note-text';
+      noteEl.textContent = lap.note;
+      lapInfo.appendChild(noteEl);
+    }
+  }
+
+  function deleteLap(lap, card) {
+    card.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+    card.style.transform = 'translateX(-100%)';
+    card.style.opacity = '0';
+    setTimeout(() => {
+      const idx = state.laps.findIndex(l => l.id === lap.id);
+      if (idx > -1) {
+        state.laps.splice(idx, 1);
+        state.laps.forEach((l, i) => l.num = i + 1);
+      }
+      card.remove();
+      // Re-render numbers on remaining cards
+      const cards = lapList.querySelectorAll('.lap-card');
+      // Cards in DOM are newest-first, state.laps are oldest-first
+      const total = state.laps.length;
+      cards.forEach((c, domIdx) => {
+        const lapIdx = total - 1 - domIdx;
+        if (state.laps[lapIdx]) {
+          const numEl = c.querySelector('.lap-number');
+          if (numEl) numEl.textContent = '#' + state.laps[lapIdx].num;
+        }
+      });
+      lapCountNum.textContent = state.laps.length;
+      if (state.laps.length === 0) lapCounter.style.display = 'none';
+      showToast('Tur silindi', 'danger');
+    }, 250);
+    vibrate([10, 30, 10]);
+  }
+
+  // ===== LONG PRESS → TAG PICKER =====
+  let longPressTimer = null;
+  let longPressTriggered = false;
+  let pickerTargetLap = null;
+
+  function setupLongPress(card, lap) {
+    const content = card.querySelector('.lap-card-content');
+
+    content.addEventListener('touchstart', (e) => {
+      longPressTriggered = false;
+      longPressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        vibrate(30);
+        openTagPicker(lap, card);
+      }, 500);
+    }, { passive: true });
+
+    content.addEventListener('touchmove', () => {
+      clearTimeout(longPressTimer);
+    }, { passive: true });
+
+    content.addEventListener('touchend', () => {
+      clearTimeout(longPressTimer);
+    });
+
+    // Mouse fallback for testing
+    content.addEventListener('mousedown', () => {
+      longPressTriggered = false;
+      longPressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        vibrate(30);
+        openTagPicker(lap, card);
+      }, 500);
+    });
+    content.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+    content.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+  }
+
+  function openTagPicker(lap, card) {
+    pickerTargetLap = { lap, card };
+    tagPickerTitle.textContent = 'Etiket Seç — Tur #' + lap.num;
+
+    // Highlight current tag
+    tagPickerGrid.querySelectorAll('.tag-picker-btn').forEach(btn => {
+      btn.classList.toggle('picker-selected', btn.dataset.tag === lap.tag);
+    });
+
+    tagPickerOverlay.classList.add('open');
+    tagPicker.classList.add('open');
+    pushPanelState();
+  }
+
+  function closeTagPicker() {
+    tagPickerOverlay.classList.remove('open');
+    tagPicker.classList.remove('open');
+    pickerTargetLap = null;
+  }
+
+  tagPickerOverlay.addEventListener('click', closeTagPicker);
+
+  tagPickerGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tag-picker-btn');
+    if (btn && pickerTargetLap) {
+      const tag = btn.dataset.tag;
+      pickerTargetLap.lap.tag = tag;
+      updateCardVisual(pickerTargetLap.card, pickerTargetLap.lap);
+      showToast('Etiket: ' + tag, 'success');
+      vibrate(15);
+      closeTagPicker();
+      return;
+    }
+  });
+
+  tagPickerRemove.addEventListener('click', () => {
+    if (pickerTargetLap) {
+      pickerTargetLap.lap.tag = null;
+      updateCardVisual(pickerTargetLap.card, pickerTargetLap.lap);
+      showToast('Etiket kaldırıldı', 'warning');
+      vibrate(15);
+      closeTagPicker();
+    }
+  });
+
+  // ===== TIMER AREA TOUCH HANDLING =====
+  let tapTimeout = null;
+  let lastTapTime = 0;
+
+  timerArea.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    const now = Date.now();
+    const diff = now - lastTapTime;
+    lastTapTime = now;
+
+    if (diff < 350 && diff > 0) {
+      clearTimeout(tapTimeout);
+      if (!state.started) return;
+      if (state.paused) resumeTimer();
+      else pauseTimer();
+      return;
+    }
+
+    tapTimeout = setTimeout(() => {
+      if (!state.started) { startTimer(); return; }
+      if (state.paused) return;
+      recordLap();
+    }, 300);
+  });
+
+  timerArea.addEventListener('touchstart', (e) => { e.preventDefault(); });
+
+  // ===== TAG STRIP BUTTONS =====
+  tagStrip.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tag-btn');
+    if (!btn) return;
+    const tag = btn.dataset.tag;
+
+    if (!state.started) startTimer();
+    if (state.paused) return;
+
+    btn.classList.remove('tag-pulse');
+    void btn.offsetWidth;
+    btn.classList.add('tag-pulse');
+
+    recordLap(tag);
+  });
+
+  // ===== NOTE PANEL =====
+  let selectedNoteLapId = null;
+
+  function openNotePanel() {
+    if (state.laps.length === 0) {
+      showToast('Henüz tur kaydı yok', 'warning');
+      return;
+    }
+    noteLapSelect.innerHTML = '';
+    const recent = state.laps.slice(-5).reverse();
+    recent.forEach((lap, i) => {
+      const chip = document.createElement('button');
+      chip.className = 'note-lap-chip' + (i === 0 ? ' selected' : '');
+      chip.textContent = '#' + lap.num + ' — ' + formatFull(lap.lapTime);
+      chip.addEventListener('click', () => {
+        noteLapSelect.querySelectorAll('.note-lap-chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        selectedNoteLapId = lap.id;
+        noteTextarea.value = lap.note || '';
+      });
+      noteLapSelect.appendChild(chip);
+      if (i === 0) selectedNoteLapId = lap.id;
+    });
+    noteTextarea.value = recent[0]?.note || '';
+    noteOverlay.classList.add('open');
+    notePanel.classList.add('open');
+    pushPanelState();
+  }
+
+  function closeNotePanel() {
+    noteOverlay.classList.remove('open');
+    notePanel.classList.remove('open');
+    noteTextarea.blur();
+  }
+
+  btnNote.addEventListener('click', openNotePanel);
+  noteOverlay.addEventListener('click', closeNotePanel);
+
+  noteSaveBtn.addEventListener('click', () => {
+    if (!selectedNoteLapId) return;
+    const lap = state.laps.find(l => l.id === selectedNoteLapId);
+    if (lap) {
+      lap.note = noteTextarea.value.trim();
+      // Update the specific card
+      const card = lapList.querySelector(`[data-lap-id="${lap.id}"]`);
+      if (card) updateCardVisual(card, lap);
+      showToast('Not kaydedildi', 'success');
+    }
+    closeNotePanel();
+  });
+
+  // Swipe up on lap list to open note
+  let listTouchStartY = 0;
+  lapListContainer.addEventListener('touchstart', (e) => {
+    listTouchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  lapListContainer.addEventListener('touchend', (e) => {
+    const dy = listTouchStartY - e.changedTouches[0].clientY;
+    if (dy > 100 && lapListContainer.scrollTop + lapListContainer.clientHeight >= lapListContainer.scrollHeight - 20) {
+      openNotePanel();
+    }
+  });
+
+  // ===== FINISH =====
+  btnFinish.addEventListener('click', () => { finishModal.classList.add('open'); pushPanelState(); });
+  modalCancel.addEventListener('click', () => { finishModal.classList.remove('open'); });
+  modalConfirm.addEventListener('click', () => {
+    finishModal.classList.remove('open');
+    stopTimer();
+    showSummary();
+  });
+
+  // ===== SUMMARY =====
+  function showSummary() {
+    const totalTime = state.laps.length > 0 ? state.laps[state.laps.length - 1].cumulative : 0;
+    const lapTimes = state.laps.map(l => l.lapTime);
+    const avg = lapTimes.length > 0 ? lapTimes.reduce((a, b) => a + b, 0) / lapTimes.length : 0;
+    const min = lapTimes.length > 0 ? Math.min(...lapTimes) : 0;
+
+    let lapsHTML = '';
+    state.laps.forEach(l => {
+      const tagStyle = l.tag ? `color:${tagColors[l.tag] || 'var(--text-muted)'}` : 'color:var(--text-muted)';
+      lapsHTML += `
+        <div class="summary-lap-row">
+          <span class="slr-num">${l.num}</span>
+          <span class="slr-time">${formatFull(l.lapTime)}</span>
+          <span class="slr-tag" style="${tagStyle}">${l.tag || '—'}</span>
+        </div>`;
+    });
+
+    summaryScreen.innerHTML = `
+      <div class="summary-header">
+        <h2>Ölçüm Tamamlandı</h2>
+        <p>${state.job} — ${state.operator}</p>
+      </div>
+      <div class="summary-stats">
+        <div class="stat-card"><div class="stat-value">${state.laps.length}</div><div class="stat-label">Toplam Tur</div></div>
+        <div class="stat-card"><div class="stat-value">${formatFull(totalTime)}</div><div class="stat-label">Toplam Süre</div></div>
+        <div class="stat-card"><div class="stat-value">${formatFull(avg)}</div><div class="stat-label">Ortalama</div></div>
+        <div class="stat-card"><div class="stat-value">${formatFull(min)}</div><div class="stat-label">En Hızlı</div></div>
+      </div>
+      <div class="summary-laps">${lapsHTML}</div>
+      <button class="btn-new-study" id="btnNewStudy">YENİ ÖLÇÜM BAŞLAT</button>
+    `;
+    showScreen(summaryScreen);
+    document.getElementById('btnNewStudy').addEventListener('click', () => {
+      resetAll();
+      showScreen(entryScreen);
+    });
+  }
+
+  function resetAll() {
+    state.laps = [];
+    state.started = false;
+    state.running = false;
+    state.paused = false;
+    state.startTime = 0;
+    state.elapsed = 0;
+    state.totalPaused = 0;
+    state.lastLapTime = 0;
+    timerTime.textContent = '00:00';
+    timerMs.textContent = '.00';
+    timerState.textContent = 'Başlamak için dokun';
+    tapHint.textContent = 'Ekrana dokun = Tur kaydet';
+    lapList.innerHTML = '';
+    lapCounter.style.display = 'none';
+    lapCountNum.textContent = '0';
+    timerRingProgress.style.strokeDashoffset = '565.48';
+    timerArea.classList.remove('running', 'paused', 'pulse');
+    operatorInput.value = '';
+    jobInput.value = '';
+  }
+
+  // ===== PWA SERVICE WORKER =====
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+})();
+</script>
+</body>
+</html>
