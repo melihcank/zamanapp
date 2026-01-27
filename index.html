@@ -77,18 +77,18 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .te-save{width:100%;padding:16px;font-size:16px;font-weight:700;font-family:var(--sans);background:var(--acc);color:#000;border:none;border-radius:var(--r-md);cursor:pointer;margin-top:8px}
 
 /* ===== HISTORY ===== */
-#historyScreen{padding:20px 16px;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
-.hi-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.hi-header h2{font-size:18px;font-weight:700;flex:1}
-.hi-empty{text-align:center;color:var(--tx3);padding:40px 0;font-size:15px}
-.hi-card{background:var(--bg2);border-radius:var(--r-md);padding:14px;margin-bottom:10px}
-.hi-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.hi-card-top .hi-job{font-weight:700;font-size:15px}
-.hi-card-top .hi-date{font-size:12px;color:var(--tx3)}
-.hi-card-row{display:flex;gap:16px;font-size:13px;color:var(--tx2)}
+#historyScreen{padding:clamp(8px,3vw,20px) clamp(8px,3vw,16px);background:var(--bg);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.hi-header{display:flex;align-items:center;gap:clamp(6px,2vw,12px);margin-bottom:clamp(8px,2.5vw,16px)}
+.hi-header h2{font-size:clamp(14px,4.5vw,18px);font-weight:700;flex:1}
+.hi-empty{text-align:center;color:var(--tx3);padding:clamp(16px,6vw,40px) 0;font-size:clamp(11px,3.5vw,15px)}
+.hi-card{background:var(--bg2);border-radius:var(--r-md);padding:clamp(8px,2.5vw,14px);margin-bottom:clamp(6px,1.5vw,10px)}
+.hi-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:clamp(3px,1vw,6px);gap:clamp(4px,1.5vw,8px)}
+.hi-card-top .hi-job{font-weight:700;font-size:clamp(11px,3.5vw,15px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.hi-card-top .hi-date{font-size:clamp(9px,2.5vw,12px);color:var(--tx3);white-space:nowrap;flex-shrink:0}
+.hi-card-row{display:flex;gap:clamp(4px,1.5vw,8px);font-size:clamp(10px,3vw,13px);color:var(--tx2);flex-wrap:wrap}
 .hi-card-row span{font-family:var(--mono);font-weight:600;color:var(--acc)}
-.hi-del{width:36px;height:36px;border-radius:50%;background:var(--dng-d);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.hi-del svg{width:16px;height:16px;fill:var(--dng)}
+.hi-del{width:clamp(28px,8vw,36px);height:clamp(28px,8vw,36px);border-radius:50%;background:var(--dng-d);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.hi-del svg{width:clamp(12px,4vw,16px);height:clamp(12px,4vw,16px);fill:var(--dng)}
 
 /* ===== MEASUREMENT SCREEN ===== */
 #measureScreen{background:var(--bg);overflow:hidden}
@@ -220,20 +220,21 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 @keyframes dtP{0%{transform:scale(.5)}70%{transform:scale(1.1)}100%{transform:scale(1)}}
 
 /* Summary */
-#summaryScreen{padding:20px 16px;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
-.sum-hdr{text-align:center;margin-bottom:20px}
-.sum-hdr h2{font-size:20px;font-weight:700;margin-bottom:4px}
-.sum-hdr p{font-size:13px;color:var(--tx2)}
-.sum-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.stat-c{background:var(--bg3);border-radius:var(--r-md);padding:14px;text-align:center}
-.stat-v{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--acc)}
-.stat-l{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
-.sum-laps{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
-.sum-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border-radius:var(--r-sm);font-size:14px}
-.sum-row .sn{font-family:var(--mono);font-weight:700;color:var(--tx3);min-width:24px;text-align:center}
-.sum-row .st{font-family:var(--mono);font-weight:700;flex:1}
-.sum-row .stg{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.btn-new{width:100%;padding:18px;font-size:17px;font-weight:700;font-family:var(--sans);background:var(--acc);color:#000;border:none;border-radius:var(--r-md);cursor:pointer;margin-bottom:calc(16px + var(--sab))}
+#summaryScreen{padding:clamp(6px,2.5vw,20px) clamp(6px,2.5vw,16px);background:var(--bg);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.sum-hdr{text-align:center;margin-bottom:clamp(8px,3vw,20px)}
+.sum-hdr h2{font-size:clamp(14px,4.5vw,20px);font-weight:700;margin-bottom:clamp(2px,0.5vw,4px)}
+.sum-hdr p{font-size:clamp(10px,3vw,13px);color:var(--tx2)}
+.sum-stats{display:grid;grid-template-columns:1fr 1fr;gap:clamp(4px,1.5vw,10px);margin-bottom:clamp(4px,1.5vw,12px)}
+.stat-c{background:var(--bg3);border-radius:var(--r-md);padding:clamp(5px,1.8vw,14px);text-align:center;overflow:hidden;min-width:0}
+.stat-v{font-family:var(--mono);font-size:clamp(11px,3.8vw,20px);font-weight:700;color:var(--acc);overflow-wrap:break-word;word-break:break-all;line-height:1.2}
+.stat-v-ci{font-size:clamp(9px,2.8vw,15px)!important}
+.stat-l{font-size:clamp(7px,2.2vw,11px);color:var(--tx3);text-transform:uppercase;letter-spacing:clamp(.3px,.15vw,.8px);margin-top:clamp(2px,.6vw,4px);line-height:1.3}
+.sum-laps{display:flex;flex-direction:column;gap:clamp(3px,1vw,6px);margin-bottom:clamp(8px,2.5vw,20px)}
+.sum-row{display:flex;align-items:center;gap:clamp(4px,1.5vw,10px);padding:clamp(5px,1.6vw,10px) clamp(6px,2vw,14px);background:var(--bg3);border-radius:var(--r-sm);font-size:clamp(10px,3.2vw,14px)}
+.sum-row .sn{font-family:var(--mono);font-weight:700;color:var(--tx3);min-width:clamp(16px,5vw,24px);text-align:center;flex-shrink:0}
+.sum-row .st{font-family:var(--mono);font-weight:700;flex:1;min-width:0}
+.sum-row .stg{font-size:clamp(8px,2.5vw,11px);font-weight:700;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;max-width:35%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-new{width:100%;padding:clamp(10px,3vw,18px);font-size:clamp(13px,4vw,17px);font-weight:700;font-family:var(--sans);background:var(--acc);color:#000;border:none;border-radius:var(--r-md);cursor:pointer;margin-bottom:calc(clamp(8px,2.5vw,16px) + var(--sab))}
 
 /* Scrollbar */
 .lap-wrap::-webkit-scrollbar{width:3px}
@@ -265,25 +266,25 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 /* Stats & Export */
 .sum-stats.s3{grid-template-columns:repeat(3,1fr)}
 .sum-stats.s2{grid-template-columns:1fr 1fr}
-@media(max-width:340px){.sum-stats.s3{grid-template-columns:1fr 1fr}}
-.sum-section-title{font-size:13px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;padding-left:2px}
+.sum-section-title{font-size:clamp(9px,2.8vw,13px);font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:clamp(.4px,.2vw,1px);margin:clamp(6px,2vw,16px) 0 clamp(4px,1.2vw,8px);padding-left:2px}
 .stat-warn{color:var(--wrn)!important}
-.sum-tag-wrap{overflow-x:auto;margin-bottom:8px}
-.sum-tag-table{width:100%;border-collapse:collapse;font-size:13px}
-.sum-tag-table th{text-align:left;padding:8px 6px;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bg4)}
-.sum-tag-table td{padding:8px 6px;border-bottom:1px solid var(--bg4);font-family:var(--mono);font-weight:600}
-.sum-tag-table td:first-child{font-family:var(--sans)}
-.export-bar{display:flex;gap:10px;margin:16px 0 10px}
-.btn-export{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 16px;font-size:15px;font-weight:700;font-family:var(--sans);border:none;border-radius:var(--r-md);cursor:pointer;transition:transform .1s}
+.sum-tag-wrap{overflow-x:auto;margin-bottom:clamp(4px,1.5vw,8px);-webkit-overflow-scrolling:touch}
+.sum-tag-table{width:100%;border-collapse:collapse;font-size:clamp(9px,2.8vw,13px)}
+.sum-tag-table th{text-align:left;padding:clamp(4px,1.2vw,8px) clamp(3px,1vw,6px);font-size:clamp(7px,2.2vw,11px);color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bg4);white-space:nowrap}
+.sum-tag-table td{padding:clamp(4px,1.2vw,8px) clamp(3px,1vw,6px);border-bottom:1px solid var(--bg4);font-family:var(--mono);font-weight:600;white-space:nowrap}
+.sum-tag-table td:first-child{font-family:var(--sans);white-space:normal;max-width:25vw;overflow:hidden;text-overflow:ellipsis}
+.export-bar{display:flex;gap:clamp(4px,1.5vw,10px);margin:clamp(8px,2.5vw,16px) 0 clamp(4px,1.5vw,10px)}
+.btn-export{flex:1;display:flex;align-items:center;justify-content:center;gap:clamp(4px,1.5vw,8px);padding:clamp(8px,2.5vw,14px) clamp(8px,2.5vw,16px);font-size:clamp(11px,3.5vw,15px);font-weight:700;font-family:var(--sans);border:none;border-radius:var(--r-md);cursor:pointer;transition:transform .1s}
 .btn-export:active{transform:scale(.97)}
+.btn-export svg{width:clamp(14px,4vw,20px);height:clamp(14px,4vw,20px);flex-shrink:0}
 .btn-xl{background:#1d6f42;color:#fff}
 .btn-jn{background:#2979ff;color:#fff}
 .btn-jn-outline{background:transparent;color:#2979ff;border:2px solid #2979ff}
-.hi-toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.hi-toolbar .btn-export{font-size:13px;padding:10px 12px}
-.hi-card-acts{display:flex;gap:6px;align-items:center}
-.hi-xl{width:36px;height:36px;border-radius:50%;background:rgba(29,111,66,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.hi-xl svg{width:16px;height:16px;fill:#1d6f42}
+.hi-toolbar{display:flex;gap:clamp(6px,2vw,10px);margin-bottom:clamp(8px,2.5vw,16px);flex-wrap:wrap}
+.hi-toolbar .btn-export{font-size:clamp(11px,3vw,13px);padding:clamp(6px,2vw,10px) clamp(8px,2.5vw,12px)}
+.hi-card-acts{display:flex;gap:clamp(4px,1.2vw,6px);align-items:center}
+.hi-xl{width:clamp(28px,8vw,36px);height:clamp(28px,8vw,36px);border-radius:50%;background:rgba(29,111,66,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.hi-xl svg{width:clamp(12px,4vw,16px);height:clamp(12px,4vw,16px);fill:#1d6f42}
 </style>
 </head>
 <body>
@@ -751,13 +752,13 @@ function showSummary(){
   const tot=laps.length?laps[laps.length-1].cum:0;
   const dateStr=new Date().toLocaleDateString('tr-TR');
   const timeStr=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
-  let h=`<div class="sum-hdr"><h2>Ölçüm Tamamlandı</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:12px;color:var(--tx3);margin-top:4px">${dateStr} ${timeStr}</p></div>`;
+  let h=`<div class="sum-hdr"><h2>Ölçüm Tamamlandı</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:clamp(9px,2.5vw,12px);color:var(--tx3);margin-top:clamp(2px,.6vw,4px)">${dateStr} ${timeStr}</p></div>`;
   if(st){
     h+=`<div class="sum-section-title">Temel İstatistikler</div>
     <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${st.n}</div><div class="stat-l">Gözlem (n)</div></div><div class="stat-c"><div class="stat-v">${ffull(tot)}</div><div class="stat-l">Toplam Süre</div></div><div class="stat-c"><div class="stat-v">${ffull(st.mean)}</div><div class="stat-l">Ortalama</div></div></div>
     <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.median)}</div><div class="stat-l">Medyan</div></div><div class="stat-c"><div class="stat-v">${ffull(st.stdDev)}</div><div class="stat-l">Std Sapma</div></div><div class="stat-c"><div class="stat-v">${st.cv.toFixed(1)}%</div><div class="stat-l">CV%</div></div></div>
     <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.min)}</div><div class="stat-l">Minimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.max)}</div><div class="stat-l">Maksimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.range)}</div><div class="stat-l">Aralık</div></div></div>
-    <div class="sum-stats s2"><div class="stat-c"><div class="stat-v" style="font-size:15px">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</div><div class="stat-l">%95 Güven Aralığı</div></div><div class="stat-c"><div class="stat-v${st.n>=st.nReq?'':' stat-warn'}">${st.nReq}</div><div class="stat-l">Gerekli Gözlem ${st.n>=st.nReq?'(Yeterli)':'(Yetersiz)'}</div></div></div>`;
+    <div class="sum-stats s2"><div class="stat-c"><div class="stat-v stat-v-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</div><div class="stat-l">%95 Güven Aralığı</div></div><div class="stat-c"><div class="stat-v${st.n>=st.nReq?'':' stat-warn'}">${st.nReq}</div><div class="stat-l">Gerekli Gözlem ${st.n>=st.nReq?'(Yeterli)':'(Yetersiz)'}</div></div></div>`;
     if(ta.length){
       h+=`<div class="sum-section-title">Etiket Analizi</div><div class="sum-tag-wrap"><table class="sum-tag-table"><thead><tr><th>Etiket</th><th>Adet</th><th>Ortalama</th><th>CV%</th><th>Oran</th></tr></thead><tbody>`;
       ta.forEach(ts=>{h+=`<tr><td style="color:${ts.color};font-weight:700">${esc(ts.name)}</td><td>${ts.count}</td><td>${ffull(ts.mean)}</td><td>${ts.cv.toFixed(1)}%</td><td>${((ts.count/st.n)*100).toFixed(0)}%</td></tr>`});
