@@ -714,6 +714,17 @@ document.addEventListener('keydown',e=>{
   else if(key==='delete'||key==='backspace'){e.preventDefault();if(S.laps.length){const last=S.laps[S.laps.length-1];const card=$('lapList').querySelector(`[data-id="${last.id}"]`);if(card)delLap(last,card)}}
 });
 
+// ===== FULLSCREEN =====
+function goFS(){
+  const el=document.documentElement;
+  if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});
+  else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen();
+  else if(el.msRequestFullscreen)el.msRequestFullscreen();
+}
+let fsDone=false;
+document.addEventListener('click',()=>{if(!fsDone){fsDone=true;goFS()}},{once:true});
+document.addEventListener('touchend',()=>{if(!fsDone){fsDone=true;goFS()}},{once:true});
+
 // ===== PWA =====
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
