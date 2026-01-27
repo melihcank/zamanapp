@@ -1,8 +1,9 @@
-const CACHE_NAME = 'zaman-etudu-v1';
+const CACHE_NAME = 'zaman-etudu-v2';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -23,6 +24,13 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
+      // Cache CDN resources on first fetch
+      if (resp.ok && e.request.url.startsWith('https://cdnjs.cloudflare.com/')) {
+        const clone = resp.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+      }
+      return resp;
+    }))
   );
 });

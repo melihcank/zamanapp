@@ -261,6 +261,29 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
   .timer-time{font-size:82px}
   .timer-ms{font-size:36px}
 }
+
+/* Stats & Export */
+.sum-stats.s3{grid-template-columns:repeat(3,1fr)}
+.sum-stats.s2{grid-template-columns:1fr 1fr}
+@media(max-width:340px){.sum-stats.s3{grid-template-columns:1fr 1fr}}
+.sum-section-title{font-size:13px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;padding-left:2px}
+.stat-warn{color:var(--wrn)!important}
+.sum-tag-wrap{overflow-x:auto;margin-bottom:8px}
+.sum-tag-table{width:100%;border-collapse:collapse;font-size:13px}
+.sum-tag-table th{text-align:left;padding:8px 6px;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bg4)}
+.sum-tag-table td{padding:8px 6px;border-bottom:1px solid var(--bg4);font-family:var(--mono);font-weight:600}
+.sum-tag-table td:first-child{font-family:var(--sans)}
+.export-bar{display:flex;gap:10px;margin:16px 0 10px}
+.btn-export{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 16px;font-size:15px;font-weight:700;font-family:var(--sans);border:none;border-radius:var(--r-md);cursor:pointer;transition:transform .1s}
+.btn-export:active{transform:scale(.97)}
+.btn-xl{background:#1d6f42;color:#fff}
+.btn-jn{background:#2979ff;color:#fff}
+.btn-jn-outline{background:transparent;color:#2979ff;border:2px solid #2979ff}
+.hi-toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.hi-toolbar .btn-export{font-size:13px;padding:10px 12px}
+.hi-card-acts{display:flex;gap:6px;align-items:center}
+.hi-xl{width:36px;height:36px;border-radius:50%;background:rgba(29,111,66,.15);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.hi-xl svg{width:16px;height:16px;fill:#1d6f42}
 </style>
 </head>
 <body>
@@ -363,6 +386,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 
 <!-- TOAST -->
 <div class="toast-c" id="toastC"></div>
+<input type="file" id="jsonImportInput" accept=".json" style="display:none">
 
 <!-- DT overlay -->
 <div class="dt-ov" id="dtOv"><div class="dt-ico" id="dtIco"></div></div>
@@ -455,6 +479,32 @@ function vib(ms=15){if(navigator.vibrate)navigator.vibrate(ms)}
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function dimColor(hex,a=.15){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return `rgba(${r},${g},${b},${a})`}
 
+// ===== STATISTICS =====
+function calcStats(times){
+  const n=times.length;if(!n)return null;
+  const sum=times.reduce((a,b)=>a+b,0),mean=sum/n;
+  const sorted=[...times].sort((a,b)=>a-b);
+  const median=n%2?sorted[Math.floor(n/2)]:(sorted[n/2-1]+sorted[n/2])/2;
+  const variance=times.reduce((a,t)=>a+(t-mean)**2,0)/(n>1?n-1:1);
+  const stdDev=Math.sqrt(variance);
+  const cv=mean>0?(stdDev/mean)*100:0;
+  const min=sorted[0],max=sorted[n-1],range=max-min;
+  const se=stdDev/Math.sqrt(n);
+  const ci95Low=Math.max(0,mean-1.96*se),ci95High=mean+1.96*se;
+  // Gerekli gözlem sayısı (±%5, %95 güven): n'=(40*sqrt(n*Σx²-(Σx)²)/Σx)²
+  const sumSq=times.reduce((a,t)=>a+t*t,0);
+  const inner=n*sumSq-sum*sum;
+  const nReq=sum>0&&inner>0?Math.ceil(Math.pow(40*Math.sqrt(inner)/sum,2)):n;
+  return {n,sum,mean,median,stdDev,cv,min,max,range,ci95Low,ci95High,se,nReq};
+}
+function tagAnalysis(laps,tgs){
+  const res=[];
+  tgs.forEach((tag,i)=>{const fl=laps.filter(l=>l.tag===i);if(!fl.length)return;const s=calcStats(fl.map(l=>l.t));res.push({name:tag.name,color:tag.color,idx:i,count:fl.length,...s})});
+  const un=laps.filter(l=>l.tag===null);
+  if(un.length){const s=calcStats(un.map(l=>l.t));res.push({name:'Etiketsiz',color:'#666',idx:-1,count:un.length,...s})}
+  return res;
+}
+
 // ===== MENU =====
 $('goMeasure').onclick=()=>showScreen('setup');
 $('goTags').onclick=()=>{renderTagEditor();showScreen('tagEditor')};
@@ -501,16 +551,29 @@ $('teSave').onclick=()=>{
 function renderHistory(){
   const list=$('hiList');list.innerHTML='';
   const hist=loadHistory();
-  if(!hist.length){list.innerHTML='<div class="hi-empty">Henüz kayıtlı ölçüm yok.</div>';return}
+  // Toolbar
+  const tb=document.createElement('div');tb.className='hi-toolbar';
+  tb.innerHTML=`<button class="btn-export btn-jn" id="hiExpJSON"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>JSON Yedekle</button><button class="btn-export btn-jn-outline" id="hiImpJSON"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>JSON İçe Aktar</button>`;
+  list.appendChild(tb);
+  $('hiExpJSON').onclick=exportAllJSON;
+  $('hiImpJSON').onclick=triggerImportJSON;
+  if(!hist.length){const e=document.createElement('div');e.className='hi-empty';e.textContent='Henüz kayıtlı ölçüm yok.';list.appendChild(e);return}
   hist.slice().reverse().forEach((h,ri)=>{
     const idx=hist.length-1-ri;
     const card=document.createElement('div');card.className='hi-card';
     const avg=h.laps.length?h.laps.reduce((a,l)=>a+l.t,0)/h.laps.length:0;
-    card.innerHTML=`<div class="hi-card-top"><span class="hi-job">${esc(h.job)}</span><div style="display:flex;align-items:center;gap:8px"><span class="hi-date">${h.date}</span><button class="hi-del" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></div><div class="hi-card-row">${esc(h.op)} &middot; <span>${h.laps.length}</span> tur &middot; Ort: <span>${ffull(avg)}</span></div>`;
+    card.innerHTML=`<div class="hi-card-top"><span class="hi-job">${esc(h.job)}</span><div class="hi-card-acts"><span class="hi-date">${h.date}</span><button class="hi-xl" data-idx="${idx}" title="Excel İndir"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg></button><button class="hi-del" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></div><div class="hi-card-row">${esc(h.op)} &middot; <span>${h.laps.length}</span> tur &middot; Ort: <span>${ffull(avg)}</span></div>`;
     list.appendChild(card);
   });
   list.querySelectorAll('.hi-del').forEach(btn=>{
     btn.onclick=()=>{const h=loadHistory();h.splice(+btn.dataset.idx,1);saveHistory(h);renderHistory();toast('Kayıt silindi','t-dng')};
+  });
+  list.querySelectorAll('.hi-xl').forEach(btn=>{
+    btn.onclick=()=>{
+      const h=loadHistory()[+btn.dataset.idx];if(!h)return;
+      const fn='zaman_etudu_'+h.job.replace(/[^a-zA-Z0-9\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g,'_')+'_'+(h.dateISO||h.date).slice(0,10)+'.xlsx';
+      exportExcel(h,fn);
+    };
   });
 }
 
@@ -678,17 +741,38 @@ mConfirm.onclick=()=>{finModal.classList.remove('open');stopT();saveSession();sh
 function saveSession(){
   if(!S.laps.length)return;
   const hist=loadHistory();
-  hist.push({op:S.op,job:S.job,date:new Date().toLocaleDateString('tr-TR'),laps:S.laps.map(l=>({t:l.t,cum:l.cum,tag:l.tag,note:l.note}))});
+  hist.push({op:S.op,job:S.job,date:new Date().toLocaleDateString('tr-TR'),dateISO:new Date().toISOString(),tags:JSON.parse(JSON.stringify(tags)),laps:S.laps.map(l=>({t:l.t,cum:l.cum,tag:l.tag,note:l.note}))});
   saveHistory(hist);
 }
 
 // ===== SUMMARY =====
 function showSummary(){
-  const tot=S.laps.length?S.laps[S.laps.length-1].cum:0;
-  const ts=S.laps.map(l=>l.t);const avg=ts.length?ts.reduce((a,b)=>a+b,0)/ts.length:0;const mn=ts.length?Math.min(...ts):0;
-  let rows='';S.laps.forEach(l=>{const tg=l.tag!==null?tags[l.tag]:null;rows+=`<div class="sum-row"><span class="sn">${l.num}</span><span class="st">${ffull(l.t)}</span><span class="stg" style="color:${tg?tg.color:'var(--tx3)'}">${tg?esc(tg.name):'—'}</span></div>`});
-  screens.summary.innerHTML=`<div class="sum-hdr"><h2>Ölçüm Tamamlandı</h2><p>${esc(S.job)} — ${esc(S.op)}</p></div><div class="sum-stats"><div class="stat-c"><div class="stat-v">${S.laps.length}</div><div class="stat-l">Toplam Tur</div></div><div class="stat-c"><div class="stat-v">${ffull(tot)}</div><div class="stat-l">Toplam Süre</div></div><div class="stat-c"><div class="stat-v">${ffull(avg)}</div><div class="stat-l">Ortalama</div></div><div class="stat-c"><div class="stat-v">${ffull(mn)}</div><div class="stat-l">En Hızlı</div></div></div><div class="sum-laps">${rows}</div><button class="btn-new" id="btnNew">ANA MENÜYE DÖN</button>`;
-  showScreen('summary');
+  const laps=S.laps,times=laps.map(l=>l.t),st=calcStats(times),ta=tagAnalysis(laps,tags);
+  const tot=laps.length?laps[laps.length-1].cum:0;
+  const dateStr=new Date().toLocaleDateString('tr-TR');
+  const timeStr=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  let h=`<div class="sum-hdr"><h2>Ölçüm Tamamlandı</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:12px;color:var(--tx3);margin-top:4px">${dateStr} ${timeStr}</p></div>`;
+  if(st){
+    h+=`<div class="sum-section-title">Temel İstatistikler</div>
+    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${st.n}</div><div class="stat-l">Gözlem (n)</div></div><div class="stat-c"><div class="stat-v">${ffull(tot)}</div><div class="stat-l">Toplam Süre</div></div><div class="stat-c"><div class="stat-v">${ffull(st.mean)}</div><div class="stat-l">Ortalama</div></div></div>
+    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.median)}</div><div class="stat-l">Medyan</div></div><div class="stat-c"><div class="stat-v">${ffull(st.stdDev)}</div><div class="stat-l">Std Sapma</div></div><div class="stat-c"><div class="stat-v">${st.cv.toFixed(1)}%</div><div class="stat-l">CV%</div></div></div>
+    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.min)}</div><div class="stat-l">Minimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.max)}</div><div class="stat-l">Maksimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.range)}</div><div class="stat-l">Aralık</div></div></div>
+    <div class="sum-stats s2"><div class="stat-c"><div class="stat-v" style="font-size:15px">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</div><div class="stat-l">%95 Güven Aralığı</div></div><div class="stat-c"><div class="stat-v${st.n>=st.nReq?'':' stat-warn'}">${st.nReq}</div><div class="stat-l">Gerekli Gözlem ${st.n>=st.nReq?'(Yeterli)':'(Yetersiz)'}</div></div></div>`;
+    if(ta.length){
+      h+=`<div class="sum-section-title">Etiket Analizi</div><div class="sum-tag-wrap"><table class="sum-tag-table"><thead><tr><th>Etiket</th><th>Adet</th><th>Ortalama</th><th>CV%</th><th>Oran</th></tr></thead><tbody>`;
+      ta.forEach(ts=>{h+=`<tr><td style="color:${ts.color};font-weight:700">${esc(ts.name)}</td><td>${ts.count}</td><td>${ffull(ts.mean)}</td><td>${ts.cv.toFixed(1)}%</td><td>${((ts.count/st.n)*100).toFixed(0)}%</td></tr>`});
+      h+=`</tbody></table></div>`;
+    }
+  }
+  h+=`<div class="sum-section-title">Tur Listesi</div><div class="sum-laps">`;
+  laps.forEach(l=>{const tg=l.tag!==null?tags[l.tag]:null;h+=`<div class="sum-row"><span class="sn">${l.num}</span><span class="st">${ffull(l.t)}</span><span class="stg" style="color:${tg?tg.color:'var(--tx3)'}">${tg?esc(tg.name):'—'}</span></div>`});
+  h+=`</div><div class="export-bar"><button class="btn-export btn-xl" id="btnExcel"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Excel İndir</button></div><button class="btn-new" id="btnNew">ANA MENÜYE DÖN</button>`;
+  screens.summary.innerHTML=h;showScreen('summary');
+  $('btnExcel').onclick=()=>{
+    const sess={op:S.op,job:S.job,date:dateStr,tags:JSON.parse(JSON.stringify(tags)),laps:S.laps.map(l=>({t:l.t,cum:l.cum,tag:l.tag,note:l.note}))};
+    const fn='zaman_etudu_'+S.job.replace(/[^a-zA-Z0-9\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
+    exportExcel(sess,fn);
+  };
   $('btnNew').onclick=()=>{resetAll();showScreen('menu')};
 }
 
@@ -712,6 +796,70 @@ document.addEventListener('keydown',e=>{
   else if(key==='q'){e.preventDefault();finModal.classList.add('open');pushPanel()}
   else if(key==='escape'){e.preventDefault();closePanels()}
   else if(key==='delete'||key==='backspace'){e.preventDefault();if(S.laps.length){const last=S.laps[S.laps.length-1];const card=$('lapList').querySelector(`[data-id="${last.id}"]`);if(card)delLap(last,card)}}
+});
+
+// ===== EXPORT: XLSX =====
+function loadXLSX(cb){
+  if(typeof XLSX!=='undefined'){cb();return}
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload=cb;s.onerror=()=>toast('Excel kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edin.','t-dng');
+  document.head.appendChild(s);
+}
+function exportExcel(session,fn){
+  loadXLSX(()=>{
+    const sTags=session.tags||tags;
+    const times=session.laps.map(l=>l.t);
+    const st=calcStats(times);
+    const ta=tagAnalysis(session.laps,sTags);
+    // Sheet 1: Özet
+    const w1=[['ZAMAN ETÜDÜ RAPORU'],[],['İş / Proses Adı',session.job],['Operatör',session.op],['Tarih',session.date||''],
+      [],[' İSTATİSTİKLER'],['Gözlem Sayısı (n)',st.n],['Toplam Süre (sn)',+(st.sum/1000).toFixed(3)],
+      ['Ortalama (sn)',+(st.mean/1000).toFixed(3)],['Medyan (sn)',+(st.median/1000).toFixed(3)],
+      ['Standart Sapma (sn)',+(st.stdDev/1000).toFixed(3)],['Varyasyon Katsayısı (%)',+st.cv.toFixed(2)],
+      ['Minimum (sn)',+(st.min/1000).toFixed(3)],['Maksimum (sn)',+(st.max/1000).toFixed(3)],['Aralık (sn)',+(st.range/1000).toFixed(3)],
+      ['%95 Güven Aralığı Alt (sn)',+(st.ci95Low/1000).toFixed(3)],['%95 Güven Aralığı Üst (sn)',+(st.ci95High/1000).toFixed(3)],
+      ['Gerekli Gözlem Sayısı (±%5, %95 GA)',st.nReq],['Yeterli Gözlem',st.n>=st.nReq?'Evet':'Hayır']];
+    // Sheet 2: Tur Verileri
+    const w2=[['Tur No','Süre (sn)','Süre','Kümülatif (sn)','Kümülatif','Etiket','Not']];
+    session.laps.forEach((l,i)=>{const tn=l.tag!==null&&sTags[l.tag]?sTags[l.tag].name:'';w2.push([i+1,+(l.t/1000).toFixed(3),ffull(l.t),+(l.cum/1000).toFixed(3),ffull(l.cum),tn,l.note||''])});
+    // Sheet 3: Etiket Analizi
+    const w3=[['Etiket','Adet','Toplam (sn)','Ortalama (sn)','Min (sn)','Max (sn)','Std Sapma (sn)','CV%','Oran (%)']];
+    ta.forEach(ts=>{w3.push([ts.name,ts.count,+(ts.sum/1000).toFixed(3),+(ts.mean/1000).toFixed(3),+(ts.min/1000).toFixed(3),+(ts.max/1000).toFixed(3),+(ts.stdDev/1000).toFixed(3),+ts.cv.toFixed(2),+((ts.count/st.n)*100).toFixed(1)])});
+    const wb=XLSX.utils.book_new();
+    const s1=XLSX.utils.aoa_to_sheet(w1);s1['!cols']=[{wch:35},{wch:20}];
+    const s2=XLSX.utils.aoa_to_sheet(w2);s2['!cols']=[{wch:8},{wch:12},{wch:12},{wch:14},{wch:12},{wch:15},{wch:30}];
+    const s3=XLSX.utils.aoa_to_sheet(w3);s3['!cols']=[{wch:15},{wch:8},{wch:14},{wch:14},{wch:12},{wch:12},{wch:14},{wch:8},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,s1,'Özet');XLSX.utils.book_append_sheet(wb,s2,'Tur Verileri');XLSX.utils.book_append_sheet(wb,s3,'Etiket Analizi');
+    XLSX.writeFile(wb,fn);
+    toast('Excel dosyası indirildi','t-ok');
+  });
+}
+
+// ===== EXPORT: JSON =====
+function exportAllJSON(){
+  const data={version:1,exportDate:new Date().toISOString(),tags:loadTags(),history:loadHistory()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='zaman_etudu_yedek_'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+  toast('JSON yedeği indirildi','t-ok');
+}
+function triggerImportJSON(){$('jsonImportInput').click()}
+$('jsonImportInput').addEventListener('change',e=>{
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.tags||!Array.isArray(data.history))throw new Error('format');
+      if(data.tags.length===4){saveTags(data.tags);tags=data.tags}
+      saveHistory(data.history);
+      toast(data.history.length+' ölçüm başarıyla içe aktarıldı','t-ok');
+      renderHistory();
+    }catch(err){toast('Geçersiz JSON dosyası','t-dng')}
+  };
+  reader.readAsText(file);e.target.value='';
 });
 
 // ===== FULLSCREEN =====
