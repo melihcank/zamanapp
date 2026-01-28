@@ -134,6 +134,10 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 @keyframes lapP{0%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.85}100%{transform:scale(1);opacity:1}}
 .timer-area.paused .timer-time{animation:blink 1.2s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.timer-area.rewind .timer-time,.timer-area.rewind .timer-ms{animation:rewindFx .5s ease-out}
+.timer-area.rewind .ring-prog{animation:rewindRing .5s ease-out}
+@keyframes rewindFx{0%{color:var(--tx);transform:scale(1)}25%{color:var(--inf);transform:scale(.92)}50%{color:var(--inf);transform:scale(.95)}100%{color:var(--tx);transform:scale(1)}}
+@keyframes rewindRing{0%{stroke:var(--acc)}25%{stroke:var(--inf)}100%{stroke:var(--acc)}}
 
 .tap-hint{font-size:clamp(11px,3vw,14px);color:var(--tx3);margin-top:2px}
 .lap-ctr{display:flex;align-items:center;gap:5px;margin-top:4px;padding:3px 12px;background:var(--bg2);border-radius:var(--r-pill);font-size:clamp(11px,2.8vw,13px);font-weight:600;color:var(--tx2)}
@@ -329,7 +333,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 <div id="setupScreen" class="screen hidden">
   <form class="setup-form" id="setupForm" style="margin:auto">
     <div class="setup-title">Yeni Ölçüm</div>
-    <div class="inp-grp"><label>Operatör Adı</label><input type="text" id="inpOp" placeholder="Adınızı girin" autocomplete="off" required></div>
+    <div class="inp-grp"><label>Operatör Adı</label><input type="text" id="inpOp" placeholder="İşi yapan kişinin adını girin" autocomplete="off" required></div>
     <div class="inp-grp"><label>İş / Proses Adı</label><input type="text" id="inpJob" placeholder="İş tanımını girin" autocomplete="off" required></div>
     <button type="submit" class="btn-go">BAŞLAT</button>
     <button type="button" class="btn-back" id="setupBack">Geri Dön</button>
@@ -722,12 +726,40 @@ function updCard(card,lap){
 }
 function refreshList(){$('lapList').innerHTML='';for(let i=0;i<S.laps.length;i++)renderCard(S.laps[i],false)}
 function delLap(lap,card){
+  const deletedTime=lap.t;
   card.style.transition='transform .25s,opacity .25s';card.style.transform='translateX(-100%)';card.style.opacity='0';
-  setTimeout(()=>{const i=S.laps.findIndex(l=>l.id===lap.id);if(i>-1){S.laps.splice(i,1);S.laps.forEach((l,j)=>l.num=j+1)}card.remove();
-    const cards=$('lapList').querySelectorAll('.lap-card');const tot=S.laps.length;
-    cards.forEach((c,di)=>{const li=tot-1-di;if(S.laps[li]){const n=c.querySelector('.lap-num');if(n)n.textContent='#'+S.laps[li].num}});
-    $('lapN').textContent=S.laps.length;if(!S.laps.length)$('lapCtr').style.display='none';toast('Tur silindi','t-dng');
-  },250);vib([10,30,10]);
+  setTimeout(()=>{
+    const i=S.laps.findIndex(l=>l.id===lap.id);
+    if(i>-1){
+      S.laps.splice(i,1);
+      // Recalc nums and cumulative times
+      let cum=0;
+      S.laps.forEach((l,j)=>{l.num=j+1;cum+=l.t;l.cum=cum});
+      // Adjust timer: add deleted time to totalPaused so timer goes back
+      S.totalPaused+=deletedTime;
+      S.lastLapTime-=deletedTime;
+      if(S.lastLapTime<0)S.lastLapTime=0;
+      // Rewind effect on timer
+      const ta=$('timerArea');
+      ta.classList.remove('rewind');void ta.offsetWidth;ta.classList.add('rewind');
+      setTimeout(()=>ta.classList.remove('rewind'),500);
+    }
+    card.remove();
+    // Update all lap cards (num + cumulative)
+    const cards=$('lapList').querySelectorAll('.lap-card');
+    const tot=S.laps.length;
+    cards.forEach((c,di)=>{
+      const li=tot-1-di;
+      if(S.laps[li]){
+        const n=c.querySelector('.lap-num');if(n)n.textContent='#'+S.laps[li].num;
+        const cumEl=c.querySelector('.lap-cum');if(cumEl)cumEl.textContent='Toplam: '+ffull(S.laps[li].cum);
+      }
+    });
+    $('lapN').textContent=S.laps.length;
+    if(!S.laps.length)$('lapCtr').style.display='none';
+    toast('Tur silindi','t-dng');
+  },250);
+  vib([10,30,10]);
 }
 
 // ===== SWIPE (touch + mouse drag) =====
@@ -799,7 +831,8 @@ $('timerArea').addEventListener('dblclick',e=>{
 $('tagStrip').addEventListener('click',e=>{
   const btn=e.target.closest('.tag-btn');if(!btn)return;
   const i=+btn.dataset.idx;
-  if(!S.started)startT();if(S.paused)return;
+  if(!S.started){startT();return;}
+  if(S.paused)return;
   btn.classList.remove('tag-pulse');void btn.offsetWidth;btn.classList.add('tag-pulse');
   recordLap(i);
 });
@@ -996,7 +1029,7 @@ document.addEventListener('keydown',e=>{
   const key=e.key.toLowerCase();
   if(key===' '||key==='space'){e.preventDefault();if(!S.started)startT();else if(!S.paused)recordLap();}
   else if(key==='p'){e.preventDefault();if(!S.started)return;S.paused?resumeT():pauseT()}
-  else if(key==='1'||key==='2'||key==='3'||key==='4'){e.preventDefault();const i=+key-1;if(!S.started)startT();if(S.paused)return;const btn=$('tagStrip').children[i];if(btn){btn.classList.remove('tag-pulse');void btn.offsetWidth;btn.classList.add('tag-pulse')}recordLap(i)}
+  else if(key==='1'||key==='2'||key==='3'||key==='4'){e.preventDefault();const i=+key-1;if(!S.started){startT();return}if(S.paused)return;const btn=$('tagStrip').children[i];if(btn){btn.classList.remove('tag-pulse');void btn.offsetWidth;btn.classList.add('tag-pulse')}recordLap(i)}
   else if(key==='n'){e.preventDefault();openNote()}
   else if(key==='q'){e.preventDefault();finModal.classList.add('open');pushPanel()}
   else if(key==='escape'){e.preventDefault();closePanels()}
