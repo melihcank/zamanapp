@@ -250,10 +250,20 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .sum-act.sa-del svg{fill:var(--dng)}
 .btn-new{width:100%;padding:clamp(10px,3vw,18px);font-size:clamp(13px,4vw,17px);font-weight:700;font-family:var(--sans);background:var(--acc);color:#000;border:none;border-radius:var(--r-md);cursor:pointer;margin-bottom:calc(clamp(8px,2.5vw,16px) + var(--sab))}
 
-/* Scrollbar */
-.lap-wrap::-webkit-scrollbar{width:3px}
-.lap-wrap::-webkit-scrollbar-track{background:transparent}
-.lap-wrap::-webkit-scrollbar-thumb{background:#444;border-radius:3px}
+/* Summary Filters */
+.sum-filters{display:flex;flex-wrap:wrap;align-items:center;gap:clamp(4px,1.2vw,8px);margin:clamp(4px,1.5vw,10px) 0;padding:clamp(6px,1.8vw,10px) clamp(8px,2vw,12px);background:var(--bg3);border-radius:var(--r-md)}
+.sum-filters-title{width:100%;font-size:clamp(8px,2.2vw,11px);font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:clamp(.3px,.15vw,.8px);margin-bottom:clamp(0px,.3vw,2px)}
+.sf-row{display:flex;align-items:center;gap:clamp(3px,1vw,5px);font-size:clamp(9px,2.8vw,12px);cursor:pointer;-webkit-user-select:none;user-select:none;white-space:nowrap}
+.sf-row input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:clamp(14px,4vw,18px);height:clamp(14px,4vw,18px);border:2px solid var(--bg4);border-radius:3px;background:var(--bg);flex-shrink:0;cursor:pointer;position:relative;transition:background .15s,border-color .15s}
+.sf-row input[type="checkbox"]:checked{background:var(--acc);border-color:var(--acc)}
+.sf-row input[type="checkbox"]:checked::after{content:'';position:absolute;left:clamp(3px,.8vw,4px);top:clamp(0px,.2vw,1px);width:clamp(4px,1.1vw,6px);height:clamp(8px,2.2vw,10px);border:solid #000;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.sf-dot{width:clamp(8px,2.5vw,12px);height:clamp(8px,2.5vw,12px);border-radius:2px;flex-shrink:0}
+.sf-sep{width:1px;height:clamp(14px,4vw,18px);background:var(--bg4);flex-shrink:0}
+.sum-row.sf-excluded{opacity:.35}
+
+/* Hide scrollbar everywhere */
+.lap-wrap,.screen{scrollbar-width:none;-ms-overflow-style:none}
+.lap-wrap::-webkit-scrollbar,.screen::-webkit-scrollbar{display:none}
 
 @media(prefers-contrast:more){:root{--bg:#000;--bg2:#111;--bg3:#1a1a1a;--tx:#fff;--tx2:#ccc}}
 
@@ -477,6 +487,8 @@ function saveHistory(h){ localStorage.setItem('zt_hist',JSON.stringify(h)); }
 // ===== STATE =====
 const S={op:'',job:'',running:false,paused:false,started:false,startTime:0,elapsed:0,pauseStart:0,totalPaused:0,laps:[],lastLapTime:0,raf:null,defaultTag:0};
 let sumDelTarget=null;
+let sumFilterTags=new Set([0,1,2,3,'none']); // tag indices + 'none' for untagged
+let sumIncludeOutliers=true;
 
 // ===== ELEMENTS =====
 const $=id=>document.getElementById(id);
@@ -553,6 +565,19 @@ function tagAnalysis(laps,tgs){
   if(un.length){const s=calcStats(un.map(l=>l.t));res.push({name:'Etiketsiz',color:'#666',idx:-1,count:un.length,...s})}
   else{res.push({name:'Etiketsiz',color:'#666',idx:-1,count:0,sum:0,mean:0,median:0,stdDev:0,cv:0,min:0,max:0,range:0,ci95Low:0,ci95High:0,se:0,nReq:0})}
   return res;
+}
+
+function detectOutliers(times){
+  if(times.length<4) return new Set();
+  const sorted=[...times].sort((a,b)=>a-b);
+  const n=sorted.length;
+  const q1=sorted[Math.floor(n*0.25)];
+  const q3=sorted[Math.floor(n*0.75)];
+  const iqr=q3-q1;
+  const low=q1-1.5*iqr, high=q3+1.5*iqr;
+  const s=new Set();
+  times.forEach((t,i)=>{if(t<low||t>high)s.add(i)});
+  return s;
 }
 
 // ===== MENU =====
@@ -813,6 +838,8 @@ let sumDateStr='',sumTimeStr='';
 function showSummary(){
   sumDateStr=new Date().toLocaleDateString('tr-TR');
   sumTimeStr=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  sumFilterTags=new Set([0,1,2,3,'none']);
+  sumIncludeOutliers=true;
   rebuildSummary();
   showScreen('summary');
 }
@@ -822,8 +849,32 @@ function recalcLaps(){
 }
 function rebuildSummary(){
   const scrollY=screens.summary.scrollTop;
-  const laps=S.laps,times=laps.map(l=>l.t),st=calcStats(times);
-  const tot=laps.length?laps[laps.length-1].cum:0;
+  const laps=S.laps;
+  // Filter laps for stats: by tag
+  const tagFiltered=laps.filter(l=>{
+    if(l.tag===null) return sumFilterTags.has('none');
+    return sumFilterTags.has(l.tag);
+  });
+  // Detect outliers on tag-filtered times
+  const tfTimes=tagFiltered.map(l=>l.t);
+  const outlierSet=detectOutliers(tfTimes);
+  // Build set of excluded lap ids (outliers)
+  const outlierIds=new Set();
+  if(!sumIncludeOutliers){tagFiltered.forEach((l,i)=>{if(outlierSet.has(i))outlierIds.add(l.id||i)})}
+  // Final filtered times for stats
+  const finalTimes=[];
+  tagFiltered.forEach((l,i)=>{if(sumIncludeOutliers||!outlierSet.has(i))finalTimes.push(l.t)});
+  const st=calcStats(finalTimes);
+  const tot=finalTimes.reduce((a,b)=>a+b,0);
+  // Also build set of all excluded lap nums for visual dimming
+  const excludedNums=new Set();
+  laps.forEach(l=>{
+    const tagKey=l.tag===null?'none':l.tag;
+    if(!sumFilterTags.has(tagKey)){excludedNums.add(l.num);return}
+    if(!sumIncludeOutliers&&outlierIds.has(l.id))excludedNums.add(l.num);
+  });
+  const outlierCount=outlierSet.size;
+
   let h=`<div class="sum-hdr"><h2>Ölçüm Tamamlandı</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:clamp(9px,2.5vw,12px);color:var(--tx3);margin-top:clamp(2px,.6vw,4px)">${sumDateStr} ${sumTimeStr}</p></div>`;
   if(st){
     h+=`<div class="sum-section-title">Temel İstatistikler</div>
@@ -831,16 +882,30 @@ function rebuildSummary(){
     <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.median)}</div><div class="stat-l">Medyan</div></div><div class="stat-c"><div class="stat-v">${ffull(st.stdDev)}</div><div class="stat-l">Std Sapma</div></div><div class="stat-c"><div class="stat-v">${st.cv.toFixed(1)}%</div><div class="stat-l">CV%</div></div></div>
     <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.min)}</div><div class="stat-l">Minimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.max)}</div><div class="stat-l">Maksimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.range)}</div><div class="stat-l">Aralık</div></div></div>
     <div class="sum-stats s2"><div class="stat-c"><div class="stat-v stat-v-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</div><div class="stat-l">%95 Güven Aralığı</div></div><div class="stat-c"><div class="stat-v${st.n>=st.nReq?'':' stat-warn'}">${st.nReq}</div><div class="stat-l">Gerekli Gözlem ${st.n>=st.nReq?'(Yeterli)':'(Yetersiz)'}</div></div></div>`;
-  } else {
+  } else if(!laps.length) {
     h+=`<div class="sum-section-title" style="text-align:center;margin:24px 0;color:var(--tx3)">Tüm turlar silindi</div>`;
+  } else {
+    h+=`<div class="sum-section-title" style="text-align:center;margin:16px 0;color:var(--tx3)">Filtre sonucu veri yok</div>`;
+  }
+  // Filter section
+  if(laps.length){
+    h+=`<div class="sum-filters"><div class="sum-filters-title">Analiz Filtresi</div>`;
+    tags.forEach((tag,i)=>{
+      h+=`<label class="sf-row"><input type="checkbox" data-sf-tag="${i}" ${sumFilterTags.has(i)?'checked':''}><span class="sf-dot" style="background:${tag.color}"></span>${esc(tag.name)}</label>`;
+    });
+    h+=`<label class="sf-row"><input type="checkbox" data-sf-tag="none" ${sumFilterTags.has('none')?'checked':''}><span class="sf-dot" style="background:#666"></span>Etiketsiz</label>`;
+    h+=`<span class="sf-sep"></span>`;
+    h+=`<label class="sf-row"><input type="checkbox" id="sfOutlier" ${sumIncludeOutliers?'checked':''}>Aykırı${outlierCount?' ('+outlierCount+')':''}</label>`;
+    h+=`</div>`;
   }
   h+=`<div class="sum-section-title">Tur Listesi</div><div class="sum-laps" id="sumLapList">`;
-  laps.forEach(l=>{h+=sumRowHTML(l)});
+  laps.forEach(l=>{h+=sumRowHTML(l,excludedNums.has(l.num))});
   if(!laps.length) h+=`<div style="text-align:center;padding:16px;color:var(--tx3);font-size:clamp(10px,3vw,13px)">Tur bulunmuyor</div>`;
   h+=`</div><div class="export-bar"><button class="btn-export btn-xl" id="btnExcel"${laps.length?'':' disabled style="opacity:.4;pointer-events:none"'}><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Excel İndir</button></div><button class="btn-new" id="btnNew">ANA MENÜYE DÖN</button>`;
   screens.summary.innerHTML=h;
   screens.summary.scrollTop=scrollY;
   bindSumActions();
+  bindSumFilters();
   $('btnExcel').onclick=()=>{
     const sess={op:S.op,job:S.job,date:sumDateStr,tags:JSON.parse(JSON.stringify(tags)),laps:S.laps.map(l=>({t:l.t,cum:l.cum,tag:l.tag,note:l.note}))};
     const fn='zaman_etudu_'+S.job.replace(/[^a-zA-Z0-9\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
@@ -848,9 +913,9 @@ function rebuildSummary(){
   };
   $('btnNew').onclick=()=>{resetAll();showScreen('menu')};
 }
-function sumRowHTML(l){
+function sumRowHTML(l,excluded){
   const tg=l.tag!==null?tags[l.tag]:null;
-  return `<div class="sum-row" data-num="${l.num}"><span class="sn">#${l.num}</span><span class="st">${ffull(l.t)}</span><span class="stg" style="color:${tg?tg.color:'var(--tx3)'}">${tg?esc(tg.name):'—'}</span><span class="sum-acts"><button class="sum-act sa-tag" data-num="${l.num}" title="Etiket">${SVG_ICONS.tag}</button><button class="sum-act sa-del" data-num="${l.num}" title="Sil">${SVG_ICONS.del}</button></span></div>`;
+  return `<div class="sum-row${excluded?' sf-excluded':''}" data-num="${l.num}"><span class="sn">#${l.num}</span><span class="st">${ffull(l.t)}</span><span class="stg" style="color:${tg?tg.color:'var(--tx3)'}">${tg?esc(tg.name):'—'}</span><span class="sum-acts"><button class="sum-act sa-tag" data-num="${l.num}" title="Etiket">${SVG_ICONS.tag}</button><button class="sum-act sa-del" data-num="${l.num}" title="Sil">${SVG_ICONS.del}</button></span></div>`;
 }
 function bindSumActions(){
   screens.summary.querySelectorAll('.sa-tag').forEach(btn=>{
@@ -867,6 +932,19 @@ function bindSumActions(){
       $('sumDelModal').classList.add('open');
     };
   });
+}
+// Filter checkboxes for summary
+function bindSumFilters(){
+  screens.summary.querySelectorAll('[data-sf-tag]').forEach(cb=>{
+    cb.onchange=()=>{
+      const v=cb.dataset.sfTag;
+      const key=v==='none'?'none':+v;
+      if(cb.checked)sumFilterTags.add(key); else sumFilterTags.delete(key);
+      rebuildSummary();
+    };
+  });
+  const oCb=$('sfOutlier');
+  if(oCb) oCb.onchange=()=>{sumIncludeOutliers=oCb.checked;rebuildSummary()};
 }
 // Tag picker for summary
 function openSumTP(lap){
