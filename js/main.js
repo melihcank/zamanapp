@@ -58,14 +58,105 @@ function init() {
       { name: 'Adım 3', color: STEP_COLORS[2] },
       { name: 'Adım 4', color: STEP_COLORS[3] }
     ]);
+    // Show choice modal
+    $('stepChoiceModal').classList.add('open');
+    pushPanel();
+  };
+
+  // Step choice modal handlers
+  $('stepChoiceNo').onclick = () => {
+    $('stepChoiceModal').classList.remove('open');
+    goToSequenceSetup();
+  };
+
+  $('stepChoiceYes').onclick = () => {
+    $('stepChoiceModal').classList.remove('open');
+    renderStepSetupList();
+    showScreen('stepSetup');
+  };
+
+  // Step setup screen handlers
+  $('stepSetupBack').onclick = () => showScreen('modeSelect');
+
+  $('stepSetupAdd').onclick = () => {
+    const newIdx = sequenceSteps.length;
+    const color = STEP_COLORS[newIdx % STEP_COLORS.length];
+    setSequenceSteps([...sequenceSteps, { name: 'Adım ' + (newIdx + 1), color }]);
+    renderStepSetupList();
+    // Focus the new input
+    setTimeout(() => {
+      const inputs = $('stepSetupList').querySelectorAll('.step-setup-input');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    }, 50);
+  };
+
+  $('stepSetupDone').onclick = () => {
+    // Save step names from inputs
+    const inputs = $('stepSetupList').querySelectorAll('.step-setup-input');
+    const newSteps = [];
+    inputs.forEach((inp, i) => {
+      const name = inp.value.trim() || ('Adım ' + (i + 1));
+      newSteps.push({ name, color: STEP_COLORS[i % STEP_COLORS.length] });
+    });
+    if (newSteps.length < 2) {
+      toast('En az 2 adım gerekli', 't-wrn');
+      return;
+    }
+    setSequenceSteps(newSteps);
+    goToSequenceSetup();
+  };
+
+  // Go to setup screen for sequence mode
+  function goToSequenceSetup() {
     $('setupTitle').textContent = 'Yeni Ölçüm — Ardışık İşlem';
     $('setupModeHint').innerHTML = 'Adımlar sırasıyla ölçülecek. Her dokunuş mevcut adımı tamamlar.<br><span style="font-size:clamp(9px,2.5vw,11px);color:var(--tx3)">Ölçüm sırasında adım isimleri değiştirilebilir ve yeni adımlar eklenebilir.</span>';
     // Show steps preview
     const preview = $('setupStepsPreview');
     preview.style.display = 'block';
-    preview.innerHTML = '<div style="font-size:clamp(9px,2.5vw,11px);color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Varsayılan Adımlar (ölçüm sırasında düzenlenebilir)</div><div style="display:flex;gap:6px;flex-wrap:wrap">' + sequenceSteps.map((s, i) => `<span style="padding:4px 10px;background:${dimColor(s.color)};color:${s.color};border-radius:var(--r-pill);font-size:clamp(10px,2.8vw,12px);font-weight:600">${i + 1}. ${esc(s.name)}</span>`).join('') + '</div>';
+    preview.innerHTML = '<div style="font-size:clamp(9px,2.5vw,11px);color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Tanımlı Adımlar (ölçüm sırasında düzenlenebilir)</div><div style="display:flex;gap:6px;flex-wrap:wrap">' + sequenceSteps.map((s, i) => `<span style="padding:4px 10px;background:${dimColor(s.color)};color:${s.color};border-radius:var(--r-pill);font-size:clamp(10px,2.8vw,12px);font-weight:600">${i + 1}. ${esc(s.name)}</span>`).join('') + '</div>';
     showScreen('setup');
-  };
+  }
+
+  // Render step setup list
+  function renderStepSetupList() {
+    const list = $('stepSetupList');
+    list.innerHTML = '';
+    sequenceSteps.forEach((step, i) => {
+      const item = document.createElement('div');
+      item.className = 'step-setup-item';
+      item.innerHTML = `
+        <div class="step-setup-num" style="background:${step.color}">${i + 1}</div>
+        <input type="text" class="step-setup-input" value="${esc(step.name)}" placeholder="Adım ${i + 1}" maxlength="30" data-idx="${i}">
+        <button class="step-setup-del" data-idx="${i}" ${sequenceSteps.length <= 2 ? 'disabled' : ''}>
+          <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        </button>
+      `;
+      list.appendChild(item);
+    });
+
+    // Bind delete buttons
+    list.querySelectorAll('.step-setup-del').forEach(btn => {
+      btn.onclick = () => {
+        if (sequenceSteps.length <= 2) return;
+        const idx = +btn.dataset.idx;
+        const newSteps = sequenceSteps.filter((_, i) => i !== idx);
+        // Renumber colors
+        newSteps.forEach((s, i) => s.color = STEP_COLORS[i % STEP_COLORS.length]);
+        setSequenceSteps(newSteps);
+        renderStepSetupList();
+      };
+    });
+
+    // Update step names on input change
+    list.querySelectorAll('.step-setup-input').forEach(inp => {
+      inp.oninput = () => {
+        const idx = +inp.dataset.idx;
+        if (sequenceSteps[idx]) {
+          sequenceSteps[idx].name = inp.value.trim() || ('Adım ' + (idx + 1));
+        }
+      };
+    });
+  }
 
   $('setupBack').onclick = () => showScreen('modeSelect');
 

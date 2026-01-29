@@ -275,6 +275,23 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .modal-btn:active,.modal-btn:hover{transform:scale(.96)}
 .m-cancel{background:var(--bg3);color:var(--tx2)}
 .m-confirm{background:var(--dng);color:#fff}
+.m-primary{background:var(--acc);color:#000}
+
+/* Step Setup Screen */
+#stepSetupScreen{padding:20px 16px;background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.step-setup-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.step-setup-header h2{font-size:18px;font-weight:700;flex:1}
+.step-setup-hint{font-size:clamp(11px,3vw,13px);color:var(--tx2);margin-bottom:16px;line-height:1.5}
+.step-setup-list{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.step-setup-item{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:var(--r-md);padding:12px}
+.step-setup-num{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.step-setup-input{flex:1;padding:10px 14px;font-size:15px;font-family:var(--sans);background:var(--bg);border:2px solid var(--bg4);border-radius:var(--r-sm);color:var(--tx);outline:none}
+.step-setup-input:focus{border-color:var(--acc)}
+.step-setup-del{width:36px;height:36px;border-radius:50%;background:var(--dng-d);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.step-setup-del svg{width:18px;height:18px;fill:var(--dng)}
+.step-setup-del:disabled{opacity:.3;cursor:not-allowed}
+.step-setup-add{width:100%;padding:14px;font-size:14px;font-weight:600;font-family:var(--sans);background:var(--bg2);color:var(--tx2);border:2px dashed var(--bg4);border-radius:var(--r-md);cursor:pointer;margin-bottom:16px;transition:border-color .2s,color .2s}
+.step-setup-add:hover{border-color:var(--acc);color:var(--acc)}
 
 /* DT overlay */
 .dt-ov{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s}

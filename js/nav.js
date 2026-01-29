@@ -8,6 +8,7 @@ export const screens = {
   menu: null,
   modeSelect: null,
   setup: null,
+  stepSetup: null,
   tagEditor: null,
   history: null,
   measure: null,
@@ -19,6 +20,7 @@ export function initScreens() {
   screens.menu = $('menuScreen');
   screens.modeSelect = $('modeSelectScreen');
   screens.setup = $('setupScreen');
+  screens.stepSetup = $('stepSetupScreen');
   screens.tagEditor = $('tagEditorScreen');
   screens.history = $('historyScreen');
   screens.measure = $('measureScreen');
@@ -51,7 +53,8 @@ export function isPanel() {
     $('sumDelModal')?.classList.contains('open') ||
     $('hiDelModal')?.classList.contains('open') ||
     $('tePanel')?.classList.contains('open') ||
-    $('stepPanel')?.classList.contains('open');
+    $('stepPanel')?.classList.contains('open') ||
+    $('stepChoiceModal')?.classList.contains('open');
 }
 
 // Close all panels
@@ -108,6 +111,12 @@ export function closePanels() {
   const hiDelModal = $('hiDelModal');
   if (hiDelModal?.classList.contains('open')) {
     hiDelModal.classList.remove('open');
+    return true;
+  }
+
+  const stepChoiceModal = $('stepChoiceModal');
+  if (stepChoiceModal?.classList.contains('open')) {
+    stepChoiceModal.classList.remove('open');
     return true;
   }
 
