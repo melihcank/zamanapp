@@ -175,8 +175,8 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .tempo-wheel::before,.tempo-wheel::after{content:'';position:absolute;left:0;right:0;height:1px;background:var(--tx2);z-index:2;pointer-events:none}
 .tempo-wheel::before{top:50%;margin-top:clamp(-14px,-3.5vh,-18px)}
 .tempo-wheel::after{top:50%;margin-top:clamp(14px,3.5vh,18px)}
-.tempo-items{position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;transition:transform .15s ease-out}
-.tempo-item{font-family:var(--mono);font-size:clamp(18px,5vw,24px);font-weight:700;color:var(--tx);line-height:clamp(28px,7vh,36px);height:clamp(28px,7vh,36px);opacity:.2;transition:opacity .15s,transform .15s}
+.tempo-items{position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;transition:transform .15s ease-out;pointer-events:none}
+.tempo-item{font-family:var(--mono);font-size:clamp(18px,5vw,24px);font-weight:700;color:var(--tx);line-height:clamp(28px,7vh,36px);height:clamp(28px,7vh,36px);opacity:.2;transition:opacity .15s,transform .15s;pointer-events:none}
 .tempo-item.ti-1{opacity:.4}
 .tempo-item.ti-2{opacity:.6}
 .tempo-item.ti-active{opacity:1;transform:scale(1.1)}
@@ -353,6 +353,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .sum-section-title{font-size:clamp(9px,2.8vw,13px);font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:clamp(.4px,.2vw,1px);margin:clamp(6px,2vw,16px) 0 clamp(4px,1.2vw,8px);padding-left:2px}
 .stat-warn{color:var(--wrn)!important}
 .sum-tag-wrap{overflow-x:auto;margin-bottom:clamp(4px,1.5vw,8px);-webkit-overflow-scrolling:touch}
+.sum-step-table-wrap{margin-bottom:clamp(8px,2vw,16px);background:var(--bg3);border-radius:var(--r-md);padding:clamp(4px,1vw,8px)}
 .sum-tag-table{width:100%;border-collapse:collapse;font-size:clamp(9px,2.8vw,13px)}
 .sum-tag-table th{text-align:left;padding:clamp(4px,1.2vw,8px) clamp(3px,1vw,6px);font-size:clamp(7px,2.2vw,11px);color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bg4);white-space:nowrap}
 .sum-tag-table td{padding:clamp(4px,1.2vw,8px) clamp(3px,1vw,6px);border-bottom:1px solid var(--bg4);font-family:var(--mono);font-weight:600;white-space:nowrap}

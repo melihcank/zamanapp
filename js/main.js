@@ -133,9 +133,8 @@ function init() {
     S.paused ? resumeT() : pauseT();
   });
 
-  // Tag strip click (repeat mode)
+  // Tag strip click (works in both modes - tags are anomaly markers)
   $('tagStrip').addEventListener('click', e => {
-    if (measurementMode === 'sequence') return;
     const btn = e.target.closest('.tag-btn');
     if (!btn) return;
     const i = +btn.dataset.idx;
@@ -144,7 +143,7 @@ function init() {
     btn.classList.remove('tag-pulse');
     void btn.offsetWidth;
     btn.classList.add('tag-pulse');
-    recordLap(i);
+    recordLap(i);  // Records lap with anomaly tag (step is recorded automatically in sequence mode)
   });
 
   // Finish modal

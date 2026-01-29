@@ -103,20 +103,33 @@ export function rebuildSummary() {
     const cycleStats = calcStats(cycleTimes);
 
     // Step analysis - use step index from laps
+    // For backwards compatibility, if laps don't have step property,
+    // infer step from lap position (lap index % stepCount)
     const stepAnalysis = [];
     for (let i = 0; i < stepCount; i++) {
-      const stepLaps = laps.filter(l => l.step === i);
+      // Try to filter by step property first, fallback to position-based inference
+      let stepLaps = laps.filter(l => l.step === i);
+
+      // If no laps have step property, infer from position
+      if (stepLaps.length === 0 && laps.length > 0 && laps[0].step === undefined) {
+        stepLaps = laps.filter((l, idx) => (idx % stepCount) === i);
+      }
+
       const times = stepLaps.map(l => l.t);
       const normalTimes = stepLaps.map(l => l.nt || l.t);
       const stats = calcStats(times);
       const ntStats = calcStats(normalTimes);
       const stepDef = sequenceSteps[i] || { name: 'Adım ' + (i + 1), color: STEP_COLORS[i % STEP_COLORS.length] };
+
+      // Safely spread stats (handle null case)
+      const safeStats = stats || { n: 0, sum: 0, mean: 0, median: 0, stdDev: 0, cv: 0, min: 0, max: 0, range: 0 };
+
       stepAnalysis.push({
         name: stepDef.name,
         color: stepDef.color,
         idx: i,
         count: stepLaps.length,
-        ...stats,
+        ...safeStats,
         ntMean: ntStats?.mean || 0,
         ntSum: ntStats?.sum || 0
       });
@@ -136,10 +149,15 @@ export function rebuildSummary() {
     }
 
     h += `<div class="sum-section-title">Adım Bazlı Analiz</div>`;
-    h += `<div class="sum-tag-wrap"><table class="sum-tag-table"><thead><tr><th>Adım</th><th>Adet</th><th>Ort.</th><th>Normal</th><th>Min</th><th>Max</th></tr></thead><tbody>`;
-    stepAnalysis.forEach(sa => {
-      h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.ntMean ? ffull(sa.ntMean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td></tr>`;
-    });
+    h += `<div class="sum-step-table-wrap">`;
+    h += `<table class="sum-tag-table"><thead><tr><th>Adım</th><th>Adet</th><th>Ort.</th><th>Normal</th><th>Min</th><th>Max</th></tr></thead><tbody>`;
+    if (stepAnalysis.length === 0) {
+      h += `<tr><td colspan="6" style="text-align:center;color:var(--tx3)">Adım verisi bulunamadı</td></tr>`;
+    } else {
+      stepAnalysis.forEach(sa => {
+        h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.ntMean ? ffull(sa.ntMean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td></tr>`;
+      });
+    }
     h += `</tbody></table></div>`;
 
     // Anomaly summary if any

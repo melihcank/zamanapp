@@ -74,36 +74,20 @@ export function initTempoPicker() {
   if (!wheel) return;
 
   let startY = 0, startIdx = 0, dragging = false;
-  let lastY = 0, velocity = 0, lastTime = 0;
-  let momentumRAF = null;
 
   function onStart(y) {
     startY = y;
-    lastY = y;
     startIdx = tempoIdx;
     dragging = true;
-    velocity = 0;
-    lastTime = Date.now();
-    cancelAnimationFrame(momentumRAF);
     markTempoActive();
   }
 
   function onMove(y) {
     if (!dragging) return;
 
-    // Calculate velocity for momentum
-    const now = Date.now();
-    const dt = now - lastTime;
-    if (dt > 0) {
-      velocity = (y - lastY) / dt;
-      lastY = y;
-      lastTime = now;
-    }
-
-    // Higher sensitivity: divide by smaller value (itemH / 2.5 instead of itemH)
+    // Sensitivity = full row height for predictable 1:1 scrolling
     const itemH = wheel.offsetHeight / 5;
-    const sensitivity = itemH / 2.5; // More sensitive scrolling
-    const delta = Math.round((y - startY) / sensitivity);
+    const delta = Math.round((y - startY) / itemH);
     let newIdx = Math.max(0, Math.min(TEMPO_VALUES.length - 1, startIdx - delta));
 
     if (newIdx !== tempoIdx) {
@@ -116,50 +100,7 @@ export function initTempoPicker() {
   }
 
   function onEnd() {
-    if (!dragging) return;
     dragging = false;
-
-    // Apply momentum
-    if (Math.abs(velocity) > 0.3) {
-      applyMomentum();
-    }
-  }
-
-  // Momentum scrolling
-  function applyMomentum() {
-    const friction = 0.92;
-    const minVelocity = 0.05;
-
-    function tick() {
-      velocity *= friction;
-
-      if (Math.abs(velocity) < minVelocity) {
-        velocity = 0;
-        return;
-      }
-
-      // Convert velocity to index change
-      const itemH = wheel.offsetHeight / 5;
-      const sensitivity = itemH / 2.5;
-      const deltaY = velocity * 16; // ~16ms per frame
-
-      if (Math.abs(deltaY) > sensitivity / 3) {
-        const direction = velocity > 0 ? 1 : -1;
-        const newIdx = Math.max(0, Math.min(TEMPO_VALUES.length - 1, tempoIdx + direction));
-
-        if (newIdx !== tempoIdx) {
-          setTempoIdx(newIdx);
-          setCurrentTempo(TEMPO_VALUES[newIdx]);
-          renderTempoWheel();
-          vib(3);
-          markTempoActive();
-        }
-      }
-
-      momentumRAF = requestAnimationFrame(tick);
-    }
-
-    momentumRAF = requestAnimationFrame(tick);
   }
 
   // Mouse events
@@ -202,14 +143,10 @@ export function initTempoPicker() {
   picker.addEventListener('wheel', e => {
     e.preventDefault();
     e.stopPropagation();
-
-    // deltaY > 0 = scroll down = decrease tempo
-    // deltaY < 0 = scroll up = increase tempo
     const direction = e.deltaY > 0 ? 1 : -1;
     changeTempo(direction);
   }, { passive: false });
 
-  // Also add wheel to the wheel element itself
   wheel.addEventListener('wheel', e => {
     e.preventDefault();
     e.stopPropagation();
