@@ -143,6 +143,20 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .lap-ctr{display:flex;align-items:center;gap:5px;margin-top:4px;padding:3px 12px;background:var(--bg2);border-radius:var(--r-pill);font-size:clamp(11px,2.8vw,13px);font-weight:600;color:var(--tx2)}
 .lap-ctr .cnt{color:var(--acc);font-family:var(--mono)}
 
+/* Tempo Picker (wheel style) */
+.timer-tempo-wrap{display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,24px);width:100%}
+.tempo-picker{display:flex;flex-direction:column;align-items:center;user-select:none;-webkit-user-select:none}
+.tempo-picker-label{font-size:clamp(9px,2.5vw,11px);font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:clamp(4px,1vh,8px)}
+.tempo-wheel{position:relative;height:clamp(100px,22vh,140px);width:clamp(56px,15vw,72px);overflow:hidden;cursor:ns-resize;touch-action:none}
+.tempo-wheel::before,.tempo-wheel::after{content:'';position:absolute;left:0;right:0;height:1px;background:var(--tx2);z-index:2;pointer-events:none}
+.tempo-wheel::before{top:50%;margin-top:clamp(-14px,-3.5vh,-18px)}
+.tempo-wheel::after{top:50%;margin-top:clamp(14px,3.5vh,18px)}
+.tempo-items{position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;transition:transform .15s ease-out}
+.tempo-item{font-family:var(--mono);font-size:clamp(18px,5vw,24px);font-weight:700;color:var(--tx);line-height:clamp(28px,7vh,36px);height:clamp(28px,7vh,36px);opacity:.2;transition:opacity .15s,transform .15s}
+.tempo-item.ti-1{opacity:.4}
+.tempo-item.ti-2{opacity:.6}
+.tempo-item.ti-active{opacity:1;transform:scale(1.1)}
+
 /* Keyboard Hints Bar (PC) */
 .kb-bar{display:none;flex-shrink:0;padding:4px 12px;background:var(--bg2);border-top:1px solid var(--bg4);gap:12px;justify-content:center;flex-wrap:wrap;font-size:12px;color:var(--tx3)}
 .kb-bar kbd{display:inline-block;padding:2px 7px;background:var(--bg4);border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--tx2);margin:0 2px}
@@ -166,6 +180,9 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .lap-tm{font-family:var(--mono);font-size:clamp(16px,4.5vw,22px);font-weight:700;letter-spacing:-.5px}
 .lap-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:var(--r-pill);font-size:clamp(9px,2.5vw,11px);font-weight:700;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
 .lap-badge svg{width:11px;height:11px}
+.lap-tempo{font-family:var(--mono);font-size:clamp(9px,2.5vw,11px);font-weight:700;padding:2px 6px;border-radius:var(--r-sm);background:var(--bg4);color:var(--tx2)}
+.lap-tempo.tempo-slow{background:var(--inf-d);color:var(--inf)}
+.lap-tempo.tempo-fast{background:var(--wrn-d);color:var(--wrn)}
 .lap-cum{font-family:var(--mono);font-size:clamp(10px,2.5vw,12px);color:var(--tx3)}
 .lap-note{font-size:clamp(10px,2.5vw,12px);color:var(--tx2);font-style:italic;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* PC: right-click & hover hints on lap cards */
@@ -192,6 +209,17 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .tp-btn svg{width:20px;height:20px;fill:#000}
 .tp-btn.sel{box-shadow:inset 0 0 0 3px #fff}
 .tp-remove{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;font-size:14px;font-weight:600;font-family:var(--sans);color:var(--tx3);background:var(--bg3);border:1px solid var(--bg4);border-radius:var(--r-md);cursor:pointer}
+
+/* Tempo Edit Panel */
+.te-tempo-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin:16px 0}
+.te-tempo-btn{width:48px;height:48px;border-radius:50%;background:var(--bg3);border:2px solid var(--bg4);font-size:24px;font-weight:700;color:var(--tx);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.te-tempo-btn:active{background:var(--bg4)}
+.te-tempo-input{width:80px;padding:12px;font-family:var(--mono);font-size:24px;font-weight:700;text-align:center;background:var(--bg);border:2px solid var(--bg4);border-radius:var(--r-md);color:var(--acc);outline:none}
+.te-tempo-input:focus{border-color:var(--acc)}
+.te-presets{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.te-preset{padding:8px 14px;font-family:var(--mono);font-size:14px;font-weight:700;background:var(--bg3);border:2px solid var(--bg4);border-radius:var(--r-md);color:var(--tx2);cursor:pointer}
+.te-preset:hover,.te-preset.sel{border-color:var(--acc);color:var(--acc)}
+.te-save-btn{width:100%;padding:14px;font-size:16px;font-weight:700;font-family:var(--sans);background:var(--acc);color:#000;border:none;border-radius:var(--r-md);cursor:pointer}
 
 /* Note Panel */
 .note-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
@@ -245,7 +273,11 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .sum-row{display:flex;align-items:center;gap:clamp(4px,1.5vw,10px);padding:clamp(5px,1.6vw,10px) clamp(6px,2vw,14px);background:var(--bg3);border-radius:var(--r-sm);font-size:clamp(10px,3.2vw,14px)}
 .sum-row .sn{font-family:var(--mono);font-weight:700;color:var(--tx3);min-width:clamp(16px,5vw,24px);text-align:center;flex-shrink:0}
 .sum-row .st{font-family:var(--mono);font-weight:700;flex:1;min-width:0}
-.sum-row .stg{font-size:clamp(8px,2.5vw,11px);font-weight:700;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;max-width:25%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-row .s-tempo{font-family:var(--mono);font-size:clamp(9px,2.8vw,12px);font-weight:700;color:var(--tx2);padding:clamp(2px,.5vw,3px) clamp(4px,1vw,6px);background:var(--bg4);border-radius:var(--r-sm);cursor:pointer;flex-shrink:0;min-width:clamp(28px,8vw,36px);text-align:center}
+.sum-row .s-tempo:hover{background:var(--bg2)}
+.sum-row .s-tempo.st-slow{color:var(--inf);background:var(--inf-d)}
+.sum-row .s-tempo.st-fast{color:var(--wrn);background:var(--wrn-d)}
+.sum-row .stg{font-size:clamp(8px,2.5vw,11px);font-weight:700;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;max-width:20%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sum-row .sum-acts{display:flex;gap:clamp(3px,1vw,6px);flex-shrink:0;margin-left:auto}
 .sum-act{width:clamp(24px,7vw,32px);height:clamp(24px,7vw,32px);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:var(--bg4);transition:transform .1s}
 .sum-act:active{transform:scale(.9)}
@@ -370,12 +402,20 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
   </div>
   <div class="tag-strip" id="tagStrip"></div>
   <div class="timer-area" id="timerArea">
-    <div class="timer-ring">
-      <svg class="timer-ring-svg" viewBox="0 0 200 200"><circle class="ring-bg" cx="100" cy="100" r="90"/><circle class="ring-prog" id="ringProg" cx="100" cy="100" r="90"/></svg>
-      <div class="timer-display">
-        <div class="timer-time" id="tTime">00:00</div>
-        <div class="timer-ms" id="tMs">.00</div>
-        <div class="timer-st" id="tState">Başlamak için dokun</div>
+    <div class="timer-tempo-wrap">
+      <div class="timer-ring">
+        <svg class="timer-ring-svg" viewBox="0 0 200 200"><circle class="ring-bg" cx="100" cy="100" r="90"/><circle class="ring-prog" id="ringProg" cx="100" cy="100" r="90"/></svg>
+        <div class="timer-display">
+          <div class="timer-time" id="tTime">00:00</div>
+          <div class="timer-ms" id="tMs">.00</div>
+          <div class="timer-st" id="tState">Başlamak için dokun</div>
+        </div>
+      </div>
+      <div class="tempo-picker" id="tempoPicker">
+        <div class="tempo-picker-label">Tempo %</div>
+        <div class="tempo-wheel" id="tempoWheel">
+          <div class="tempo-items" id="tempoItems"></div>
+        </div>
       </div>
     </div>
     <div class="tap-hint" id="tapHint">Ekrana dokun = Tur kaydet</div>
@@ -413,6 +453,26 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
   <div class="tp-grid" id="tpGrid"></div>
 </div>
 
+<!-- TEMPO EDIT PANEL -->
+<div class="overlay" id="teOv"></div>
+<div class="panel" id="tePanel" style="max-width:320px;left:50%;right:auto;transform:translateX(-50%) translateY(100%)">
+  <div class="panel-handle"></div>
+  <div class="panel-title" id="teTitle">Tempo Düzenle</div>
+  <div class="te-tempo-wrap">
+    <button class="te-tempo-btn" id="teMinus">−</button>
+    <input type="number" class="te-tempo-input" id="teInput" min="50" max="150" step="5" value="100">
+    <button class="te-tempo-btn" id="tePlus">+</button>
+  </div>
+  <div class="te-presets">
+    <button class="te-preset" data-val="75">75</button>
+    <button class="te-preset" data-val="90">90</button>
+    <button class="te-preset" data-val="100">100</button>
+    <button class="te-preset" data-val="110">110</button>
+    <button class="te-preset" data-val="125">125</button>
+  </div>
+  <button class="te-save-btn" id="teSaveBtn">KAYDET</button>
+</div>
+
 <!-- TOAST -->
 <div class="toast-c" id="toastC"></div>
 <input type="file" id="jsonImportInput" accept=".json" style="display:none">
@@ -440,6 +500,18 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
     <div class="modal-acts">
       <button class="modal-btn m-cancel" id="sdCancel">Vazgeç</button>
       <button class="modal-btn m-confirm" id="sdConfirm">Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY DELETE MODAL -->
+<div class="modal-ov" id="hiDelModal">
+  <div class="modal-box">
+    <div class="modal-t">Ölçümü Sil</div>
+    <div class="modal-p">Bu ölçüm kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</div>
+    <div class="modal-acts">
+      <button class="modal-btn m-cancel" id="hdCancel">Vazgeç</button>
+      <button class="modal-btn m-confirm" id="hdConfirm">Sil</button>
     </div>
   </div>
 </div>
@@ -490,9 +562,12 @@ function saveHistory(h){ localStorage.setItem('zt_hist',JSON.stringify(h)); }
 
 // ===== STATE =====
 const S={op:'',job:'',running:false,paused:false,started:false,startTime:0,elapsed:0,pauseStart:0,totalPaused:0,laps:[],lastLapTime:0,raf:null,defaultTag:0};
+let currentTempo=100; // 75-125 range
 let sumDelTarget=null;
 let sumFilterTags=new Set([0,1,2,3,'none']); // tag indices + 'none' for untagged
 let sumIncludeOutliers=true;
+let historyViewIdx=null; // index of history record being viewed, null if from live measurement
+let hiDelTarget=null; // index of history record to delete
 
 // ===== ELEMENTS =====
 const $=id=>document.getElementById(id);
@@ -512,12 +587,14 @@ function showScreen(name,push=true){
 }
 history.replaceState({screen:'menu'},'','#menu');
 
-function isPanel(){return notePanel.classList.contains('open')||tpPanel.classList.contains('open')||finModal.classList.contains('open')||$('sumDelModal').classList.contains('open')}
+function isPanel(){return notePanel.classList.contains('open')||tpPanel.classList.contains('open')||finModal.classList.contains('open')||$('sumDelModal').classList.contains('open')||$('hiDelModal').classList.contains('open')||$('tePanel').classList.contains('open')}
 function closePanels(){
   if(tpPanel.classList.contains('open')){tpOv.classList.remove('open');tpPanel.classList.remove('open');tpPanel.style.transform='translateX(-50%) translateY(100%)';return true}
+  if($('tePanel').classList.contains('open')){$('teOv').classList.remove('open');$('tePanel').classList.remove('open');$('tePanel').style.transform='translateX(-50%) translateY(100%)';return true}
   if(notePanel.classList.contains('open')){noteOv.classList.remove('open');notePanel.classList.remove('open');noteTa.blur();return true}
   if(finModal.classList.contains('open')){finModal.classList.remove('open');return true}
   if($('sumDelModal').classList.contains('open')){$('sumDelModal').classList.remove('open');sumDelTarget=null;return true}
+  if($('hiDelModal').classList.contains('open')){$('hiDelModal').classList.remove('open');hiDelTarget=null;return true}
   return false;
 }
 function pushPanel(){history.pushState({panel:true,screen:curScreen},'');}
@@ -650,21 +727,49 @@ function renderHistory(){
   if(!hist.length){const e=document.createElement('div');e.className='hi-empty';e.textContent='Henüz kayıtlı ölçüm yok.';list.appendChild(e);return}
   hist.slice().reverse().forEach((h,ri)=>{
     const idx=hist.length-1-ri;
-    const card=document.createElement('div');card.className='hi-card';
+    const card=document.createElement('div');card.className='hi-card';card.dataset.idx=idx;card.style.cursor='pointer';
     const avg=h.laps.length?h.laps.reduce((a,l)=>a+l.t,0)/h.laps.length:0;
     card.innerHTML=`<div class="hi-card-top"><span class="hi-job">${esc(h.job)}</span><div class="hi-card-acts"><span class="hi-date">${h.date}</span><button class="hi-xl" data-idx="${idx}" title="Excel İndir"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg></button><button class="hi-del" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></div><div class="hi-card-row">${esc(h.op)} &middot; <span>${h.laps.length}</span> tur &middot; Ort: <span>${ffull(avg)}</span></div>`;
     list.appendChild(card);
   });
+  // Card click -> open summary
+  list.querySelectorAll('.hi-card').forEach(card=>{
+    card.onclick=(e)=>{
+      if(e.target.closest('.hi-xl')||e.target.closest('.hi-del'))return;
+      const h=loadHistory()[+card.dataset.idx];if(!h)return;
+      openHistorySummary(h,+card.dataset.idx);
+    };
+  });
   list.querySelectorAll('.hi-del').forEach(btn=>{
-    btn.onclick=()=>{const h=loadHistory();h.splice(+btn.dataset.idx,1);saveHistory(h);renderHistory();toast('Kayıt silindi','t-dng')};
+    btn.onclick=(e)=>{e.stopPropagation();hiDelTarget=+btn.dataset.idx;$('hiDelModal').classList.add('open')};
   });
   list.querySelectorAll('.hi-xl').forEach(btn=>{
-    btn.onclick=()=>{
+    btn.onclick=(e)=>{
+      e.stopPropagation();
       const h=loadHistory()[+btn.dataset.idx];if(!h)return;
       const fn='zaman_etudu_'+h.job.replace(/[^a-zA-Z0-9\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g,'_')+'_'+(h.dateISO||h.date).slice(0,10)+'.xlsx';
       exportExcel(h,fn);
     };
   });
+}
+
+// ===== OPEN HISTORY SUMMARY =====
+function openHistorySummary(record,idx){
+  historyViewIdx=idx;
+  S.op=record.op;
+  S.job=record.job;
+  // Load tags from record if available, else use current tags
+  if(record.tags&&record.tags.length===4) tags=JSON.parse(JSON.stringify(record.tags));
+  // Load laps with id generation for editing
+  S.laps=record.laps.map((l,i)=>({id:Date.now()+Math.random()+i,num:i+1,t:l.t,cum:l.cum,tag:l.tag,note:l.note||'',tempo:l.tempo||100,nt:l.nt||l.t}));
+  // Parse date
+  const d=record.dateISO?new Date(record.dateISO):null;
+  sumDateStr=record.date||'';
+  sumTimeStr=d?d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
+  sumFilterTags=new Set([0,1,2,3,'none']);
+  sumIncludeOutliers=true;
+  rebuildSummary();
+  showScreen('summary');
 }
 
 // ===== BUILD TAG STRIP =====
@@ -677,6 +782,56 @@ function buildTagStrip(){
     strip.appendChild(btn);
   });
 }
+
+// ===== TEMPO PICKER (wheel style) =====
+const TEMPO_VALUES=[150,145,140,135,130,125,120,115,110,105,100,95,90,85,80,75,70,65,60,55,50];
+let tempoIdx=10; // index of 100
+function setTempo(val){
+  currentTempo=val;
+  tempoIdx=TEMPO_VALUES.indexOf(val);
+  if(tempoIdx<0){tempoIdx=10;currentTempo=100}
+  renderTempoWheel();
+}
+function renderTempoWheel(){
+  const items=$('tempoItems');
+  const wheel=$('tempoWheel');
+  const itemH=wheel.offsetHeight/5; // show 5 items
+  let html='';
+  TEMPO_VALUES.forEach((v,i)=>{
+    const dist=Math.abs(i-tempoIdx);
+    let cls='tempo-item';
+    if(dist===0)cls+=' ti-active';
+    else if(dist===1)cls+=' ti-2';
+    else if(dist===2)cls+=' ti-1';
+    html+=`<div class="${cls}" style="height:${itemH}px;line-height:${itemH}px">${v}</div>`;
+  });
+  items.innerHTML=html;
+  // Center active item
+  const offset=(wheel.offsetHeight/2)-(tempoIdx*itemH)-(itemH/2);
+  items.style.transform=`translateY(${offset}px)`;
+}
+(function initTempoPicker(){
+  const wheel=$('tempoWheel');
+  let startY=0,startIdx=0,dragging=false;
+  function onStart(y){startY=y;startIdx=tempoIdx;dragging=true}
+  function onMove(y){
+    if(!dragging)return;
+    const itemH=wheel.offsetHeight/5;
+    const delta=Math.round((y-startY)/itemH); // reversed: drag down = increase tempo (go up in list)
+    let newIdx=Math.max(0,Math.min(TEMPO_VALUES.length-1,startIdx-delta));
+    if(newIdx!==tempoIdx){tempoIdx=newIdx;currentTempo=TEMPO_VALUES[tempoIdx];renderTempoWheel();vib(5)}
+  }
+  function onEnd(){dragging=false}
+  wheel.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();onStart(e.clientY);
+    const mm=ev=>onMove(ev.clientY);const mu=()=>{onEnd();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu)};
+    document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu)});
+  wheel.addEventListener('touchstart',e=>{e.stopPropagation();onStart(e.touches[0].clientY)},{passive:true});
+  wheel.addEventListener('touchmove',e=>{e.stopPropagation();onMove(e.touches[0].clientY)},{passive:true});
+  wheel.addEventListener('touchend',e=>{e.stopPropagation();onEnd()});
+  wheel.addEventListener('click',e=>e.stopPropagation());
+  // Initial render
+  setTimeout(renderTempoWheel,50);
+})();
 
 // ===== TIMER =====
 function getNow(){return performance.now()}
@@ -693,7 +848,9 @@ function dtFb(p){dtIco.className='dt-ico'+(p?' pau':'');dtIco.innerHTML=p?'<svg 
 function recordLap(tagIdx=null){
   if(!S.started||S.paused)return;
   const cum=getEl(),lt=cum-S.lastLapTime;S.lastLapTime=cum;
-  const lap={id:Date.now()+Math.random(),num:S.laps.length+1,t:lt,cum,tag:tagIdx!==null?tagIdx:null,note:''};
+  const tempo=currentTempo;
+  const nt=lt*(tempo/100); // normal time
+  const lap={id:Date.now()+Math.random(),num:S.laps.length+1,t:lt,cum,tag:tagIdx!==null?tagIdx:null,note:'',tempo,nt};
   S.laps.push(lap);
   $('timerArea').classList.remove('pulse');void $('timerArea').offsetWidth;$('timerArea').classList.add('pulse');
   $('lapCtr').style.display='flex';$('lapN').textContent=S.laps.length;
@@ -705,8 +862,11 @@ function renderCard(lap,isNew){
   const sc=tag?tag.color:'#555';
   const badge=tag?`<span class="lap-badge" style="background:${dimColor(tag.color)};color:${tag.color}">${tagIcon(tag)} ${esc(tag.name)}</span>`:'';
   const noteH=lap.note?`<div class="lap-note">${esc(lap.note)}</div>`:'';
+  const tempo=lap.tempo||100;
+  const tempoClass=tempo<100?'tempo-slow':(tempo>100?'tempo-fast':'');
+  const tempoBadge=tempo!==100?`<span class="lap-tempo ${tempoClass}">%${tempo}</span>`:'';
   const defTag=tags[S.defaultTag];
-  card.innerHTML=`<div class="swipe-bg sw-r" style="background:${dimColor(defTag.color)};color:${defTag.color}"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> ${esc(defTag.name)}</div><div class="swipe-bg sw-l"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> Sil</div><div class="lap-cc"><div class="lap-stripe" style="background:${sc}"></div><div class="lap-num">#${lap.num}</div><div class="lap-info"><div class="lap-info-top"><span class="lap-tm">${ffull(lap.t)}</span>${badge}</div><div class="lap-cum">Toplam: ${ffull(lap.cum)}</div>${noteH}</div></div><div class="lap-actions"><button class="lap-act-btn act-tag" title="Etiketle">${SVG_ICONS.tag}</button><button class="lap-act-btn act-del" title="Sil">${SVG_ICONS.del}</button></div>`;
+  card.innerHTML=`<div class="swipe-bg sw-r" style="background:${dimColor(defTag.color)};color:${defTag.color}"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> ${esc(defTag.name)}</div><div class="swipe-bg sw-l"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> Sil</div><div class="lap-cc"><div class="lap-stripe" style="background:${sc}"></div><div class="lap-num">#${lap.num}</div><div class="lap-info"><div class="lap-info-top"><span class="lap-tm">${ffull(lap.t)}</span>${tempoBadge}${badge}</div><div class="lap-cum">Toplam: ${ffull(lap.cum)}</div>${noteH}</div></div><div class="lap-actions"><button class="lap-act-btn act-tag" title="Etiketle">${SVG_ICONS.tag}</button><button class="lap-act-btn act-del" title="Sil">${SVG_ICONS.del}</button></div>`;
   $('lapList').insertBefore(card,$('lapList').firstChild);
   setupSwipe(card,lap);setupLongPress(card,lap);
   // PC: action buttons
@@ -858,17 +1018,25 @@ mCancel.onclick=()=>finModal.classList.remove('open');
 mConfirm.onclick=()=>{finModal.classList.remove('open');stopT();saveSession();showSummary()};
 $('sdCancel').onclick=()=>{sumDelTarget=null;$('sumDelModal').classList.remove('open')};
 $('sdConfirm').onclick=confirmSumDel;
+$('hdCancel').onclick=()=>{hiDelTarget=null;$('hiDelModal').classList.remove('open')};
+$('hdConfirm').onclick=()=>{
+  if(hiDelTarget===null)return;
+  const h=loadHistory();h.splice(hiDelTarget,1);saveHistory(h);
+  hiDelTarget=null;$('hiDelModal').classList.remove('open');
+  renderHistory();toast('Kayıt silindi','t-dng');
+};
 
 function saveSession(){
   if(!S.laps.length)return;
   const hist=loadHistory();
-  hist.push({op:S.op,job:S.job,date:new Date().toLocaleDateString('tr-TR'),dateISO:new Date().toISOString(),tags:JSON.parse(JSON.stringify(tags)),laps:S.laps.map(l=>({t:l.t,cum:l.cum,tag:l.tag,note:l.note}))});
+  hist.push({op:S.op,job:S.job,date:new Date().toLocaleDateString('tr-TR'),dateISO:new Date().toISOString(),tags:JSON.parse(JSON.stringify(tags)),laps:S.laps.map(l=>({t:l.t,cum:l.cum,tag:l.tag,note:l.note,tempo:l.tempo||100,nt:l.nt||l.t}))});
   saveHistory(hist);
 }
 
 // ===== SUMMARY =====
 let sumDateStr='',sumTimeStr='';
 function showSummary(){
+  historyViewIdx=null; // live measurement, not from history
   sumDateStr=new Date().toLocaleDateString('tr-TR');
   sumTimeStr=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
   sumFilterTags=new Set([0,1,2,3,'none']);
@@ -894,11 +1062,13 @@ function rebuildSummary(){
   // Build set of excluded lap ids (outliers)
   const outlierIds=new Set();
   if(!sumIncludeOutliers){tagFiltered.forEach((l,i)=>{if(outlierSet.has(i))outlierIds.add(l.id||i)})}
-  // Final filtered times for stats
-  const finalTimes=[];
-  tagFiltered.forEach((l,i)=>{if(sumIncludeOutliers||!outlierSet.has(i))finalTimes.push(l.t)});
+  // Final filtered times for stats (observed and normal)
+  const finalTimes=[],finalNT=[];
+  tagFiltered.forEach((l,i)=>{if(sumIncludeOutliers||!outlierSet.has(i)){finalTimes.push(l.t);finalNT.push(l.nt||l.t)}});
   const st=calcStats(finalTimes);
+  const stNT=calcStats(finalNT);
   const tot=finalTimes.reduce((a,b)=>a+b,0);
+  const totNT=finalNT.reduce((a,b)=>a+b,0);
   // Also build set of all excluded lap nums for visual dimming
   const excludedNums=new Set();
   laps.forEach(l=>{
@@ -910,9 +1080,12 @@ function rebuildSummary(){
 
   let h=`<div class="sum-hdr"><h2>Ölçüm Tamamlandı</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:clamp(9px,2.5vw,12px);color:var(--tx3);margin-top:clamp(2px,.6vw,4px)">${sumDateStr} ${sumTimeStr}</p></div>`;
   if(st){
-    h+=`<div class="sum-section-title">Temel İstatistikler</div>
-    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${st.n}</div><div class="stat-l">Gözlem (n)</div></div><div class="stat-c"><div class="stat-v">${ffull(tot)}</div><div class="stat-l">Toplam Süre</div></div><div class="stat-c"><div class="stat-v">${ffull(st.mean)}</div><div class="stat-l">Ortalama</div></div></div>
-    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.median)}</div><div class="stat-l">Medyan</div></div><div class="stat-c"><div class="stat-v">${ffull(st.stdDev)}</div><div class="stat-l">Std Sapma</div></div><div class="stat-c"><div class="stat-v">${st.cv.toFixed(1)}%</div><div class="stat-l">CV%</div></div></div>
+    h+=`<div class="sum-section-title">Gözlemlenen Süreler</div>
+    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${st.n}</div><div class="stat-l">Gözlem (n)</div></div><div class="stat-c"><div class="stat-v">${ffull(tot)}</div><div class="stat-l">Toplam</div></div><div class="stat-c"><div class="stat-v">${ffull(st.mean)}</div><div class="stat-l">Ortalama</div></div></div>
+    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.median)}</div><div class="stat-l">Medyan</div></div><div class="stat-c"><div class="stat-v">${ffull(st.stdDev)}</div><div class="stat-l">Std Sapma</div></div><div class="stat-c"><div class="stat-v">${st.cv.toFixed(1)}%</div><div class="stat-l">CV%</div></div></div>`;
+    h+=`<div class="sum-section-title">Normal Süreler (Tempo Düzeltmeli)</div>
+    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(totNT)}</div><div class="stat-l">Toplam</div></div><div class="stat-c"><div class="stat-v">${ffull(stNT.mean)}</div><div class="stat-l">Ortalama</div></div><div class="stat-c"><div class="stat-v">${ffull(stNT.median)}</div><div class="stat-l">Medyan</div></div></div>`;
+    h+=`<div class="sum-section-title">Dağılım & Yeterlilik</div>
     <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.min)}</div><div class="stat-l">Minimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.max)}</div><div class="stat-l">Maksimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.range)}</div><div class="stat-l">Aralık</div></div></div>
     <div class="sum-stats s2"><div class="stat-c"><div class="stat-v stat-v-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</div><div class="stat-l">%95 Güven Aralığı</div></div><div class="stat-c"><div class="stat-v${st.n>=st.nReq?'':' stat-warn'}">${st.nReq}</div><div class="stat-l">Gerekli Gözlem ${st.n>=st.nReq?'(Yeterli)':'(Yetersiz)'}</div></div></div>`;
   } else if(!laps.length) {
@@ -927,14 +1100,14 @@ function rebuildSummary(){
       h+=`<label class="sf-row"><input type="checkbox" data-sf-tag="${i}" ${sumFilterTags.has(i)?'checked':''}><span class="sf-dot" style="background:${tag.color}"></span>${esc(tag.name)}</label>`;
     });
     h+=`<label class="sf-row"><input type="checkbox" data-sf-tag="none" ${sumFilterTags.has('none')?'checked':''}><span class="sf-dot" style="background:#666"></span>Etiketsiz</label>`;
-    h+=`<span class="sf-sep"></span>`;
-    h+=`<label class="sf-row"><input type="checkbox" id="sfOutlier" ${sumIncludeOutliers?'checked':''}>Aykırı${outlierCount?' ('+outlierCount+')':''}</label>`;
+    h+=`<label class="sf-row" style="width:100%;margin-top:clamp(2px,.5vw,4px)"><input type="checkbox" id="sfOutlier" ${sumIncludeOutliers?'checked':''}>Aykırı veriler dahil mi?${outlierCount?' ('+outlierCount+')':''}</label>`;
     h+=`</div>`;
   }
   h+=`<div class="sum-section-title">Tur Listesi</div><div class="sum-laps" id="sumLapList">`;
   laps.forEach(l=>{h+=sumRowHTML(l,excludedNums.has(l.num))});
   if(!laps.length) h+=`<div style="text-align:center;padding:16px;color:var(--tx3);font-size:clamp(10px,3vw,13px)">Tur bulunmuyor</div>`;
-  h+=`</div><div class="export-bar"><button class="btn-export btn-xl" id="btnExcel"${laps.length?'':' disabled style="opacity:.4;pointer-events:none"'}><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Excel İndir</button></div><button class="btn-new" id="btnNew">ANA MENÜYE DÖN</button>`;
+  const backBtnText=historyViewIdx!==null?'GERİ DÖN':'ANA MENÜYE DÖN';
+  h+=`</div><div class="export-bar"><button class="btn-export btn-xl" id="btnExcel"${laps.length?'':' disabled style="opacity:.4;pointer-events:none"'}><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Excel İndir</button></div><button class="btn-new" id="btnNew">${backBtnText}</button>`;
   screens.summary.innerHTML=h;
   screens.summary.scrollTop=scrollY;
   bindSumActions();
@@ -944,11 +1117,16 @@ function rebuildSummary(){
     const fn='zaman_etudu_'+S.job.replace(/[^a-zA-Z0-9\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
     exportExcel(sess,fn);
   };
-  $('btnNew').onclick=()=>{resetAll();showScreen('menu')};
+  $('btnNew').onclick=()=>{
+    if(historyViewIdx!==null){tags=loadTags();historyViewIdx=null;renderHistory();showScreen('history')}
+    else{resetAll();showScreen('menu')}
+  };
 }
 function sumRowHTML(l,excluded){
   const tg=l.tag!==null?tags[l.tag]:null;
-  return `<div class="sum-row${excluded?' sf-excluded':''}" data-num="${l.num}"><span class="sn">#${l.num}</span><span class="st">${ffull(l.t)}</span><span class="stg" style="color:${tg?tg.color:'var(--tx3)'}">${tg?esc(tg.name):'—'}</span><span class="sum-acts"><button class="sum-act sa-tag" data-num="${l.num}" title="Etiket">${SVG_ICONS.tag}</button><button class="sum-act sa-del" data-num="${l.num}" title="Sil">${SVG_ICONS.del}</button></span></div>`;
+  const tempo=l.tempo||100;
+  const tempoClass=tempo<100?'st-slow':(tempo>100?'st-fast':'');
+  return `<div class="sum-row${excluded?' sf-excluded':''}" data-num="${l.num}"><span class="sn">#${l.num}</span><span class="st">${ffull(l.t)}</span><span class="s-tempo ${tempoClass}" data-num="${l.num}">${tempo}</span><span class="stg" style="color:${tg?tg.color:'var(--tx3)'}">${tg?esc(tg.name):'—'}</span><span class="sum-acts"><button class="sum-act sa-tag" data-num="${l.num}" title="Etiket">${SVG_ICONS.tag}</button><button class="sum-act sa-del" data-num="${l.num}" title="Sil">${SVG_ICONS.del}</button></span></div>`;
 }
 function bindSumActions(){
   screens.summary.querySelectorAll('.sa-tag').forEach(btn=>{
@@ -965,7 +1143,49 @@ function bindSumActions(){
       $('sumDelModal').classList.add('open');
     };
   });
+  // Tempo edit
+  screens.summary.querySelectorAll('.s-tempo').forEach(el=>{
+    el.onclick=()=>{
+      const num=+el.dataset.num;
+      const lap=S.laps.find(l=>l.num===num);if(!lap)return;
+      openTempoEdit(lap);
+    };
+  });
 }
+// Tempo edit panel
+let teTarget=null;
+function openTempoEdit(lap){
+  teTarget=lap;
+  $('teTitle').textContent='Tempo Düzenle — Tur #'+lap.num;
+  $('teInput').value=lap.tempo||100;
+  $('teOv').classList.add('open');
+  $('tePanel').classList.add('open');
+  $('tePanel').style.transform='translateX(-50%) translateY(0)';
+  pushPanel();
+}
+function closeTempoEdit(){
+  $('teOv').classList.remove('open');
+  $('tePanel').classList.remove('open');
+  $('tePanel').style.transform='translateX(-50%) translateY(100%)';
+  teTarget=null;
+}
+$('teOv').onclick=closeTempoEdit;
+$('teMinus').onclick=()=>{const inp=$('teInput');inp.value=Math.max(50,+inp.value-5)};
+$('tePlus').onclick=()=>{const inp=$('teInput');inp.value=Math.min(150,+inp.value+5)};
+$('tePanel').querySelectorAll('.te-preset').forEach(btn=>{
+  btn.onclick=()=>$('teInput').value=btn.dataset.val;
+});
+$('teSaveBtn').onclick=()=>{
+  if(!teTarget)return;
+  let newTempo=Math.round((+$('teInput').value||100)/5)*5; // round to nearest 5
+  newTempo=Math.max(50,Math.min(150,newTempo));
+  teTarget.tempo=newTempo;
+  teTarget.nt=teTarget.t*(newTempo/100);
+  closeTempoEdit();
+  updateHistoryLaps();
+  rebuildSummary();
+  toast('Tempo güncellendi','t-ok');
+};
 // Filter checkboxes for summary
 function bindSumFilters(){
   screens.summary.querySelectorAll('[data-sf-tag]').forEach(cb=>{
@@ -1006,12 +1226,12 @@ function confirmSumDel(){
 }
 function updateHistoryLaps(){
   const hist=loadHistory();
-  if(hist.length){
-    const last=hist[hist.length-1];
-    last.laps=S.laps.map(l=>({t:l.t,cum:l.cum,tag:l.tag,note:l.note}));
-    last.tags=JSON.parse(JSON.stringify(tags));
-    saveHistory(hist);
-  }
+  if(!hist.length)return;
+  const idx=historyViewIdx!==null?historyViewIdx:hist.length-1;
+  if(!hist[idx])return;
+  hist[idx].laps=S.laps.map(l=>({t:l.t,cum:l.cum,tag:l.tag,note:l.note,tempo:l.tempo||100,nt:l.nt||l.t}));
+  hist[idx].tags=JSON.parse(JSON.stringify(tags));
+  saveHistory(hist);
 }
 
 function resetAll(){
@@ -1019,6 +1239,9 @@ function resetAll(){
   $('tTime').textContent='00:00';$('tMs').textContent='.00';$('tState').textContent='Başlamak için dokun';$('tapHint').textContent='Ekrana dokun = Tur kaydet';
   $('lapList').innerHTML='';$('lapCtr').style.display='none';$('lapN').textContent='0';$('ringProg').style.strokeDashoffset='565.48';
   $('timerArea').classList.remove('running','paused','pulse');$('inpOp').value='';$('inpJob').value='';
+  tags=loadTags(); // reload original tags
+  historyViewIdx=null;
+  setTempo(100); // reset tempo to default
 }
 
 // ===== PC KEYBOARD =====
@@ -1048,25 +1271,29 @@ function exportExcel(session,fn){
   loadXLSX(()=>{
     const sTags=session.tags||tags;
     const times=session.laps.map(l=>l.t);
+    const normalTimes=session.laps.map(l=>l.nt||l.t);
     const st=calcStats(times);
+    const stNT=calcStats(normalTimes);
     const ta=tagAnalysis(session.laps,sTags);
     // Sheet 1: Özet
     const w1=[['ZAMAN ETÜDÜ RAPORU'],[],['İş / Proses Adı',session.job],['Operatör',session.op],['Tarih',session.date||''],
-      [],[' İSTATİSTİKLER'],['Gözlem Sayısı (n)',st.n],['Toplam Süre (sn)',+(st.sum/1000).toFixed(3)],
+      [],['GÖZLEMLENEN SÜRELER'],['Gözlem Sayısı (n)',st.n],['Toplam Süre (sn)',+(st.sum/1000).toFixed(3)],
       ['Ortalama (sn)',+(st.mean/1000).toFixed(3)],['Medyan (sn)',+(st.median/1000).toFixed(3)],
       ['Standart Sapma (sn)',+(st.stdDev/1000).toFixed(3)],['Varyasyon Katsayısı (%)',+st.cv.toFixed(2)],
       ['Minimum (sn)',+(st.min/1000).toFixed(3)],['Maksimum (sn)',+(st.max/1000).toFixed(3)],['Aralık (sn)',+(st.range/1000).toFixed(3)],
-      ['%95 Güven Aralığı Alt (sn)',+(st.ci95Low/1000).toFixed(3)],['%95 Güven Aralığı Üst (sn)',+(st.ci95High/1000).toFixed(3)],
+      [],['NORMAL SÜRELER (Tempo Düzeltmeli)'],['Toplam Normal Süre (sn)',+(stNT.sum/1000).toFixed(3)],
+      ['Ortalama Normal Süre (sn)',+(stNT.mean/1000).toFixed(3)],['Medyan Normal Süre (sn)',+(stNT.median/1000).toFixed(3)],
+      [],['DAĞILIM & YETERLİLİK'],['%95 Güven Aralığı Alt (sn)',+(st.ci95Low/1000).toFixed(3)],['%95 Güven Aralığı Üst (sn)',+(st.ci95High/1000).toFixed(3)],
       ['Gerekli Gözlem Sayısı (±%5, %95 GA)',st.nReq],['Yeterli Gözlem',st.n>=st.nReq?'Evet':'Hayır']];
     // Sheet 2: Tur Verileri
-    const w2=[['Tur No','Süre (sn)','Süre','Kümülatif (sn)','Kümülatif','Etiket','Not']];
-    session.laps.forEach((l,i)=>{const tn=l.tag!==null&&sTags[l.tag]?sTags[l.tag].name:'';w2.push([i+1,+(l.t/1000).toFixed(3),ffull(l.t),+(l.cum/1000).toFixed(3),ffull(l.cum),tn,l.note||''])});
+    const w2=[['Tur No','Süre (sn)','Süre','Tempo','Normal Süre (sn)','Normal Süre','Kümülatif (sn)','Etiket','Not']];
+    session.laps.forEach((l,i)=>{const tn=l.tag!==null&&sTags[l.tag]?sTags[l.tag].name:'';const tempo=l.tempo||100;const nt=l.nt||l.t;w2.push([i+1,+(l.t/1000).toFixed(3),ffull(l.t),tempo,+(nt/1000).toFixed(3),ffull(nt),+(l.cum/1000).toFixed(3),tn,l.note||''])});
     // Sheet 3: Etiket Analizi
     const w3=[['Etiket','Adet','Toplam (sn)','Ortalama (sn)','Min (sn)','Max (sn)','Std Sapma (sn)','CV%','Oran (%)']];
     ta.forEach(ts=>{w3.push([ts.name,ts.count,+(ts.sum/1000).toFixed(3),+(ts.mean/1000).toFixed(3),+(ts.min/1000).toFixed(3),+(ts.max/1000).toFixed(3),+(ts.stdDev/1000).toFixed(3),+ts.cv.toFixed(2),+((ts.count/st.n)*100).toFixed(1)])});
     const wb=XLSX.utils.book_new();
     const s1=XLSX.utils.aoa_to_sheet(w1);s1['!cols']=[{wch:35},{wch:20}];
-    const s2=XLSX.utils.aoa_to_sheet(w2);s2['!cols']=[{wch:8},{wch:12},{wch:12},{wch:14},{wch:12},{wch:15},{wch:30}];
+    const s2=XLSX.utils.aoa_to_sheet(w2);s2['!cols']=[{wch:8},{wch:12},{wch:10},{wch:8},{wch:14},{wch:12},{wch:14},{wch:15},{wch:30}];
     const s3=XLSX.utils.aoa_to_sheet(w3);s3['!cols']=[{wch:15},{wch:8},{wch:14},{wch:14},{wch:12},{wch:12},{wch:14},{wch:8},{wch:10}];
     XLSX.utils.book_append_sheet(wb,s1,'Özet');XLSX.utils.book_append_sheet(wb,s2,'Tur Verileri');XLSX.utils.book_append_sheet(wb,s3,'Etiket Analizi');
     XLSX.writeFile(wb,fn);
