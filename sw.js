@@ -1,8 +1,26 @@
-const CACHE_NAME = 'zaman-etudu-v2';
+const CACHE_NAME = 'zaman-etudu-v3';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './css/styles.css',
+  './js/main.js',
+  './js/config.js',
+  './js/state.js',
+  './js/utils.js',
+  './js/storage.js',
+  './js/stats.js',
+  './js/nav.js',
+  './js/timer.js',
+  './js/tempo.js',
+  './js/steps.js',
+  './js/laps.js',
+  './js/panels.js',
+  './js/tags.js',
+  './js/history.js',
+  './js/summary.js',
+  './js/export.js',
+  './js/keyboard.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
 ];
 
