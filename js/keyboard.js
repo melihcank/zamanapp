@@ -6,6 +6,7 @@ import { startT, pauseT, resumeT } from './timer.js';
 import { recordLap, delLap } from './laps.js';
 import { openNote } from './panels.js';
 import { closePanels, pushPanel } from './nav.js';
+import { changeTempo } from './tempo.js';
 
 // Initialize keyboard shortcuts
 export function initKeyboard() {
@@ -15,21 +16,34 @@ export function initKeyboard() {
     // Don't capture when typing in input/textarea
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-    const key = e.key.toLowerCase();
+    const key = e.key;
+    const keyLower = key.toLowerCase();
 
-    if (key === ' ' || key === 'space') {
+    // Tempo controls: + and - keys (works with numpad too)
+    if (key === '+' || key === '=' || key === 'ArrowUp') {
+      e.preventDefault();
+      changeTempo(-1); // -1 to increase tempo (go up in list)
+      return;
+    }
+    else if (key === '-' || key === '_' || key === 'ArrowDown') {
+      e.preventDefault();
+      changeTempo(1); // +1 to decrease tempo (go down in list)
+      return;
+    }
+
+    if (keyLower === ' ' || keyLower === 'space') {
       e.preventDefault();
       if (!S.started) startT();
       else if (!S.paused) recordLap();
     }
-    else if (key === 'p') {
+    else if (keyLower === 'p') {
       e.preventDefault();
       if (!S.started) return;
       S.paused ? resumeT() : pauseT();
     }
-    else if (key === '1' || key === '2' || key === '3' || key === '4') {
+    else if (keyLower === '1' || keyLower === '2' || keyLower === '3' || keyLower === '4') {
       e.preventDefault();
-      const i = +key - 1;
+      const i = +keyLower - 1;
       if (!S.started) { startT(); return; }
       if (S.paused) return;
       const btn = $('tagStrip').children[i];
@@ -40,20 +54,20 @@ export function initKeyboard() {
       }
       recordLap(i);
     }
-    else if (key === 'n') {
+    else if (keyLower === 'n') {
       e.preventDefault();
       openNote();
     }
-    else if (key === 'q') {
+    else if (keyLower === 'q') {
       e.preventDefault();
       $('finModal').classList.add('open');
       pushPanel();
     }
-    else if (key === 'escape') {
+    else if (keyLower === 'escape') {
       e.preventDefault();
       closePanels();
     }
-    else if (key === 'delete' || key === 'backspace') {
+    else if (keyLower === 'delete' || keyLower === 'backspace') {
       e.preventDefault();
       if (S.laps.length) {
         const last = S.laps[S.laps.length - 1];

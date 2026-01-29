@@ -169,7 +169,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 
 /* Tempo Picker (wheel style) */
 .timer-tempo-wrap{display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,24px);width:100%}
-.tempo-picker{display:flex;flex-direction:column;align-items:center;user-select:none;-webkit-user-select:none}
+.tempo-picker{display:flex;flex-direction:column;align-items:center;user-select:none;-webkit-user-select:none;touch-action:none}
 .tempo-picker-label{font-size:clamp(9px,2.5vw,11px);font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:clamp(4px,1vh,8px)}
 .tempo-wheel{position:relative;height:clamp(100px,22vh,140px);width:clamp(56px,15vw,72px);overflow:hidden;cursor:ns-resize;touch-action:none}
 .tempo-wheel::before,.tempo-wheel::after{content:'';position:absolute;left:0;right:0;height:1px;background:var(--tx2);z-index:2;pointer-events:none}

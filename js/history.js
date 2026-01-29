@@ -137,7 +137,7 @@ export function updateHistoryLaps() {
   if (!hist[idx]) return;
   hist[idx].laps = S.laps.map(l => ({
     t: l.t, cum: l.cum, tag: l.tag, note: l.note, tempo: l.tempo || 100, nt: l.nt || l.t,
-    step: l.step, stepName: l.stepName, cycle: l.cycle
+    step: l.step, stepName: l.stepName, cycle: l.cycle, mode: l.mode
   }));
   hist[idx].tags = JSON.parse(JSON.stringify(tags));
   saveHistory(hist);

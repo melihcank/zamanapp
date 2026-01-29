@@ -6,7 +6,7 @@ import { S, setMeasurementMode, setSequenceSteps, measurementMode, sequenceSteps
 import { loadTags, saveHistory, loadHistory } from './storage.js';
 import { initScreens, showScreen, initPopState, pushPanel, closePanels } from './nav.js';
 import { startT, pauseT, resumeT, stopT } from './timer.js';
-import { initTempoPicker, setTempo } from './tempo.js';
+import { initTempoPicker, setTempo, isTempoActive } from './tempo.js';
 import { initSequenceMode, initStepPanelEvents } from './steps.js';
 import { recordLap } from './laps.js';
 import { initPanelEvents } from './panels.js';
@@ -89,6 +89,10 @@ function init() {
   // Timer touch events
   let tapTO = null, lastTap = 0;
   $('timerArea').addEventListener('touchend', e => {
+    // Skip if tempo picker is being adjusted
+    if (isTempoActive()) return;
+    if (e.target.closest('.tempo-picker') || e.target.closest('.tempo-wheel')) return;
+
     e.preventDefault();
     const now = Date.now();
     const d = now - lastTap;
@@ -100,16 +104,23 @@ function init() {
       return;
     }
     tapTO = setTimeout(() => {
+      if (isTempoActive()) return; // Double-check before recording
       if (!S.started) { startT(); return; }
       if (S.paused) return;
       recordLap();
     }, 300);
   });
-  $('timerArea').addEventListener('touchstart', e => e.preventDefault());
+  $('timerArea').addEventListener('touchstart', e => {
+    // Don't prevent default on tempo picker
+    if (e.target.closest('.tempo-picker') || e.target.closest('.tempo-wheel')) return;
+    e.preventDefault();
+  });
 
   // PC: click on timer
   $('timerArea').addEventListener('click', e => {
     if (e.target.closest('.lap-cc')) return;
+    if (e.target.closest('.tempo-picker') || e.target.closest('.tempo-wheel')) return;
+    if (isTempoActive()) return;
     if (!S.started) { startT(); return; }
     if (S.paused) return;
     recordLap();
@@ -117,6 +128,7 @@ function init() {
 
   // PC: double-click on timer = pause/resume
   $('timerArea').addEventListener('dblclick', e => {
+    if (e.target.closest('.tempo-picker') || e.target.closest('.tempo-wheel')) return;
     if (!S.started) return;
     S.paused ? resumeT() : pauseT();
   });
@@ -174,7 +186,7 @@ function saveSession() {
     tags: JSON.parse(JSON.stringify(tags)),
     laps: S.laps.map(l => ({
       t: l.t, cum: l.cum, tag: l.tag, note: l.note, tempo: l.tempo || 100, nt: l.nt || l.t,
-      step: l.step, stepName: l.stepName, cycle: l.cycle
+      step: l.step, stepName: l.stepName, cycle: l.cycle, mode: l.mode
     })),
     mode: measurementMode,
     cycles: measurementMode === 'sequence' ? S.laps.length > 0 ? Math.ceil(S.laps.length / sequenceSteps.length) : 0 : null,
