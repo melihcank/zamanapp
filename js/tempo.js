@@ -85,9 +85,10 @@ export function initTempoPicker() {
   function onMove(y) {
     if (!dragging) return;
 
-    // Sensitivity = full row height for predictable 1:1 scrolling
+    // Sensitivity = 130% of row height - requires more movement per step
     const itemH = wheel.offsetHeight / 5;
-    const delta = Math.round((y - startY) / itemH);
+    const sensitivity = itemH * 1.3;
+    const delta = Math.round((y - startY) / sensitivity);
     let newIdx = Math.max(0, Math.min(TEMPO_VALUES.length - 1, startIdx - delta));
 
     if (newIdx !== tempoIdx) {
