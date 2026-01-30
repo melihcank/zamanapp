@@ -54,7 +54,6 @@ export function renderStepIndicator() {
   dots.appendChild(addBtn);
 
   const curStep = sequenceSteps[currentStep];
-  $('stepNum').textContent = currentStep + 1;
   $('stepName').textContent = curStep ? curStep.name : '—';
   $('stepCycle').textContent = 'Çevrim ' + sequenceCycle;
 }
