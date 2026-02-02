@@ -323,6 +323,27 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .stat-v{font-family:var(--mono);font-size:clamp(11px,3.8vw,20px);font-weight:700;color:var(--acc);overflow-wrap:break-word;word-break:break-all;line-height:1.2}
 .stat-v-ci{font-size:clamp(9px,2.8vw,15px)!important}
 .stat-l{font-size:clamp(7px,2.2vw,11px);color:var(--tx3);text-transform:uppercase;letter-spacing:clamp(.3px,.15vw,.8px);margin-top:clamp(2px,.6vw,4px);line-height:1.3}
+
+/* Comparison Table */
+.sum-compare{background:var(--bg2);border-radius:var(--r-lg);padding:clamp(10px,2.5vw,16px);margin-bottom:clamp(8px,2vw,14px)}
+.sum-compare-header{display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,12px);padding-bottom:clamp(8px,2vw,12px);border-bottom:1px solid var(--bg4);margin-bottom:clamp(8px,2vw,12px)}
+.sum-compare-header .sch-n{font-family:var(--mono);font-size:clamp(18px,5vw,28px);font-weight:700;color:var(--acc)}
+.sum-compare-header .sch-label{font-size:clamp(10px,2.8vw,13px);color:var(--tx2)}
+.sum-compare-header .sch-req{font-size:clamp(9px,2.5vw,11px);padding:clamp(3px,.8vw,5px) clamp(8px,2vw,12px);border-radius:var(--r-pill);font-weight:600}
+.sum-compare-header .sch-req.ok{background:var(--ok-d);color:var(--ok)}
+.sum-compare-header .sch-req.warn{background:var(--wrn-d);color:var(--wrn)}
+.sum-compare-table{width:100%}
+.sum-compare-table th,.sum-compare-table td{padding:clamp(6px,1.5vw,10px) clamp(4px,1vw,8px);text-align:right}
+.sum-compare-table th:first-child,.sum-compare-table td:first-child{text-align:left}
+.sum-compare-table thead th{font-size:clamp(9px,2.5vw,12px);font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bg4)}
+.sum-compare-table tbody td{font-family:var(--mono);font-size:clamp(11px,3.2vw,15px);font-weight:600;color:var(--tx)}
+.sum-compare-table tbody td:first-child{font-family:var(--sans);font-size:clamp(9px,2.6vw,12px);color:var(--tx2);font-weight:500}
+.sum-compare-table tbody tr:nth-child(odd){background:var(--bg3);border-radius:var(--r-sm)}
+.sum-compare-table .sct-section{border-top:1px solid var(--bg4)}
+.sum-compare-table .sct-section td{padding-top:clamp(10px,2.5vw,14px)}
+.sum-compare-table .sct-highlight td{color:var(--acc);font-weight:700}
+.sum-compare-table .sct-ci{font-size:clamp(9px,2.5vw,12px)!important}
+
 .sum-laps{display:flex;flex-direction:column;gap:clamp(3px,1vw,6px);margin-bottom:clamp(8px,2.5vw,20px)}
 .sum-row{display:flex;align-items:center;gap:clamp(4px,1.5vw,10px);padding:clamp(5px,1.6vw,10px) clamp(6px,2vw,14px);background:var(--bg3);border-radius:var(--r-sm);font-size:clamp(10px,3.2vw,14px)}
 .sum-row .sn{font-family:var(--mono);font-weight:700;color:var(--tx3);min-width:clamp(16px,5vw,24px);text-align:center;flex-shrink:0}

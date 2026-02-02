@@ -151,23 +151,65 @@ export function rebuildSummary() {
     const anomalyCount = anomalyLaps.length;
 
     h += `<div class="sum-section-title">Çevrim Bilgisi</div>
-    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${completeCycles}</div><div class="stat-l">Tam Çevrim</div></div><div class="stat-c"><div class="stat-v">${stepCount}</div><div class="stat-l">Adım Sayısı</div></div><div class="stat-c"><div class="stat-v">${laps.length}</div><div class="stat-l">Toplam Kayıt</div></div></div>`;
+    <div class="sum-stats s2"><div class="stat-c"><div class="stat-v">${stepCount}</div><div class="stat-l">Adım Sayısı</div></div><div class="stat-c"><div class="stat-v">${laps.length}</div><div class="stat-l">Toplam Kayıt</div></div></div>`;
+
+    // Check if any tempo differs from 100 for sequence mode
+    const seqHasTempoVariation = laps.some(l => (l.tempo || 100) !== 100);
 
     if (cycleStats && cycleStats.n > 0) {
-      h += `<div class="sum-section-title">Çevrim Süresi İstatistikleri</div>
-      <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(cycleStats.mean)}</div><div class="stat-l">Ort. Çevrim</div></div><div class="stat-c"><div class="stat-v">${ffull(cycleStats.min)}</div><div class="stat-l">Min Çevrim</div></div><div class="stat-c"><div class="stat-v">${ffull(cycleStats.max)}</div><div class="stat-l">Max Çevrim</div></div></div>
-      <div class="sum-stats s2"><div class="stat-c"><div class="stat-v">${ffull(cycleStats.stdDev)}</div><div class="stat-l">Std Sapma</div></div><div class="stat-c"><div class="stat-v">${cycleStats.cv.toFixed(1)}%</div><div class="stat-l">CV%</div></div></div>`;
+      // Calculate normal cycle time from step normal times
+      const normalCycleTime = stepAnalysis.reduce((sum, sa) => sum + (sa.ntMean || 0), 0);
+      const seqObsPerHour = cycleStats.mean > 0 ? (3600000 / cycleStats.mean).toFixed(1) : '—';
+      const seqNormPerHour = normalCycleTime > 0 ? (3600000 / normalCycleTime).toFixed(1) : '—';
+
+      h += `<div class="sum-compare">`;
+      h += `<div class="sum-compare-header">
+        <span class="sch-n">${cycleStats.n}</span>
+        <span class="sch-label">Tam Çevrim</span>
+      </div>`;
+
+      if (seqHasTempoVariation) {
+        h += `<table class="sum-compare-table"><thead><tr><th></th><th>Gözlem</th><th>Normal</th></tr></thead><tbody>`;
+        h += `<tr><td>Ort. Çevrim</td><td>${ffull(cycleStats.mean)}</td><td>${ffull(normalCycleTime)}</td></tr>`;
+        h += `<tr><td>Min</td><td>${ffull(cycleStats.min)}</td><td>—</td></tr>`;
+        h += `<tr><td>Max</td><td>${ffull(cycleStats.max)}</td><td>—</td></tr>`;
+        h += `<tr><td>Std Sapma</td><td>${ffull(cycleStats.stdDev)}</td><td>—</td></tr>`;
+        h += `<tr><td>CV%</td><td>${cycleStats.cv.toFixed(1)}%</td><td>—</td></tr>`;
+        h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${seqObsPerHour}</td><td>${seqNormPerHour}</td></tr>`;
+        h += `</tbody></table>`;
+      } else {
+        h += `<table class="sum-compare-table"><thead><tr><th></th><th>Değer</th></tr></thead><tbody>`;
+        h += `<tr><td>Ort. Çevrim</td><td>${ffull(cycleStats.mean)}</td></tr>`;
+        h += `<tr><td>Min</td><td>${ffull(cycleStats.min)}</td></tr>`;
+        h += `<tr><td>Max</td><td>${ffull(cycleStats.max)}</td></tr>`;
+        h += `<tr><td>Std Sapma</td><td>${ffull(cycleStats.stdDev)}</td></tr>`;
+        h += `<tr><td>CV%</td><td>${cycleStats.cv.toFixed(1)}%</td></tr>`;
+        h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${seqObsPerHour}</td></tr>`;
+        h += `</tbody></table>`;
+      }
+      h += `</div>`;
     }
 
     h += `<div class="sum-section-title">Adım Bazlı Analiz</div>`;
     h += `<div class="sum-step-table-wrap">`;
-    h += `<table class="sum-tag-table"><thead><tr><th>Adım</th><th>Adet</th><th>Ort.</th><th>Normal</th><th>Min</th><th>Max</th></tr></thead><tbody>`;
-    if (stepAnalysis.length === 0) {
-      h += `<tr><td colspan="6" style="text-align:center;color:var(--tx3)">Adım verisi bulunamadı</td></tr>`;
+    if (seqHasTempoVariation) {
+      h += `<table class="sum-tag-table"><thead><tr><th>Adım</th><th>Adet</th><th>Ort.</th><th>Normal</th><th>Min</th><th>Max</th></tr></thead><tbody>`;
+      if (stepAnalysis.length === 0) {
+        h += `<tr><td colspan="6" style="text-align:center;color:var(--tx3)">Adım verisi bulunamadı</td></tr>`;
+      } else {
+        stepAnalysis.forEach(sa => {
+          h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.ntMean ? ffull(sa.ntMean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td></tr>`;
+        });
+      }
     } else {
-      stepAnalysis.forEach(sa => {
-        h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.ntMean ? ffull(sa.ntMean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td></tr>`;
-      });
+      h += `<table class="sum-tag-table"><thead><tr><th>Adım</th><th>Adet</th><th>Ort.</th><th>Min</th><th>Max</th></tr></thead><tbody>`;
+      if (stepAnalysis.length === 0) {
+        h += `<tr><td colspan="5" style="text-align:center;color:var(--tx3)">Adım verisi bulunamadı</td></tr>`;
+      } else {
+        stepAnalysis.forEach(sa => {
+          h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td></tr>`;
+        });
+      }
     }
     h += `</tbody></table></div>`;
 
@@ -184,14 +226,49 @@ export function rebuildSummary() {
 
   } else if (st) {
     // REPEAT MODE SUMMARY
-    h += `<div class="sum-section-title">Gözlemlenen Süreler</div>
-    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${st.n}</div><div class="stat-l">Gözlem (n)</div></div><div class="stat-c"><div class="stat-v">${ffull(tot)}</div><div class="stat-l">Toplam</div></div><div class="stat-c"><div class="stat-v">${ffull(st.mean)}</div><div class="stat-l">Ortalama</div></div></div>
-    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.median)}</div><div class="stat-l">Medyan</div></div><div class="stat-c"><div class="stat-v">${ffull(st.stdDev)}</div><div class="stat-l">Std Sapma</div></div><div class="stat-c"><div class="stat-v">${st.cv.toFixed(1)}%</div><div class="stat-l">CV%</div></div></div>`;
-    h += `<div class="sum-section-title">Normal Süreler (Tempo Düzeltmeli)</div>
-    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(totNT)}</div><div class="stat-l">Toplam</div></div><div class="stat-c"><div class="stat-v">${ffull(stNT.mean)}</div><div class="stat-l">Ortalama</div></div><div class="stat-c"><div class="stat-v">${ffull(stNT.median)}</div><div class="stat-l">Medyan</div></div></div>`;
-    h += `<div class="sum-section-title">Dağılım & Yeterlilik</div>
-    <div class="sum-stats s3"><div class="stat-c"><div class="stat-v">${ffull(st.min)}</div><div class="stat-l">Minimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.max)}</div><div class="stat-l">Maksimum</div></div><div class="stat-c"><div class="stat-v">${ffull(st.range)}</div><div class="stat-l">Aralık</div></div></div>
-    <div class="sum-stats s2"><div class="stat-c"><div class="stat-v stat-v-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</div><div class="stat-l">%95 Güven Aralığı</div></div><div class="stat-c"><div class="stat-v${st.n >= st.nReq ? '' : ' stat-warn'}">${st.nReq}</div><div class="stat-l">Gerekli Gözlem ${st.n >= st.nReq ? '(Yeterli)' : '(Yetersiz)'}</div></div></div>`;
+    // Check if any tempo differs from 100
+    const hasTempoVariation = laps.some(l => (l.tempo || 100) !== 100);
+    const obsPerHour = st.mean > 0 ? (3600000 / st.mean).toFixed(1) : '—';
+    const normPerHour = stNT.mean > 0 ? (3600000 / stNT.mean).toFixed(1) : '—';
+    const reqOk = st.n >= st.nReq;
+    const reqNTOk = stNT && st.n >= stNT.nReq;
+
+    h += `<div class="sum-compare">`;
+    // Header with observation count
+    h += `<div class="sum-compare-header">
+      <span class="sch-n">${st.n}</span>
+      <span class="sch-label">Gözlem</span>
+      <span class="sch-req ${reqOk ? 'ok' : 'warn'}">Gerekli: ${st.nReq} ${reqOk ? '✓' : '✗'}</span>
+    </div>`;
+
+    if (hasTempoVariation) {
+      // Two column table: Gözlem vs Normal
+      h += `<table class="sum-compare-table"><thead><tr><th></th><th>Gözlem</th><th>Normal</th></tr></thead><tbody>`;
+      h += `<tr><td>Toplam</td><td>${ffull(tot)}</td><td>${ffull(totNT)}</td></tr>`;
+      h += `<tr><td>Ortalama</td><td>${ffull(st.mean)}</td><td>${ffull(stNT.mean)}</td></tr>`;
+      h += `<tr><td>Medyan</td><td>${ffull(st.median)}</td><td>${ffull(stNT.median)}</td></tr>`;
+      h += `<tr><td>Min</td><td>${ffull(st.min)}</td><td>${ffull(stNT.min)}</td></tr>`;
+      h += `<tr><td>Max</td><td>${ffull(st.max)}</td><td>${ffull(stNT.max)}</td></tr>`;
+      h += `<tr><td>Std Sapma</td><td>${ffull(st.stdDev)}</td><td>${ffull(stNT.stdDev)}</td></tr>`;
+      h += `<tr><td>CV%</td><td>${st.cv.toFixed(1)}%</td><td>${stNT.cv.toFixed(1)}%</td></tr>`;
+      h += `<tr><td>%95 Güven Aralığı</td><td class="sct-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</td><td class="sct-ci">${ffull(stNT.ci95Low)} — ${ffull(stNT.ci95High)}</td></tr>`;
+      h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${obsPerHour}</td><td>${normPerHour}</td></tr>`;
+      h += `</tbody></table>`;
+    } else {
+      // Single column table: Only Gözlem (all tempos are 100)
+      h += `<table class="sum-compare-table"><thead><tr><th></th><th>Değer</th></tr></thead><tbody>`;
+      h += `<tr><td>Toplam</td><td>${ffull(tot)}</td></tr>`;
+      h += `<tr><td>Ortalama</td><td>${ffull(st.mean)}</td></tr>`;
+      h += `<tr><td>Medyan</td><td>${ffull(st.median)}</td></tr>`;
+      h += `<tr><td>Min</td><td>${ffull(st.min)}</td></tr>`;
+      h += `<tr><td>Max</td><td>${ffull(st.max)}</td></tr>`;
+      h += `<tr><td>Std Sapma</td><td>${ffull(st.stdDev)}</td></tr>`;
+      h += `<tr><td>CV%</td><td>${st.cv.toFixed(1)}%</td></tr>`;
+      h += `<tr><td>%95 Güven Aralığı</td><td class="sct-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</td></tr>`;
+      h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${obsPerHour}</td></tr>`;
+      h += `</tbody></table>`;
+    }
+    h += `</div>`;
   } else if (!laps.length) {
     h += `<div class="sum-section-title" style="text-align:center;margin:24px 0;color:var(--tx3)">Tüm turlar silindi</div>`;
   } else {
@@ -409,23 +486,22 @@ export function resumeMeasurement() {
   // Calculate cumulative time from all laps
   const cumTime = S.laps.reduce((sum, l) => sum + l.t, 0);
 
-  // Set timer state to "ready to start from cumulative" (not started yet, single tap will start)
-  S.started = false;
+  // Set timer state to "started but paused" so pause button shows
+  S.started = true;
   S.running = false;
-  S.paused = false;
+  S.paused = true;
   S.resumeFromTime = cumTime;  // This tells startFromTime() where to continue from
   S.lastLapTime = cumTime;
+  S.pausedAt = Date.now();
+  S.base = S.pausedAt - cumTime;
 
   // Update display elements
   $('dJob').textContent = S.job;
   $('dOp').textContent = S.op;
-  $('tState').textContent = 'Devam etmek için dokun';
-  if (measurementMode === 'sequence') {
-    $('tapHint').textContent = 'Ekrana dokun = Süreyi başlat';
-  } else {
-    $('tapHint').textContent = 'Ekrana dokun = Süreyi başlat';
-  }
-  $('timerArea').classList.remove('paused', 'running');
+  $('tState').textContent = 'DURAKLATILDI';
+  $('tapHint').textContent = 'Devam etmek için butona dokun';
+  $('timerArea').classList.remove('running');
+  $('timerArea').classList.add('paused');
   $('lapCtr').style.display = 'flex';
   $('lapN').textContent = S.laps.length;
 
@@ -472,7 +548,10 @@ export function resumeMeasurement() {
   // Show measure screen
   showScreen('measure');
 
-  toast('Ölçüme devam edebilirsiniz. Dokunarak süreyi başlatın.', 't-ok');
+  // Update pause button to show "Devam Et"
+  if (window.updatePauseIcon) window.updatePauseIcon();
+
+  toast('Ölçüm duraklatıldı. Devam Et butonuna basın.', 't-warn');
   vib(30);
 }
 
