@@ -56,6 +56,8 @@ export function startT() {
   $('timerArea').classList.remove('paused');
   tick();
   vib(30);
+  // Show pause button
+  if (window.updatePauseIcon) window.updatePauseIcon();
 }
 
 // Start timer from a specific cumulative time (for resuming)
@@ -78,6 +80,8 @@ export function startFromTime(cumTime) {
   $('timerArea').classList.remove('paused');
   tick();
   vib(30);
+  // Show pause button
+  if (window.updatePauseIcon) window.updatePauseIcon();
 }
 
 // Pause timer
@@ -119,4 +123,6 @@ export function stopT() {
   S.started = false;
   cancelAnimationFrame(S.raf);
   $('timerArea').classList.remove('running', 'paused');
+  // Hide pause button
+  if (window.updatePauseIcon) window.updatePauseIcon();
 }

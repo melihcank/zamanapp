@@ -106,7 +106,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 
 /* ===== MEASUREMENT SCREEN ===== */
 #measureScreen{background:var(--bg);overflow:hidden}
-.top-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px;flex-shrink:0}
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px;flex-shrink:0;position:relative}
 .top-bar-info{display:flex;flex-direction:column;gap:1px}
 .top-bar-info .job-name{font-size:clamp(12px,3.5vw,15px);font-weight:700;max-width:55vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .top-bar-info .op-name{font-size:clamp(10px,2.5vw,12px);color:var(--tx2)}
@@ -115,6 +115,13 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .btn-ic:hover{background:var(--bg4)}
 .btn-ic svg{width:20px;height:20px;fill:var(--tx2)}
 .btn-ic.danger svg{fill:var(--dng)}
+
+/* Pause Button (top bar center) */
+.btn-pause-top{display:none;align-items:center;justify-content:center;gap:6px;padding:clamp(8px,2vh,12px) clamp(16px,4vw,24px);font-size:clamp(12px,3.5vw,15px);font-weight:700;font-family:var(--sans);background:var(--wrn);color:#000;border:none;border-radius:var(--r-pill);cursor:pointer;transition:transform .1s;position:absolute;left:50%;transform:translateX(-50%)}
+.btn-pause-top:active{transform:translateX(-50%) scale(.95)}
+.btn-pause-top svg{width:clamp(16px,4vw,20px);height:clamp(16px,4vw,20px);fill:#000}
+.btn-pause-top.visible{display:flex}
+.btn-pause-top.paused{background:var(--acc)}
 
 /* Tag Strip 2x2 */
 .tag-strip{display:grid;grid-template-columns:1fr 1fr;gap:clamp(6px,1.5vw,10px);padding:6px clamp(10px,3vw,16px) 10px;flex-shrink:0}

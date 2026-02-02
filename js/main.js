@@ -234,28 +234,37 @@ function init() {
   // Pause/Resume button
   const pauseBtn = $('bPause');
   const pauseIcon = $('pauseIcon');
-  const updatePauseIcon = () => {
-    if (S.paused) {
-      // Show play icon
-      pauseIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
-      pauseBtn.title = 'Devam (P)';
+  const pauseText = $('pauseText');
+  const updatePauseBtn = () => {
+    // Show/hide based on timer state
+    if (S.started) {
+      pauseBtn.classList.add('visible');
     } else {
-      // Show pause icon
+      pauseBtn.classList.remove('visible');
+    }
+    // Update icon and text based on paused state
+    if (S.paused) {
+      pauseIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      pauseText.textContent = 'Devam Et';
+      pauseBtn.classList.add('paused');
+    } else {
       pauseIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-      pauseBtn.title = 'Duraklat (P)';
+      pauseText.textContent = 'Duraklat';
+      pauseBtn.classList.remove('paused');
     }
   };
-  pauseBtn.onclick = () => {
+  pauseBtn.onclick = (e) => {
+    e.stopPropagation(); // Prevent triggering lap record
     if (!S.started) return;
     if (S.paused) {
       resumeT();
     } else {
       pauseT();
     }
-    updatePauseIcon();
+    updatePauseBtn();
   };
-  // Export updatePauseIcon for use in timer.js
-  window.updatePauseIcon = updatePauseIcon;
+  // Export for use in timer.js
+  window.updatePauseIcon = updatePauseBtn;
 
   // Finish modal
   $('bStop').onclick = () => { $('finModal').classList.add('open'); pushPanel(); };
