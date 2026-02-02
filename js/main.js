@@ -267,16 +267,17 @@ function init() {
     showSummary();
   };
 
-  // Fullscreen
-  let fsDone = false;
+  // Fullscreen - request on every interaction if not already fullscreen
   function goFS() {
+    // Skip if already in fullscreen
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) return;
     const el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     else if (el.msRequestFullscreen) el.msRequestFullscreen();
   }
-  document.addEventListener('click', () => { if (!fsDone) { fsDone = true; goFS(); } }, { once: true });
-  document.addEventListener('touchend', () => { if (!fsDone) { fsDone = true; goFS(); } }, { once: true });
+  document.addEventListener('click', goFS);
+  document.addEventListener('touchend', goFS);
 
   // PWA
   if ('serviceWorker' in navigator) {
