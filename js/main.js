@@ -177,36 +177,23 @@ function init() {
     showScreen('measure');
   };
 
-  // Timer touch events
-  let tapTO = null, lastTap = 0;
+  // Timer touch events - instant response, no delay
   $('timerArea').addEventListener('touchend', e => {
     // Skip if tempo picker is being adjusted
     if (isTempoActive()) return;
     if (e.target.closest('.tempo-picker') || e.target.closest('.tempo-wheel')) return;
 
     e.preventDefault();
-    const now = Date.now();
-    const d = now - lastTap;
-    lastTap = now;
-    if (d < 350 && d > 0) {
-      clearTimeout(tapTO);
-      if (!S.started) return;
-      S.paused ? resumeT() : pauseT();
+    if (!S.started) {
+      if (S.resumeFromTime > 0) {
+        startFromTime(S.resumeFromTime);
+      } else {
+        startT();
+      }
       return;
     }
-    tapTO = setTimeout(() => {
-      if (isTempoActive()) return; // Double-check before recording
-      if (!S.started) {
-        if (S.resumeFromTime > 0) {
-          startFromTime(S.resumeFromTime);
-        } else {
-          startT();
-        }
-        return;
-      }
-      if (S.paused) return;
-      recordLap();
-    }, 300);
+    if (S.paused) return;
+    recordLap();
   });
   $('timerArea').addEventListener('touchstart', e => {
     // Don't prevent default on tempo picker
@@ -231,13 +218,6 @@ function init() {
     recordLap();
   });
 
-  // PC: double-click on timer = pause/resume
-  $('timerArea').addEventListener('dblclick', e => {
-    if (e.target.closest('.tempo-picker') || e.target.closest('.tempo-wheel')) return;
-    if (!S.started) return;
-    S.paused ? resumeT() : pauseT();
-  });
-
   // Tag strip click (works in both modes - tags are anomaly markers)
   $('tagStrip').addEventListener('click', e => {
     const btn = e.target.closest('.tag-btn');
@@ -250,6 +230,32 @@ function init() {
     btn.classList.add('tag-pulse');
     recordLap(i);  // Records lap with anomaly tag (step is recorded automatically in sequence mode)
   });
+
+  // Pause/Resume button
+  const pauseBtn = $('bPause');
+  const pauseIcon = $('pauseIcon');
+  const updatePauseIcon = () => {
+    if (S.paused) {
+      // Show play icon
+      pauseIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      pauseBtn.title = 'Devam (P)';
+    } else {
+      // Show pause icon
+      pauseIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+      pauseBtn.title = 'Duraklat (P)';
+    }
+  };
+  pauseBtn.onclick = () => {
+    if (!S.started) return;
+    if (S.paused) {
+      resumeT();
+    } else {
+      pauseT();
+    }
+    updatePauseIcon();
+  };
+  // Export updatePauseIcon for use in timer.js
+  window.updatePauseIcon = updatePauseIcon;
 
   // Finish modal
   $('bStop').onclick = () => { $('finModal').classList.add('open'); pushPanel(); };

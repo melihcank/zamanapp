@@ -92,6 +92,8 @@ export function pauseT() {
   $('timerArea').classList.add('paused');
   dtFb(true);
   vib([20, 50, 20]);
+  // Update pause button icon
+  if (window.updatePauseIcon) window.updatePauseIcon();
 }
 
 // Resume timer
@@ -106,6 +108,8 @@ export function resumeT() {
   tick();
   dtFb(false);
   vib(30);
+  // Update pause button icon
+  if (window.updatePauseIcon) window.updatePauseIcon();
 }
 
 // Stop timer
