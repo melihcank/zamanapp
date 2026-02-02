@@ -17,7 +17,8 @@ export const S = {
   laps: [],
   lastLapTime: 0,
   raf: null,
-  defaultTag: 0
+  defaultTag: 0,
+  resumeFromTime: 0  // For resuming measurement from cumulative time
 };
 
 // Tags state

@@ -5,7 +5,7 @@ import { STEP_COLORS } from './config.js';
 import { S, setMeasurementMode, setSequenceSteps, measurementMode, sequenceSteps, tags, setTags } from './state.js';
 import { loadTags, saveHistory, loadHistory } from './storage.js';
 import { initScreens, showScreen, initPopState, pushPanel, closePanels } from './nav.js';
-import { startT, pauseT, resumeT, stopT } from './timer.js';
+import { startT, pauseT, resumeT, stopT, startFromTime } from './timer.js';
 import { initTempoPicker, setTempo, isTempoActive } from './tempo.js';
 import { initSequenceMode, initStepPanelEvents } from './steps.js';
 import { recordLap } from './laps.js';
@@ -196,7 +196,14 @@ function init() {
     }
     tapTO = setTimeout(() => {
       if (isTempoActive()) return; // Double-check before recording
-      if (!S.started) { startT(); return; }
+      if (!S.started) {
+        if (S.resumeFromTime > 0) {
+          startFromTime(S.resumeFromTime);
+        } else {
+          startT();
+        }
+        return;
+      }
       if (S.paused) return;
       recordLap();
     }, 300);
@@ -212,7 +219,14 @@ function init() {
     if (e.target.closest('.lap-cc')) return;
     if (e.target.closest('.tempo-picker') || e.target.closest('.tempo-wheel')) return;
     if (isTempoActive()) return;
-    if (!S.started) { startT(); return; }
+    if (!S.started) {
+      if (S.resumeFromTime > 0) {
+        startFromTime(S.resumeFromTime);
+      } else {
+        startT();
+      }
+      return;
+    }
     if (S.paused) return;
     recordLap();
   });

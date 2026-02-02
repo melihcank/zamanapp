@@ -12,10 +12,15 @@ import {
   sumDateStr, setSumDateStr,
   sumTimeStr, setSumTimeStr,
   sumDelTarget, setSumDelTarget,
-  tpTarget, setTpTarget
+  tpTarget, setTpTarget,
+  setCurrentStep, setSequenceCycle
 } from './state.js';
 import { screens, showScreen, pushPanel } from './nav.js';
-import { recalcLaps } from './laps.js';
+import { recalcLaps, refreshList } from './laps.js';
+import { updDisp, tick } from './timer.js';
+import { buildTagStrip } from './tags.js';
+import { initSequenceMode, renderStepIndicator } from './steps.js';
+import { getNow } from './utils.js';
 import { updateHistoryLaps, renderHistory } from './history.js';
 import { exportExcel } from './export.js';
 import { openTempoEdit, closeTP } from './panels.js';
@@ -82,7 +87,13 @@ export function rebuildSummary() {
     ? '<span style="display:inline-block;padding:2px 8px;background:var(--inf-d);color:var(--inf);border-radius:var(--r-pill);font-size:clamp(8px,2.2vw,10px);font-weight:700;margin-left:6px">ARDIŞIK</span>'
     : '<span style="display:inline-block;padding:2px 8px;background:var(--acc-d);color:var(--acc);border-radius:var(--r-pill);font-size:clamp(8px,2.2vw,10px);font-weight:700;margin-left:6px">TEKRARLI</span>';
 
-  let h = `<div class="sum-hdr"><h2>Ölçüm Tamamlandı${modeBadge}</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:clamp(9px,2.5vw,12px);color:var(--tx3);margin-top:clamp(2px,.6vw,4px)">${sumDateStr} ${sumTimeStr}</p></div>`;
+  const backBtnText = historyViewIdx !== null ? 'Geri' : 'Menü';
+  const actionBtns = `<div class="sum-action-bar">
+    <button class="sum-action-btn sab-excel" id="btnExcel"${laps.length ? '' : ' disabled'}><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Excel</button>
+    ${laps.length ? '<button class="sum-action-btn sab-resume" id="btnResume"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Devam Et</button>' : ''}
+    <button class="sum-action-btn sab-back" id="btnNew"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>${backBtnText}</button>
+  </div>`;
+  let h = `<div class="sum-hdr"><h2>Ölçüm Tamamlandı${modeBadge}</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:clamp(9px,2.5vw,12px);color:var(--tx3);margin-top:clamp(2px,.6vw,4px)">${sumDateStr} ${sumTimeStr}</p>${actionBtns}</div>`;
 
   if (isSeqMode) {
     // SEQUENCE MODE SUMMARY
@@ -202,8 +213,7 @@ export function rebuildSummary() {
   h += `<div class="sum-section-title">${listTitle}</div><div class="sum-laps" id="sumLapList">`;
   laps.forEach(l => { h += sumRowHTML(l, excludedNums.has(l.num)); });
   if (!laps.length) h += `<div style="text-align:center;padding:16px;color:var(--tx3);font-size:clamp(10px,3vw,13px)">Kayıt bulunmuyor</div>`;
-  const backBtnText = historyViewIdx !== null ? 'GERİ DÖN' : 'ANA MENÜYE DÖN';
-  h += `</div><div class="export-bar"><button class="btn-export btn-xl" id="btnExcel"${laps.length ? '' : ' disabled style="opacity:.4;pointer-events:none"'}><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg>Excel İndir</button></div><button class="btn-new" id="btnNew">${backBtnText}</button>`;
+  h += `</div>`;
 
   screens.summary.innerHTML = h;
   screens.summary.scrollTop = scrollY;
@@ -236,6 +246,12 @@ export function rebuildSummary() {
       showScreen('menu');
     }
   };
+
+  // Resume measurement button
+  const btnResume = $('btnResume');
+  if (btnResume) {
+    btnResume.onclick = () => resumeMeasurement();
+  }
 }
 
 // Summary row HTML
@@ -384,6 +400,80 @@ export function resetAll() {
 
   // Reset tempo
   import('./tempo.js').then(m => m.setTempo(100));
+}
+
+// Resume measurement from current laps
+export function resumeMeasurement() {
+  if (!S.laps.length) return;
+
+  // Calculate cumulative time from all laps
+  const cumTime = S.laps.reduce((sum, l) => sum + l.t, 0);
+
+  // Set timer state to "ready to start from cumulative" (not started yet, single tap will start)
+  S.started = false;
+  S.running = false;
+  S.paused = false;
+  S.resumeFromTime = cumTime;  // This tells startFromTime() where to continue from
+  S.lastLapTime = cumTime;
+
+  // Update display elements
+  $('dJob').textContent = S.job;
+  $('dOp').textContent = S.op;
+  $('tState').textContent = 'Devam etmek için dokun';
+  if (measurementMode === 'sequence') {
+    $('tapHint').textContent = 'Ekrana dokun = Süreyi başlat';
+  } else {
+    $('tapHint').textContent = 'Ekrana dokun = Süreyi başlat';
+  }
+  $('timerArea').classList.remove('paused', 'running');
+  $('lapCtr').style.display = 'flex';
+  $('lapN').textContent = S.laps.length;
+
+  // Manually update timer display to show cumulative time
+  const mins = Math.floor(cumTime / 60000);
+  const secs = Math.floor((cumTime % 60000) / 1000);
+  const ms = Math.floor((cumTime % 1000) / 10);
+  $('tTime').textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+  $('tMs').textContent = '.' + String(ms).padStart(2, '0');
+  const p = (cumTime / 60000) % 1;
+  $('ringProg').style.strokeDashoffset = 565.48 * (1 - p);
+
+  // Build tag strip
+  buildTagStrip();
+
+  // Refresh lap list
+  refreshList();
+
+  // If sequence mode, restore step/cycle state and show indicator
+  if (measurementMode === 'sequence') {
+    // Find the last lap to get current step and cycle
+    const lastLap = S.laps[S.laps.length - 1];
+    if (lastLap && lastLap.step !== undefined) {
+      // Calculate next step (the one after the last recorded)
+      let nextStep = (lastLap.step + 1) % sequenceSteps.length;
+      let nextCycle = lastLap.cycle || 1;
+      if (nextStep === 0) nextCycle++;
+      setCurrentStep(nextStep);
+      setSequenceCycle(nextCycle);
+      renderStepIndicator();
+    } else {
+      initSequenceMode();
+    }
+    $('stepIndicator').classList.add('visible');
+    $('tagStrip').style.display = 'none';
+  } else {
+    $('stepIndicator').classList.remove('visible');
+    $('tagStrip').style.display = 'grid';
+  }
+
+  // Clear history view index since we're continuing the measurement
+  setHistoryViewIdx(null);
+
+  // Show measure screen
+  showScreen('measure');
+
+  toast('Ölçüme devam edebilirsiniz. Dokunarak süreyi başlatın.', 't-ok');
+  vib(30);
 }
 
 // Initialize summary events

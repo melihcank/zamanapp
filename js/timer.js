@@ -58,6 +58,28 @@ export function startT() {
   vib(30);
 }
 
+// Start timer from a specific cumulative time (for resuming)
+export function startFromTime(cumTime) {
+  S.started = true;
+  S.running = true;
+  S.paused = false;
+  S.startTime = getNow() - cumTime;
+  S.totalPaused = 0;
+  S.lastLapTime = cumTime;
+  S.resumeFromTime = 0;
+
+  $('tState').textContent = 'Çalışıyor';
+  if (measurementMode === 'sequence') {
+    $('tapHint').textContent = 'Ekrana dokun = Adım tamamla';
+  } else {
+    $('tapHint').textContent = 'Ekrana dokun = Tur kaydet';
+  }
+  $('timerArea').classList.add('running');
+  $('timerArea').classList.remove('paused');
+  tick();
+  vib(30);
+}
+
 // Pause timer
 export function pauseT() {
   if (!S.running || S.paused) return;
