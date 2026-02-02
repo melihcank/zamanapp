@@ -16,8 +16,23 @@ import { showSummary, rebuildSummary, initSummaryEvents, resetAll } from './summ
 import { initExportEvents } from './export.js';
 import { initKeyboard } from './keyboard.js';
 
+// Lock viewport dimensions on first load to prevent resize issues
+function lockViewport() {
+  // Only lock once on first load
+  if (document.documentElement.style.getPropertyValue('--vw')) return;
+
+  // Calculate 1vw and 1vh in pixels and store as CSS custom properties
+  const vw = window.innerWidth / 100;
+  const vh = window.innerHeight / 100;
+  document.documentElement.style.setProperty('--vw', vw + 'px');
+  document.documentElement.style.setProperty('--vh', vh + 'px');
+}
+
 // Initialize application
 function init() {
+  // Lock viewport dimensions before anything else
+  lockViewport();
+
   // Initialize screens
   initScreens();
   initPopState();
