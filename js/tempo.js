@@ -159,7 +159,3 @@ export function initTempoPicker() {
   setTimeout(renderTempoWheel, 50);
 }
 
-// Get current tempo value
-export function getCurrentTempoValue() {
-  return currentTempo;
-}

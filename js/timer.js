@@ -6,8 +6,8 @@ import { S, measurementMode } from './state.js';
 // Get elapsed time
 export function getEl() {
   if (!S.started) return 0;
-  if (S.paused) return S.pauseStart - S.startTime - S.totalPaused;
-  return getNow() - S.startTime - S.totalPaused;
+  if (S.paused) return S.pauseStart - S.startTime - S.totalPaused - S.deletedTime;
+  return getNow() - S.startTime - S.totalPaused - S.deletedTime;
 }
 
 // Update display
@@ -28,10 +28,6 @@ export function tick() {
   }
 }
 
-// Double-tap feedback (disabled - using edge flash instead)
-export function dtFb(paused) {
-  // Removed - edge flash effect is used instead
-}
 
 // Start timer
 export function startT() {
@@ -108,7 +104,6 @@ export function pauseT() {
   ef.classList.remove('flash-pause', 'flash-resume');
   void ef.offsetWidth; // Force reflow
   ef.classList.add('flash-pause');
-  dtFb(true);
   vib([20, 50, 20]);
   // Update pause button icon
   if (window.updatePauseIcon) window.updatePauseIcon();
@@ -136,7 +131,6 @@ export function resumeT() {
   void ef.offsetWidth; // Force reflow
   ef.classList.add('flash-resume');
   tick();
-  dtFb(false);
   vib(30);
   // Update pause button icon
   if (window.updatePauseIcon) window.updatePauseIcon();

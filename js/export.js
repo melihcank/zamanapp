@@ -176,20 +176,106 @@ export function handleJSONImport(e) {
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
-      if (!data.tags || !Array.isArray(data.history)) throw new Error('format');
-      if (data.tags.length === 4) {
+
+      // Doğrulama yap
+      const validation = validateImportData(data);
+      if (!validation.valid) {
+        toast(validation.error, 't-dng');
+        return;
+      }
+
+      // Etiketleri kaydet (4 adet ve geçerliyse)
+      if (data.tags && data.tags.length === 4) {
         saveTags(data.tags);
         setTags(data.tags);
       }
+
+      // Geçmişi kaydet
       saveHistory(data.history);
       toast(data.history.length + ' ölçüm başarıyla içe aktarıldı', 't-ok');
       renderHistory();
     } catch (err) {
-      toast('Geçersiz JSON dosyası', 't-dng');
+      toast('Geçersiz JSON dosyası: Dosya okunamadı', 't-dng');
     }
   };
   reader.readAsText(file);
   e.target.value = '';
+}
+
+// İçe aktarma verisini doğrula
+function validateImportData(data) {
+  // Temel yapı kontrolü
+  if (!data || typeof data !== 'object') {
+    return { valid: false, error: 'Geçersiz dosya formatı' };
+  }
+
+  // history dizisi kontrolü
+  if (!Array.isArray(data.history)) {
+    return { valid: false, error: 'Geçmiş verisi bulunamadı' };
+  }
+
+  // Boş history kabul edilebilir
+  if (data.history.length === 0) {
+    return { valid: true };
+  }
+
+  // Her geçmiş kaydını kontrol et
+  for (let i = 0; i < data.history.length; i++) {
+    const record = data.history[i];
+
+    // Kayıt obje mi?
+    if (!record || typeof record !== 'object') {
+      return { valid: false, error: `Kayıt #${i + 1} geçersiz format` };
+    }
+
+    // laps dizisi var mı?
+    if (!Array.isArray(record.laps)) {
+      return { valid: false, error: `Kayıt #${i + 1}: Tur verisi bulunamadı` };
+    }
+
+    // Her turu kontrol et
+    for (let j = 0; j < record.laps.length; j++) {
+      const lap = record.laps[j];
+
+      // Tur obje mi?
+      if (!lap || typeof lap !== 'object') {
+        return { valid: false, error: `Kayıt #${i + 1}, Tur #${j + 1}: Geçersiz format` };
+      }
+
+      // Süre (t) var mı ve sayı mı?
+      if (typeof lap.t !== 'number' || lap.t < 0) {
+        return { valid: false, error: `Kayıt #${i + 1}, Tur #${j + 1}: Geçersiz süre değeri` };
+      }
+    }
+  }
+
+  // Etiketler varsa kontrol et
+  if (data.tags) {
+    if (!Array.isArray(data.tags)) {
+      return { valid: false, error: 'Etiket verisi geçersiz format' };
+    }
+
+    // 4 etiket olmalı
+    if (data.tags.length !== 4) {
+      return { valid: false, error: 'Etiket sayısı 4 olmalı' };
+    }
+
+    // Her etiketin name ve color'ı olmalı
+    for (let i = 0; i < data.tags.length; i++) {
+      const tag = data.tags[i];
+      if (!tag || typeof tag !== 'object') {
+        return { valid: false, error: `Etiket #${i + 1}: Geçersiz format` };
+      }
+      if (!tag.name || typeof tag.name !== 'string') {
+        return { valid: false, error: `Etiket #${i + 1}: İsim bulunamadı` };
+      }
+      if (!tag.color || typeof tag.color !== 'string') {
+        return { valid: false, error: `Etiket #${i + 1}: Renk bulunamadı` };
+      }
+    }
+  }
+
+  return { valid: true };
 }
 
 // Initialize export events

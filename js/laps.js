@@ -62,7 +62,7 @@ export function recordLap(tagIdx = null) {
 }
 
 // Ölçüm ilerlemesini otomatik kaydet
-function autoSaveProgress() {
+export function autoSaveProgress() {
   saveAutoRecovery({
     job: S.job,
     op: S.op,
@@ -171,8 +171,8 @@ export function delLap(lap, card) {
       // Recalc nums and cumulative times
       let cum = 0;
       S.laps.forEach((l, j) => { l.num = j + 1; cum += l.t; l.cum = cum; });
-      // Adjust timer: add deleted time to totalPaused so timer goes back
-      S.totalPaused += deletedTime;
+      // Silinen süreyi kaydet - kronometre geri sarsın
+      S.deletedTime += deletedTime;
       S.lastLapTime -= deletedTime;
       if (S.lastLapTime < 0) S.lastLapTime = 0;
       // Rewind effect on timer

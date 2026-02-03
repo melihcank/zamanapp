@@ -13,12 +13,13 @@ export const S = {
   startTime: 0,
   elapsed: 0,
   pauseStart: 0,
-  totalPaused: 0,
+  totalPaused: 0,      // Duraklatma süresi
+  deletedTime: 0,      // Silinen turların toplam süresi
   laps: [],
   lastLapTime: 0,
   raf: null,
   defaultTag: 0,
-  resumeFromTime: 0  // For resuming measurement from cumulative time
+  resumeFromTime: 0
 };
 
 // Tags state
@@ -79,13 +80,27 @@ export function setCurScreen(val) { curScreen = val; }
 
 // Reset all state
 export function resetAllState() {
+  // Timer state
   S.laps = [];
   S.started = false;
   S.running = false;
   S.paused = false;
   S.startTime = 0;
   S.totalPaused = 0;
+  S.deletedTime = 0;
   S.lastLapTime = 0;
+  S.pauseStart = 0;
+  S.elapsed = 0;
+  S.resumeFromTime = 0;
+  S.defaultTag = 0;
+
+  // Animasyon - varsa iptal et
+  if (S.raf) {
+    cancelAnimationFrame(S.raf);
+    S.raf = null;
+  }
+
+  // Tags & mode
   tags = loadTags();
   historyViewIdx = null;
   measurementMode = 'repeat';
@@ -94,14 +109,4 @@ export function resetAllState() {
   sequenceSteps = [];
   currentTempo = 100;
   tempoIdx = 10;
-}
-
-// Initialize default sequence steps
-export function initDefaultSequenceSteps() {
-  sequenceSteps = [
-    { name: 'Adım 1', color: STEP_COLORS[0] },
-    { name: 'Adım 2', color: STEP_COLORS[1] },
-    { name: 'Adım 3', color: STEP_COLORS[2] },
-    { name: 'Adım 4', color: STEP_COLORS[3] }
-  ];
 }

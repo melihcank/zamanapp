@@ -350,7 +350,10 @@ function sumRowHTML(l, excluded) {
     labelHtml = `<span class="stg" style="color:${tg ? tg.color : 'var(--tx3)'}">${tg ? esc(tg.name) : '—'}</span>`;
   }
 
-  return `<div class="sum-row${excluded ? ' sf-excluded' : ''}" data-num="${l.num}"><span class="sn">#${l.num}</span><span class="st">${ffull(l.t)}</span><span class="s-tempo ${tempoClass}" data-num="${l.num}">${tempo}</span>${labelHtml}<span class="sum-acts"><button class="sum-act sa-tag" data-num="${l.num}" title="Anomali Etiketle">${SVG_ICONS.tag}</button><button class="sum-act sa-del" data-num="${l.num}" title="Sil">${SVG_ICONS.del}</button></span></div>`;
+  // Not varsa göster
+  const noteHtml = l.note ? `<div class="sum-note">${esc(l.note)}</div>` : '';
+
+  return `<div class="sum-row${excluded ? ' sf-excluded' : ''}" data-num="${l.num}"><span class="sn">#${l.num}</span><span class="st">${ffull(l.t)}</span><span class="s-tempo ${tempoClass}" data-num="${l.num}">${tempo}</span>${labelHtml}<span class="sum-acts"><button class="sum-act sa-tag" data-num="${l.num}" title="Anomali Etiketle">${SVG_ICONS.tag}</button><button class="sum-act sa-del" data-num="${l.num}" title="Sil">${SVG_ICONS.del}</button></span>${noteHtml}</div>`;
 }
 
 // Bind summary action buttons

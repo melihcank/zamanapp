@@ -7,7 +7,7 @@ import {
   selNoteLap, setSelNoteLap
 } from './state.js';
 import { pushPanel } from './nav.js';
-import { updCard } from './laps.js';
+import { updCard, autoSaveProgress } from './laps.js';
 
 // ===== TAG PICKER =====
 
@@ -110,6 +110,8 @@ export function saveNote() {
     l.note = $('noteTa').value.trim();
     const c = $('lapList').querySelector(`[data-id="${l.id}"]`);
     if (c) updCard(c, l);
+    // Otomatik kurtarmaya da yaz
+    autoSaveProgress();
     toast('Not kaydedildi', 't-ok');
   }
   closeNote();
