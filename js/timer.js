@@ -25,16 +25,9 @@ export function tick() {
   S.raf = requestAnimationFrame(tick);
 }
 
-// Double-tap feedback
+// Double-tap feedback (disabled - using edge flash instead)
 export function dtFb(paused) {
-  const dtOv = $('dtOv');
-  const dtIco = $('dtIco');
-  dtIco.className = 'dt-ico' + (paused ? ' pau' : '');
-  dtIco.innerHTML = paused
-    ? '<svg viewBox="0 0 24 24" width="32" height="32" fill="var(--wrn)"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'
-    : '<svg viewBox="0 0 24 24" width="32" height="32" fill="var(--acc)"><path d="M8 5v14l11-7z"/></svg>';
-  dtOv.classList.add('show');
-  setTimeout(() => dtOv.classList.remove('show'), 600);
+  // Removed - edge flash effect is used instead
 }
 
 // Start timer
@@ -94,6 +87,11 @@ export function pauseT() {
   $('tState').textContent = 'Duraklatıldı';
   $('timerArea').classList.remove('running');
   $('timerArea').classList.add('paused');
+  // Edge flash effect
+  const ef = $('edgeFlash');
+  ef.classList.remove('flash-pause', 'flash-resume');
+  void ef.offsetWidth; // Force reflow
+  ef.classList.add('flash-pause');
   dtFb(true);
   vib([20, 50, 20]);
   // Update pause button icon
@@ -109,6 +107,11 @@ export function resumeT() {
   $('tState').textContent = 'Çalışıyor';
   $('timerArea').classList.add('running');
   $('timerArea').classList.remove('paused');
+  // Edge flash effect
+  const ef = $('edgeFlash');
+  ef.classList.remove('flash-pause', 'flash-resume');
+  void ef.offsetWidth; // Force reflow
+  ef.classList.add('flash-resume');
   tick();
   dtFb(false);
   vib(30);

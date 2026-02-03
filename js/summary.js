@@ -238,7 +238,7 @@ export function rebuildSummary() {
     h += `<div class="sum-compare-header">
       <span class="sch-n">${st.n}</span>
       <span class="sch-label">Gözlem</span>
-      <span class="sch-req ${reqOk ? 'ok' : 'warn'}">Gerekli: ${st.nReq} ${reqOk ? '✓' : '✗'}</span>
+      <span class="sch-req ${reqOk ? 'ok' : 'warn'}">Gerekli Gözlem: ${st.nReq} ${reqOk ? '✓' : '✗'}</span>
     </div>`;
 
     if (hasTempoVariation) {
