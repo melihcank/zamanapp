@@ -32,3 +32,29 @@ export function loadHistory() {
 export function saveHistory(h) {
   localStorage.setItem('zt_hist', JSON.stringify(h));
 }
+
+// Otomatik kurtarma - ölçüm sırasında veri kaybını önler
+export function saveAutoRecovery(data) {
+  try {
+    localStorage.setItem('zt_recovery', JSON.stringify({
+      ...data,
+      savedAt: Date.now()
+    }));
+  } catch (e) {
+    console.warn('Otomatik kayıt başarısız:', e);
+  }
+}
+
+export function loadAutoRecovery() {
+  try {
+    const data = JSON.parse(localStorage.getItem('zt_recovery'));
+    if (data && data.laps && data.laps.length > 0) {
+      return data;
+    }
+  } catch (e) {}
+  return null;
+}
+
+export function clearAutoRecovery() {
+  localStorage.removeItem('zt_recovery');
+}

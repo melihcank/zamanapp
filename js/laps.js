@@ -1,6 +1,6 @@
 // ===== LAP MANAGEMENT =====
 
-import { $, ffull, vib, esc, dimColor, tagIcon, toast } from './utils.js';
+import { $, ffull, vib, esc, dimColor, tagIcon, toast, getNow } from './utils.js';
 import { SVG_ICONS, STEP_COLORS } from './config.js';
 import {
   S, tags, measurementMode,
@@ -9,7 +9,8 @@ import {
 } from './state.js';
 import { getEl } from './timer.js';
 import { advanceStep } from './steps.js';
-import { openTP } from './panels.js';
+import { openTP, openNote } from './panels.js';
+import { saveAutoRecovery } from './storage.js';
 
 // Record a lap
 export function recordLap(tagIdx = null) {
@@ -55,6 +56,25 @@ export function recordLap(tagIdx = null) {
   if (measurementMode === 'sequence') {
     advanceStep();
   }
+
+  // Otomatik kaydet - veri kaybını önle
+  autoSaveProgress();
+}
+
+// Ölçüm ilerlemesini otomatik kaydet
+function autoSaveProgress() {
+  saveAutoRecovery({
+    job: S.job,
+    op: S.op,
+    laps: S.laps,
+    startTime: S.startTime,
+    totalPaused: S.totalPaused,
+    lastLapTime: S.lastLapTime,
+    mode: measurementMode,
+    steps: measurementMode === 'sequence' ? sequenceSteps : null,
+    currentStep: measurementMode === 'sequence' ? currentStep : null,
+    cycle: measurementMode === 'sequence' ? sequenceCycle : null
+  });
 }
 
 // Render a lap card
@@ -86,16 +106,14 @@ export function renderCard(lap, isNew) {
   const tempo = lap.tempo || 100;
   const tempoClass = tempo < 100 ? 'tempo-slow' : (tempo > 100 ? 'tempo-fast' : '');
   const tempoBadge = tempo !== 100 ? `<span class="lap-tempo ${tempoClass}">%${tempo}</span>` : '';
-  const defTag = tags[S.defaultTag];
 
   // Combine badges: step first, then tempo, then anomaly tag
   const allBadges = stepBadge + tempoBadge + tagBadge;
 
-  card.innerHTML = `<div class="swipe-bg sw-r" style="background:${dimColor(defTag.color)};color:${defTag.color}"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> ${esc(defTag.name)}</div><div class="swipe-bg sw-l"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> Sil</div><div class="lap-cc"><div class="lap-stripe" style="background:${sc}"></div><div class="lap-num">#${lap.num}</div><div class="lap-info"><div class="lap-info-top"><span class="lap-tm">${ffull(lap.t)}</span>${allBadges}</div><div class="lap-cum">Toplam: ${ffull(lap.cum)}</div>${noteH}</div></div><div class="lap-actions"><button class="lap-act-btn act-tag" title="Anomali Etiketle">${SVG_ICONS.tag}</button><button class="lap-act-btn act-del" title="Sil">${SVG_ICONS.del}</button></div>`;
+  card.innerHTML = `<div class="swipe-bg sw-r" style="background:rgba(76,175,80,0.2);color:#4CAF50"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg> Not Ekle</div><div class="swipe-bg sw-l"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg> Sil</div><div class="lap-cc"><div class="lap-stripe" style="background:${sc}"></div><div class="lap-num">#${lap.num}</div><div class="lap-info"><div class="lap-info-top"><span class="lap-tm">${ffull(lap.t)}</span>${allBadges}</div><div class="lap-cum">Toplam: ${ffull(lap.cum)}</div>${noteH}</div></div><div class="lap-actions"><button class="lap-act-btn act-tag" title="Anomali Etiketle">${SVG_ICONS.tag}</button><button class="lap-act-btn act-del" title="Sil">${SVG_ICONS.del}</button></div>`;
 
   $('lapList').insertBefore(card, $('lapList').firstChild);
   setupSwipe(card, lap);
-  setupLongPress(card, lap);
 
   // PC: action buttons
   card.querySelector('.act-tag').onclick = (e) => { e.stopPropagation(); openTP(lap, card); };
@@ -207,11 +225,10 @@ function setupSwipe(card, lap) {
     if (!hz) { cc.style.transform = 'translateX(0)'; return; }
     const dx = cx - sx;
     if (dx > th) {
-      lap.tag = S.defaultTag;
-      updCard(card, lap);
-      toast('Etiket: ' + tags[S.defaultTag].name, 't-ok');
-      vib(15);
+      // Sağa kaydır → Not ekle
       cc.style.transform = 'translateX(0)';
+      openNote(lap.id);
+      vib(15);
     } else if (dx < -th) {
       delLap(lap, card);
     } else {
@@ -232,17 +249,6 @@ function setupSwipe(card, lap) {
     document.addEventListener('mousemove', mm);
     document.addEventListener('mouseup', mu);
   });
-}
-
-// Long press handling
-let lpTimer = null;
-function setupLongPress(card, lap) {
-  const cc = card.querySelector('.lap-cc');
-  function start() { lpTimer = setTimeout(() => { vib(30); openTP(lap, card); }, 500); }
-  function cancel() { clearTimeout(lpTimer); }
-  cc.addEventListener('touchstart', start, { passive: true });
-  cc.addEventListener('touchmove', cancel, { passive: true });
-  cc.addEventListener('touchend', cancel);
 }
 
 // Recalculate lap numbers and cumulative times

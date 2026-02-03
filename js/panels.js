@@ -61,7 +61,7 @@ export function closeTP() {
 
 // ===== NOTE PANEL =====
 
-export function openNote() {
+export function openNote(targetLapId = null) {
   if (!S.laps.length) {
     toast('Henüz tur kaydı yok', 't-wrn');
     return;
@@ -72,9 +72,14 @@ export function openNote() {
   noteChips.innerHTML = '';
   const rec = S.laps.slice(-5).reverse();
 
-  rec.forEach((l, i) => {
+  // Hedef tur belirtilmişse onu bul, yoksa son turu seç
+  let targetLap = targetLapId ? S.laps.find(l => l.id === targetLapId) : rec[0];
+  if (!targetLap) targetLap = rec[0];
+
+  rec.forEach((l) => {
     const c = document.createElement('button');
-    c.className = 'note-chip' + (i === 0 ? ' sel' : '');
+    const isSelected = l.id === targetLap.id;
+    c.className = 'note-chip' + (isSelected ? ' sel' : '');
     c.textContent = '#' + l.num + ' — ' + ffull(l.t);
     c.onclick = () => {
       noteChips.querySelectorAll('.note-chip').forEach(x => x.classList.remove('sel'));
@@ -83,10 +88,10 @@ export function openNote() {
       noteTa.value = l.note || '';
     };
     noteChips.appendChild(c);
-    if (i === 0) setSelNoteLap(l.id);
+    if (isSelected) setSelNoteLap(l.id);
   });
 
-  noteTa.value = rec[0]?.note || '';
+  noteTa.value = targetLap?.note || '';
   $('noteOv').classList.add('open');
   $('notePanel').classList.add('open');
   pushPanel();

@@ -22,7 +22,10 @@ export function updDisp() {
 // Animation frame tick
 export function tick() {
   updDisp();
-  S.raf = requestAnimationFrame(tick);
+  // Sadece çalışıyorsa yeni güncelleme iste
+  if (S.running && !S.paused) {
+    S.raf = requestAnimationFrame(tick);
+  }
 }
 
 // Double-tap feedback (disabled - using edge flash instead)
@@ -32,6 +35,12 @@ export function dtFb(paused) {
 
 // Start timer
 export function startT() {
+  // Önce varsa eski animasyonu iptal et
+  if (S.raf) {
+    cancelAnimationFrame(S.raf);
+    S.raf = null;
+  }
+
   S.started = true;
   S.running = true;
   S.paused = false;
@@ -55,6 +64,12 @@ export function startT() {
 
 // Start timer from a specific cumulative time (for resuming)
 export function startFromTime(cumTime) {
+  // Önce varsa eski animasyonu iptal et
+  if (S.raf) {
+    cancelAnimationFrame(S.raf);
+    S.raf = null;
+  }
+
   S.started = true;
   S.running = true;
   S.paused = false;
@@ -84,6 +99,7 @@ export function pauseT() {
   S.running = false;
   S.pauseStart = getNow();
   cancelAnimationFrame(S.raf);
+  S.raf = null;  // Animasyon kimliğini sıfırla
   $('tState').textContent = 'Duraklatıldı';
   $('timerArea').classList.remove('running');
   $('timerArea').classList.add('paused');
@@ -101,6 +117,13 @@ export function pauseT() {
 // Resume timer
 export function resumeT() {
   if (!S.paused) return;
+
+  // Önce varsa eski animasyonu iptal et (güvenlik için)
+  if (S.raf) {
+    cancelAnimationFrame(S.raf);
+    S.raf = null;
+  }
+
   S.totalPaused += getNow() - S.pauseStart;
   S.paused = false;
   S.running = true;
@@ -125,6 +148,7 @@ export function stopT() {
   S.paused = false;
   S.started = false;
   cancelAnimationFrame(S.raf);
+  S.raf = null;  // Animasyon kimliğini sıfırla
   $('timerArea').classList.remove('running', 'paused');
   // Hide pause button
   if (window.updatePauseIcon) window.updatePauseIcon();

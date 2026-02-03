@@ -3,7 +3,7 @@
 import { $, toast, vib, ffull, esc, dimColor, tagIcon } from './utils.js';
 import { SVG_ICONS, STEP_COLORS } from './config.js';
 import { calcStats, tagAnalysis, detectOutliers } from './stats.js';
-import { loadHistory, saveHistory, loadTags } from './storage.js';
+import { loadHistory, saveHistory, loadTags, clearAutoRecovery } from './storage.js';
 import {
   S, tags, setTags, measurementMode, sequenceSteps,
   historyViewIdx, setHistoryViewIdx,
@@ -461,6 +461,7 @@ export function confirmSumDel() {
 // Reset all state and UI
 export function resetAll() {
   resetAllState();
+  clearAutoRecovery();  // Geçici kaydı sil
   $('tTime').textContent = '00:00';
   $('tMs').textContent = '.00';
   $('tState').textContent = 'Başlamak için dokun';
@@ -485,6 +486,7 @@ export function resumeMeasurement() {
 
   // Calculate cumulative time from all laps
   const cumTime = S.laps.reduce((sum, l) => sum + l.t, 0);
+  const now = getNow();
 
   // Set timer state to "started but paused" so pause button shows
   S.started = true;
@@ -492,8 +494,11 @@ export function resumeMeasurement() {
   S.paused = true;
   S.resumeFromTime = cumTime;  // This tells startFromTime() where to continue from
   S.lastLapTime = cumTime;
-  S.pausedAt = Date.now();
-  S.base = S.pausedAt - cumTime;
+
+  // CRITICAL: Set these correctly for getEl() to work
+  S.startTime = now - cumTime;  // So elapsed = now - startTime - totalPaused = cumTime
+  S.pauseStart = now;           // Current pause started now
+  S.totalPaused = 0;            // No pause time accumulated yet in this session
 
   // Update display elements
   $('dJob').textContent = S.job;
