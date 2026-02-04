@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zaman-etudu-v37';
+const CACHE_NAME = 'zaman-etudu-v39';
 const ASSETS = [
   './',
   './index.html',
@@ -21,6 +21,7 @@ const ASSETS = [
   './js/summary.js',
   './js/export.js',
   './js/keyboard.js',
+  './js/tutorial.js',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
 ];
 

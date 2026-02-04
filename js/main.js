@@ -15,6 +15,7 @@ import { renderHistory, initHistoryEvents, updateHistoryLaps } from './history.j
 import { showSummary, rebuildSummary, initSummaryEvents, resetAll } from './summary.js';
 import { initExportEvents } from './export.js';
 import { initKeyboard } from './keyboard.js';
+import { initTutorial } from './tutorial.js';
 
 // Initialize application
 function init() {
@@ -31,6 +32,7 @@ function init() {
   initSummaryEvents();
   initExportEvents();
   initKeyboard();
+  initTutorial();
 
   // Menu navigation
   $('goMeasure').onclick = () => showScreen('modeSelect');
