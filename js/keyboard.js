@@ -4,7 +4,6 @@ import { $ } from './utils.js';
 import { S, curScreen } from './state.js';
 import { startT, pauseT, resumeT } from './timer.js';
 import { recordLap, delLap } from './laps.js';
-import { openNote } from './panels.js';
 import { closePanels, pushPanel } from './nav.js';
 import { changeTempo } from './tempo.js';
 
@@ -53,10 +52,6 @@ export function initKeyboard() {
         btn.classList.add('tag-pulse');
       }
       recordLap(i);
-    }
-    else if (keyLower === 'n') {
-      e.preventDefault();
-      openNote();
     }
     else if (keyLower === 'q') {
       e.preventDefault();

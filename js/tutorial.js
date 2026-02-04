@@ -2,7 +2,7 @@
 // "Nasıl Kullanılır?" öğretici sistemi
 // Dikey akış: Önce açıklama, sonra işaretlenmiş arayüz
 
-import { $, vib } from './utils.js';
+import { $, vib, goFS } from './utils.js';
 
 // Tutorial state
 let currentStep = 0;
@@ -168,7 +168,6 @@ const STEPS = [
       <p>Üst çubuk, ölçüm sırasında ihtiyaç duyacağınız kontrolleri barındırır:</p>
       <p><strong>İş ve Operatör Bilgisi</strong> — Hangi ölçümde olduğunuzu hatırlatır.</p>
       <p><strong>Duraklat/Devam</strong> — Kronometreyi durdurup tekrar başlatır. Molalarda veya beklenmedik durumlarda kullanın.</p>
-      <p><strong>Not Butonu</strong> — Son kaydedilen tura açıklayıcı not ekler. "Malzeme beklendi", "Makine arızası" gibi detayları kaydedin.</p>
       <p><strong>Bitir Butonu</strong> — Ölçümü sonlandırır ve özet ekranına geçer.</p>
       <div class="tut-callout tut-callout-tip">
         <span class="tut-callout-icon">💡</span>
@@ -311,7 +310,6 @@ const STEPS = [
         <div class="tut-shortcut"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> <span>Etiketli tur</span></div>
         <div class="tut-shortcut"><kbd>+</kbd><kbd>−</kbd> <span>Tempo ayarla</span></div>
         <div class="tut-shortcut"><kbd>P</kbd> <span>Duraklat</span></div>
-        <div class="tut-shortcut"><kbd>N</kbd> <span>Not ekle</span></div>
         <div class="tut-shortcut"><kbd>Q</kbd> <span>Bitir</span></div>
         <div class="tut-shortcut"><kbd>Del</kbd> <span>Son turu sil</span></div>
       </div>
@@ -542,9 +540,11 @@ function getMeasureHTML() {
           <div class="job-name">${EXAMPLE.job}</div>
           <div class="op-name">${EXAMPLE.op}</div>
         </div>
+        <button class="btn-pause-top visible">
+          <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          <span>Duraklat</span>
+        </button>
         <div class="top-bar-acts">
-          <button class="btn-ic" title="Duraklat"><svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button>
-          <button class="btn-ic" title="Not"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"/></svg></button>
           <button class="btn-ic danger" title="Bitir"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg></button>
         </div>
       </div>
@@ -754,12 +754,14 @@ function bindButton(id, handler) {
     if (handled) return;
     handled = true;
     setTimeout(() => handled = false, 400);
+    goFS();
     handler();
   }, { passive: false });
 
   btn.addEventListener('click', e => {
     if (handled) return;
     e.stopPropagation();
+    goFS();
     handler();
   });
 }
@@ -837,6 +839,10 @@ export function startTutorial() {
 
   document.body.appendChild(container);
 
+  // Fullscreen on any click/touch in tutorial
+  container.addEventListener('click', goFS);
+  container.addEventListener('touchend', goFS);
+
   bindButton('tutClose', closeTutorial);
   bindButton('tutSkip', closeTutorial);
   bindButton('tutPrev', prevStep);
@@ -849,6 +855,7 @@ export function startTutorial() {
     renderStep(0);
   }, 50);
 
+  goFS();
   vib(20);
 }
 

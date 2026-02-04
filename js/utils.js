@@ -59,3 +59,12 @@ export function dimColor(hex, a = 0.15) {
 export function getNow() {
   return performance.now();
 }
+
+// Request fullscreen (if not already)
+export function goFS() {
+  if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) return;
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else if (el.msRequestFullscreen) el.msRequestFullscreen();
+}

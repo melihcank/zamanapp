@@ -151,7 +151,6 @@ export function saveTempoEdit(updateHistoryLapsCallback, rebuildSummaryCallback)
 // Initialize panel events
 export function initPanelEvents(updateHistoryLapsCallback, rebuildSummaryCallback) {
   $('tpOv').onclick = closeTP;
-  $('bNote').onclick = openNote;
   $('noteOv').onclick = closeNote;
   $('noteSave').onclick = saveNote;
   $('teOv').onclick = closeTempoEdit;

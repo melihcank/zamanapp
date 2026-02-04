@@ -1,6 +1,6 @@
 // ===== MAIN APPLICATION =====
 
-import { $, toast, vib, esc, dimColor, getNow } from './utils.js';
+import { $, toast, vib, esc, dimColor, getNow, goFS } from './utils.js';
 import { STEP_COLORS } from './config.js';
 import { S, setMeasurementMode, setSequenceSteps, measurementMode, sequenceSteps, tags, setTags, setCurrentStep, setSequenceCycle } from './state.js';
 import { loadTags, saveHistory, loadHistory, loadAutoRecovery, clearAutoRecovery } from './storage.js';
@@ -304,14 +304,6 @@ function init() {
   };
 
   // Fullscreen - request on every interaction if not already fullscreen
-  function goFS() {
-    // Skip if already in fullscreen
-    if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) return;
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else if (el.msRequestFullscreen) el.msRequestFullscreen();
-  }
   document.addEventListener('click', goFS);
   document.addEventListener('touchend', goFS);
 
