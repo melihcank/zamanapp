@@ -431,7 +431,7 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .tutorial-overlay.open{opacity:1;transform:scale(1);pointer-events:auto}
 
 /* Tutorial Header */
-.tut-header{display:flex;align-items:center;justify-content:space-between;padding:clamp(12px,3vw,20px);background:var(--bg2);border-bottom:1px solid var(--bg4)}
+.tut-header{display:flex;align-items:center;justify-content:space-between;padding:clamp(10px,2.5vw,16px) clamp(12px,3vw,20px);background:var(--bg2);border-bottom:1px solid var(--bg4)}
 .tut-header-left{display:flex;align-items:center;gap:clamp(8px,2vw,12px);color:var(--acc);font-weight:700;font-size:clamp(14px,4vw,18px)}
 .tut-header-left svg{fill:var(--acc)}
 .tut-close{width:36px;height:36px;border-radius:50%;background:var(--bg3);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
@@ -442,30 +442,30 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .tut-progress{height:3px;background:var(--bg3)}
 .tut-progress-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--inf));transition:width .3s ease}
 
-/* Main Content */
-.tut-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-@media(min-width:768px){.tut-main{flex-direction:row}}
+/* Main Content - Vertical Flow */
+.tut-main{flex:1;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 
-/* Screen Preview Area */
-.tut-screen-area{flex:1;background:var(--bg);overflow-y:auto;padding:clamp(12px,3vw,24px);display:flex;flex-direction:column;align-items:center;border-bottom:1px solid var(--bg4)}
-@media(min-width:768px){.tut-screen-area{border-bottom:none;border-right:1px solid var(--bg4)}}
-.tut-screen-content{width:100%;max-width:400px;pointer-events:none}
-
-/* Info Panel */
-.tut-info-panel{padding:clamp(16px,4vw,28px);background:var(--bg2);min-height:180px;max-height:40vh;overflow-y:auto}
-@media(min-width:768px){.tut-info-panel{width:340px;max-height:none}}
-.tut-info-title{font-size:clamp(16px,4.5vw,22px);font-weight:700;color:var(--tx);margin-bottom:clamp(8px,2vw,16px);padding-bottom:clamp(8px,2vw,12px);border-bottom:2px solid var(--acc)}
-.tut-info-content{font-size:clamp(13px,3.5vw,15px);color:var(--tx2);line-height:1.6}
+/* Info Panel - Always on Top */
+.tut-info-panel{padding:clamp(16px,4vw,24px);background:var(--bg2);border-bottom:1px solid var(--bg4);flex-shrink:0}
+.tut-info-title{font-size:clamp(18px,5vw,24px);font-weight:700;color:var(--tx);margin-bottom:clamp(10px,2.5vw,16px)}
+.tut-info-content{font-size:clamp(14px,3.8vw,16px);color:var(--tx2);line-height:1.7}
 .tut-info-content p{margin-bottom:12px}
-.tut-info-content ul{margin:0;padding-left:20px}
-.tut-info-content li{margin-bottom:8px}
+.tut-info-content p:last-child{margin-bottom:0}
 .tut-info-content strong{color:var(--tx)}
 
+/* Screen Preview Area - Below Info */
+.tut-screen-area{flex:1;background:var(--bg);padding:clamp(16px,4vw,24px);display:flex;flex-direction:column;align-items:center}
+.tut-screen-content{width:100%;max-width:420px;pointer-events:none}
+
+/* Screen Label */
+.tut-screen-label{display:flex;align-items:center;gap:8px;margin-bottom:clamp(12px,3vw,16px);padding:8px 14px;background:var(--acc-d);border-radius:var(--r-pill);align-self:flex-start;font-size:clamp(11px,3vw,13px);font-weight:600;color:var(--acc)}
+.tut-screen-label svg{width:16px;height:16px;fill:var(--acc)}
+
 /* Footer */
-.tut-footer{display:flex;align-items:center;justify-content:space-between;padding:clamp(12px,3vw,16px);background:var(--bg2);border-top:1px solid var(--bg4);gap:12px}
-.tut-nav{display:flex;align-items:center;gap:clamp(8px,2vw,16px)}
+.tut-footer{display:flex;align-items:center;justify-content:space-between;padding:clamp(10px,2.5vw,14px) clamp(12px,3vw,20px);background:var(--bg2);border-top:1px solid var(--bg4);gap:10px;flex-shrink:0}
+.tut-nav{display:flex;align-items:center;gap:clamp(8px,2vw,12px)}
 .tut-step-counter{font-size:clamp(11px,3vw,13px);color:var(--tx3);font-family:var(--mono);min-width:50px;text-align:center}
-.tut-btn{display:flex;align-items:center;gap:6px;padding:clamp(8px,2vw,12px) clamp(12px,3vw,20px);font-size:clamp(12px,3.2vw,14px);font-weight:600;font-family:var(--sans);border:none;border-radius:var(--r-md);cursor:pointer;transition:all .2s}
+.tut-btn{display:flex;align-items:center;gap:6px;padding:clamp(10px,2.5vw,12px) clamp(14px,3.5vw,20px);font-size:clamp(13px,3.5vw,15px);font-weight:600;font-family:var(--sans);border:none;border-radius:var(--r-md);cursor:pointer;transition:all .2s}
 .tut-btn svg{width:18px;height:18px}
 .tut-btn-skip{background:transparent;color:var(--tx3)}
 .tut-btn-skip:hover{color:var(--tx2)}
@@ -480,72 +480,58 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .tut-highlighted::after{content:'';position:absolute;inset:-4px;border:2px solid var(--acc);border-radius:var(--r-md);animation:tut-pulse 1.5s ease-in-out infinite;pointer-events:none}
 @keyframes tut-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,200,83,.4)}50%{box-shadow:0 0 0 8px rgba(0,200,83,0)}}
 
-/* Welcome Screen */
-.tut-welcome{text-align:center;padding:clamp(16px,4vw,32px) 0}
-.tut-welcome-icon{width:80px;height:80px;margin:0 auto clamp(16px,4vw,24px);border-radius:50%;background:var(--acc-d);display:flex;align-items:center;justify-content:center}
-.tut-welcome-icon svg{width:48px;height:48px;fill:var(--acc)}
-.tut-welcome p{font-size:clamp(14px,3.8vw,16px);color:var(--tx2);margin-bottom:clamp(16px,4vw,24px)}
-.tut-features{display:grid;grid-template-columns:1fr 1fr;gap:clamp(8px,2vw,12px)}
-.tut-feature{display:flex;align-items:center;gap:8px;padding:clamp(8px,2vw,12px);background:var(--bg3);border-radius:var(--r-md);font-size:clamp(11px,3vw,13px);color:var(--tx2)}
-.tut-feature-icon{font-size:clamp(16px,4vw,20px)}
+/* Callout Boxes */
+.tut-callout{display:flex;gap:12px;padding:14px 16px;border-radius:var(--r-md);margin:16px 0;font-size:clamp(13px,3.5vw,14px);line-height:1.6}
+.tut-callout-icon{font-size:20px;flex-shrink:0}
+.tut-callout-tip{background:var(--inf-d);color:var(--inf)}
+.tut-callout-success{background:var(--ok-d);color:var(--ok)}
+.tut-callout-warn{background:var(--wrn-d);color:var(--wrn)}
 
-/* Mode Cards in Tutorial */
-.tut-modes{display:flex;flex-direction:column;gap:12px;margin-top:12px}
-.tut-mode{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:var(--r-md)}
-.tut-mode-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
-.tut-mode strong{display:block;color:var(--tx);font-size:13px}
-.tut-mode span{font-size:11px;color:var(--tx3)}
+/* Feature Grid - Welcome */
+.tut-features{display:flex;flex-direction:column;gap:12px;margin:16px 0}
+.tut-feature{display:flex;align-items:flex-start;gap:14px;padding:16px;background:var(--bg3);border-radius:var(--r-md)}
+.tut-feature-icon{font-size:28px;line-height:1}
+.tut-feature-text h4{font-size:clamp(14px,3.8vw,16px);font-weight:700;color:var(--tx);margin-bottom:4px}
+.tut-feature-text p{font-size:clamp(12px,3.2vw,14px);color:var(--tx2);line-height:1.5;margin:0}
 
-/* List Style */
-.tut-list{margin:12px 0;padding-left:0;list-style:none}
-.tut-list li{position:relative;padding-left:20px;margin-bottom:10px}
-.tut-list li::before{content:'';position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+/* Intro Stats */
+.tut-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.tut-stat{text-align:center;padding:14px 8px;background:var(--bg3);border-radius:var(--r-md)}
+.tut-stat-value{font-size:clamp(20px,5vw,28px);font-weight:700;color:var(--acc);display:block}
+.tut-stat-label{font-size:clamp(10px,2.8vw,12px);color:var(--tx3);margin-top:4px}
 
-/* Tip Style */
-.tut-tip{display:flex;align-items:flex-start;gap:8px;padding:12px;background:var(--inf-d);border-radius:var(--r-md);font-size:clamp(11px,3vw,13px);color:var(--inf);margin-top:12px}
+/* Keyboard Shortcuts */
+.tut-shortcuts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}
+.tut-shortcut{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:var(--r-sm);font-size:clamp(11px,3vw,13px);color:var(--tx2)}
+.tut-shortcut kbd{display:inline-flex;align-items:center;justify-content:center;min-width:24px;padding:3px 7px;background:var(--bg);border:1px solid var(--bg4);border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--tx);font-weight:600}
 
-/* Lap Demo */
-.tut-lap-demo{margin:16px 0}
-.tut-lap-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--r-md)}
-.tut-lap-num{font-family:var(--mono);font-weight:700;color:var(--tx3);font-size:12px}
-.tut-lap-time{font-family:var(--mono);font-weight:600;color:var(--acc);font-size:14px}
-.tut-lap-tag{padding:2px 8px;border-radius:var(--r-pill);font-size:10px;font-weight:600;color:#000}
+/* Gestures */
+.tut-gestures{display:flex;flex-direction:column;gap:10px;margin:12px 0}
+.tut-gesture{display:flex;align-items:center;gap:14px;padding:12px 14px;background:var(--bg3);border-radius:var(--r-md)}
+.tut-gesture-icon{width:40px;height:40px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.tut-gesture-text{flex:1}
+.tut-gesture-text strong{display:block;font-size:clamp(13px,3.5vw,15px);color:var(--tx);margin-bottom:2px}
+.tut-gesture-text span{font-size:clamp(11px,3vw,13px);color:var(--tx3)}
 
-/* Interactions List */
-.tut-interactions{display:flex;flex-direction:column;gap:8px;margin-top:12px}
-.tut-interaction{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg3);border-radius:var(--r-md)}
-.tut-int-icon{font-size:20px;width:32px;text-align:center}
-.tut-interaction strong{display:block;color:var(--tx);font-size:12px}
-.tut-interaction span{font-size:11px;color:var(--tx3)}
-
-/* Shortcuts */
-.tut-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.tut-shortcut{display:flex;align-items:center;gap:8px;font-size:clamp(10px,2.8vw,12px);color:var(--tx2)}
-.tut-shortcut kbd{display:inline-block;padding:2px 6px;background:var(--bg3);border:1px solid var(--bg4);border-radius:4px;font-family:var(--mono);font-size:10px;color:var(--tx)}
-
-/* Finish Screen */
-.tut-finish{text-align:center;padding:clamp(16px,4vw,24px) 0}
-.tut-finish-icon{font-size:clamp(48px,12vw,64px);margin-bottom:16px}
-.tut-finish p{font-size:clamp(14px,3.8vw,16px);color:var(--tx);margin-bottom:20px}
-.tut-finish-tips{text-align:left;padding:16px;background:var(--bg3);border-radius:var(--r-md)}
-.tut-finish-tips strong{display:block;margin-bottom:8px;color:var(--acc)}
-.tut-finish-tips ul{margin:0;padding-left:20px}
-.tut-finish-tips li{margin-bottom:6px;font-size:13px;color:var(--tx2)}
+/* Finish */
+.tut-finish{text-align:center;padding:clamp(24px,6vw,40px) 0}
+.tut-finish-icon{font-size:clamp(56px,14vw,72px);margin-bottom:20px}
+.tut-finish h2{font-size:clamp(20px,5.5vw,26px);font-weight:700;color:var(--tx);margin-bottom:12px}
+.tut-finish p{font-size:clamp(14px,3.8vw,16px);color:var(--tx2);max-width:320px;margin:0 auto 24px;line-height:1.6}
+.tut-finish-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:340px;margin:0 auto}
+.tut-finish-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg3);border-radius:var(--r-md);text-align:left;font-size:clamp(12px,3.2vw,14px);color:var(--tx2)}
+.tut-finish-item span:first-child{font-size:18px}
 
 /* Tutorial Menu Button */
 .menu-btn-help{background:var(--bg3);border:2px solid var(--bg4);color:var(--tx)}
 .menu-btn-help:hover,.menu-btn-help:active{border-color:var(--inf);color:var(--inf);background:var(--inf-d)}
 .menu-btn-help svg{fill:currentColor;width:20px;height:20px}
 
-/* Measure screen in tutorial */
+/* Screen specific styles */
 .tut-measure .timer-area{padding:12px 0;pointer-events:none}
-.tut-measure .timer-ring{width:180px;height:180px}
-.tut-measure .timer-time{font-size:42px}
-.tut-measure .timer-ms{font-size:24px}
-.tut-measure .lap-wrap{max-height:200px;overflow-y:auto}
-
-/* Summary in tutorial */
+.tut-measure .timer-ring{width:clamp(140px,35vw,180px);height:clamp(140px,35vw,180px)}
+.tut-measure .timer-time{font-size:clamp(32px,8vw,42px)}
+.tut-measure .timer-ms{font-size:clamp(18px,5vw,24px)}
+.tut-measure .lap-wrap{max-height:160px;overflow-y:auto}
 .tut-summary{overflow-y:auto;max-height:100%}
-
-/* History in tutorial */
 .tut-history .hi-card{margin-bottom:8px}
