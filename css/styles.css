@@ -533,9 +533,9 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .tut-finish-tips li{margin-bottom:6px;font-size:13px;color:var(--tx2)}
 
 /* Tutorial Menu Button */
-.menu-btn-help{background:transparent;border:2px solid var(--bg4);color:var(--tx2)}
-.menu-btn-help:hover{border-color:var(--acc);color:var(--acc)}
-.menu-btn-help svg{fill:currentColor}
+.menu-btn-help{background:var(--bg3);border:2px solid var(--bg4);color:var(--tx)}
+.menu-btn-help:hover,.menu-btn-help:active{border-color:var(--inf);color:var(--inf);background:var(--inf-d)}
+.menu-btn-help svg{fill:currentColor;width:20px;height:20px}
 
 /* Measure screen in tutorial */
 .tut-measure .timer-area{padding:12px 0;pointer-events:none}

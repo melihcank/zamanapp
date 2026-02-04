@@ -35,32 +35,100 @@ const EXAMPLE_DATA = {
 // Tutorial adımları
 const TUTORIAL_STEPS = [
   {
-    id: 'welcome',
-    title: 'Zaman Etüdü Uygulamasına Hoş Geldiniz',
+    id: 'intro',
+    title: 'Zaman Etüdü Nedir?',
     content: `
       <div class="tut-welcome">
         <div class="tut-welcome-icon">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>
         </div>
-        <p>Bu rehber size uygulamayı nasıl kullanacağınızı adım adım gösterecek.</p>
+        <p><strong>Zaman Etüdü</strong>, bir işin yapılması için gereken standart süreyi bilimsel olarak belirleme yöntemidir. Endüstri mühendisliğinin temel araçlarından biridir.</p>
+        <p style="margin-top:12px;color:var(--tx2)">Bu uygulama ile sahada, üretim hattında veya herhangi bir iş ortamında profesyonel zaman ölçümü yapabilir, verileri analiz edebilir ve raporlayabilirsiniz.</p>
+      </div>
+    `,
+    screen: 'menu',
+    highlight: null,
+    position: 'center'
+  },
+  {
+    id: 'benefits',
+    title: 'Bu Uygulama Ne İşe Yarar?',
+    content: `
+      <div class="tut-welcome">
+        <p style="margin-bottom:16px">Zaman Etüdü uygulaması ile şunları yapabilirsiniz:</p>
         <div class="tut-features">
           <div class="tut-feature">
             <span class="tut-feature-icon">⏱️</span>
-            <span>Hassas zaman ölçümü</span>
+            <div>
+              <strong>Standart Süre Belirleme</strong>
+              <span style="display:block;font-size:12px;color:var(--tx2)">Bir işin ne kadar sürmesi gerektiğini objektif olarak tespit edin</span>
+            </div>
           </div>
           <div class="tut-feature">
             <span class="tut-feature-icon">📊</span>
-            <span>Otomatik istatistikler</span>
+            <div>
+              <strong>Verimlilik Analizi</strong>
+              <span style="display:block;font-size:12px;color:var(--tx2)">Üretim kapasitesini, darboğazları ve iyileştirme alanlarını keşfedin</span>
+            </div>
           </div>
           <div class="tut-feature">
-            <span class="tut-feature-icon">📱</span>
-            <span>Mobil uyumlu</span>
+            <span class="tut-feature-icon">💰</span>
+            <div>
+              <strong>Maliyet Hesaplama</strong>
+              <span style="display:block;font-size:12px;color:var(--tx2)">İşçilik maliyetlerini doğru hesaplayın, fiyatlandırma yapın</span>
+            </div>
           </div>
           <div class="tut-feature">
-            <span class="tut-feature-icon">💾</span>
-            <span>Otomatik kayıt</span>
+            <span class="tut-feature-icon">📈</span>
+            <div>
+              <strong>Kapasite Planlama</strong>
+              <span style="display:block;font-size:12px;color:var(--tx2)">Saatlik/günlük üretim miktarını öngörün, iş gücü planlayın</span>
+            </div>
           </div>
         </div>
+      </div>
+    `,
+    screen: 'menu',
+    highlight: null,
+    position: 'center'
+  },
+  {
+    id: 'welcome',
+    title: 'Uygulama Özellikleri',
+    content: `
+      <div class="tut-welcome">
+        <p style="margin-bottom:16px">Bu uygulama profesyonel zaman etüdü için ihtiyacınız olan her şeyi sunar:</p>
+        <div class="tut-features">
+          <div class="tut-feature">
+            <span class="tut-feature-icon">📱</span>
+            <div>
+              <strong>Her Yerde Kullanım</strong>
+              <span style="display:block;font-size:12px;color:var(--tx2)">Telefon, tablet veya bilgisayardan çalışır. İnternet gerekmez.</span>
+            </div>
+          </div>
+          <div class="tut-feature">
+            <span class="tut-feature-icon">🏷️</span>
+            <div>
+              <strong>Anomali Etiketleme</strong>
+              <span style="display:block;font-size:12px;color:var(--tx2)">Bekleme, arıza, hurda gibi durumları işaretleyin, analizden hariç tutun</span>
+            </div>
+          </div>
+          <div class="tut-feature">
+            <span class="tut-feature-icon">⚡</span>
+            <div>
+              <strong>Tempo Değerlendirmesi</strong>
+              <span style="display:block;font-size:12px;color:var(--tx2)">Çalışanın hızını değerlendirip normal süreyi hesaplayın</span>
+            </div>
+          </div>
+          <div class="tut-feature">
+            <span class="tut-feature-icon">📋</span>
+            <div>
+              <strong>Excel Raporları</strong>
+              <span style="display:block;font-size:12px;color:var(--tx2)">Profesyonel raporlar oluşturun, paylaşın ve arşivleyin</span>
+            </div>
+          </div>
+        </div>
+        <p class="tut-tip" style="margin-top:16px">💡 Şimdi uygulamayı adım adım tanıyalım!</p>
       </div>
     `,
     screen: 'menu',
@@ -71,12 +139,13 @@ const TUTORIAL_STEPS = [
     id: 'menu-overview',
     title: 'Ana Menü',
     content: `
-      <p>Bu ana menü ekranıdır. Buradan tüm işlemlere erişebilirsiniz.</p>
+      <p>Ana menü, uygulamanın giriş noktasıdır. Buradan tüm temel işlemlere tek dokunuşla erişebilirsiniz.</p>
       <ul class="tut-list">
-        <li><strong>Zaman Tut:</strong> Yeni ölçüm başlatır</li>
-        <li><strong>Etiketleri Düzenle:</strong> Anomali etiketlerini özelleştirir</li>
-        <li><strong>Geçmiş Veriler:</strong> Kayıtlı ölçümleri görüntüler</li>
+        <li><strong>Zaman Tut:</strong> Yeni bir ölçüm başlatır. İş ve operatör bilgilerini girdikten sonra ölçüme geçersiniz.</li>
+        <li><strong>Etiketleri Düzenle:</strong> Anomali etiketlerinin isimlerini, renklerini ve simgelerini özelleştirin. Her sektörün ihtiyacına göre uyarlayın.</li>
+        <li><strong>Geçmiş Veriler:</strong> Daha önce kaydettiğiniz tüm ölçümlere erişin, inceleyin veya Excel olarak dışa aktarın.</li>
       </ul>
+      <p class="tut-tip">💡 Uygulama açılır açılmaz ölçüme başlayabilirsiniz. Kurulum gerektirmez!</p>
     `,
     screen: 'menu',
     highlight: '.menu-btns',
@@ -86,19 +155,20 @@ const TUTORIAL_STEPS = [
     id: 'mode-select',
     title: 'Ölçüm Modu Seçimi',
     content: `
-      <p>İki farklı ölçüm modu vardır:</p>
+      <p>İhtiyacınıza göre iki farklı ölçüm modu arasından seçim yapabilirsiniz:</p>
       <div class="tut-modes">
         <div class="tut-mode">
           <div class="tut-mode-icon" style="background:var(--acc-d)">🔄</div>
           <strong>Tekrarlı Ölçüm</strong>
-          <span>Aynı işlem tekrar tekrar ölçülür</span>
+          <span>Aynı işlem tekrar tekrar yapılır ve her seferinde süre kaydedilir. Örneğin: Bir vidayı sıkma, bir kutuyu paketleme, bir formu doldurma gibi tekrarlanan işler.</span>
         </div>
         <div class="tut-mode">
           <div class="tut-mode-icon" style="background:var(--inf-d)">📋</div>
           <strong>Ardışık İşlem</strong>
-          <span>Farklı adımlar sırasıyla ölçülür</span>
+          <span>Bir işin farklı adımları sırasıyla ölçülür. Örneğin: Parça al → Yerleştir → Vidala → Kontrol et şeklinde aşamalı işler.</span>
         </div>
       </div>
+      <p class="tut-tip" style="margin-top:12px">💡 Çoğu zaman etüdü için <strong>Tekrarlı Ölçüm</strong> idealdir. Ardışık mod, iş analizi ve süreç haritalama için kullanılır.</p>
     `,
     screen: 'mode-select',
     highlight: '.mode-cards',
@@ -108,12 +178,12 @@ const TUTORIAL_STEPS = [
     id: 'setup',
     title: 'Ölçüm Bilgileri',
     content: `
-      <p>Ölçüme başlamadan önce temel bilgileri girin:</p>
+      <p>Ölçüme başlamadan önce kayıt için gerekli temel bilgileri girin. Bu bilgiler raporlarınızda ve geçmiş kayıtlarında görünecektir.</p>
       <ul class="tut-list">
-        <li><strong>Operatör Adı:</strong> İşi yapan kişi</li>
-        <li><strong>İş Adı:</strong> Ölçülen işlemin tanımı</li>
+        <li><strong>Operatör Adı:</strong> İşi yapan kişinin adı. Farklı operatörlerin performansını karşılaştırmanıza olanak tanır.</li>
+        <li><strong>İş / Proses Adı:</strong> Ölçtüğünüz işlemin tanımlayıcı adı. Örneğin: "Montaj Hattı A - Vida Takma", "Paketleme İstasyonu 3" gibi.</li>
       </ul>
-      <p class="tut-tip">💡 Bu bilgiler raporlarda ve geçmişte görünecektir.</p>
+      <p class="tut-tip">💡 Açıklayıcı isimler kullanın. Daha sonra geçmiş verilerinizi ararken işinizi kolaylaştırır.</p>
     `,
     screen: 'setup',
     highlight: '.setup-form',
@@ -121,9 +191,18 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'measure-overview',
-    title: 'Ölçüm Ekranı',
+    title: 'Ölçüm Ekranı - Genel Bakış',
     content: `
-      <p>Bu ana ölçüm ekranıdır. Şimdi her bölümü inceleyelim.</p>
+      <p>Bu, uygulamanın kalbi olan ana ölçüm ekranıdır. Tüm zaman kaydı işlemleri burada gerçekleşir.</p>
+      <p style="margin-top:12px">Ekran şu ana bölümlerden oluşur:</p>
+      <ul class="tut-list">
+        <li><strong>Üst çubuk:</strong> İş bilgileri, duraklat/devam ve bitir kontrolleri</li>
+        <li><strong>Etiket butonları:</strong> Anomali durumları için hızlı işaretleme</li>
+        <li><strong>Kronometre:</strong> Dokunarak tur kaydı yapılan merkezi alan</li>
+        <li><strong>Tempo ayarı:</strong> Çalışan hızı değerlendirmesi</li>
+        <li><strong>Tur listesi:</strong> Kaydedilen tüm turların görüntülendiği alan</li>
+      </ul>
+      <p class="tut-tip">💡 Şimdi her bir bölümü detaylıca inceleyelim.</p>
     `,
     screen: 'measure',
     highlight: null,
@@ -133,12 +212,14 @@ const TUTORIAL_STEPS = [
     id: 'measure-topbar',
     title: 'Üst Kontrol Çubuğu',
     content: `
-      <p>Üst çubukta önemli kontroller bulunur:</p>
+      <p>Üst çubuk, ölçüm sırasında ihtiyaç duyacağınız kontrolleri barındırır:</p>
       <ul class="tut-list">
-        <li><strong>Duraklat/Devam:</strong> Kronometreyi kontrol eder</li>
-        <li><strong>Not (N):</strong> Son tura not ekler</li>
-        <li><strong>Bitir (■):</strong> Ölçümü sonlandırır</li>
+        <li><strong>İş ve Operatör Bilgisi:</strong> Hangi ölçümde olduğunuzu hatırlatır</li>
+        <li><strong>Duraklat/Devam:</strong> Kronometreyi durdurup tekrar başlatmanızı sağlar. Molalarda veya beklenmedik durumlarda kullanın.</li>
+        <li><strong>Not Butonu:</strong> Son kaydedilen tura açıklayıcı not ekler. "Malzeme beklendi", "Makine arızası" gibi detayları kaydedin.</li>
+        <li><strong>Bitir Butonu:</strong> Ölçümü sonlandırır ve özet ekranına geçer. Yeterli veri topladığınızda kullanın.</li>
       </ul>
+      <p class="tut-tip">💡 Ölçümü bitirmeden önce en az 5-10 tur kaydetmeniz önerilir. Daha fazla veri = daha güvenilir sonuç!</p>
     `,
     screen: 'measure',
     highlight: '.top-bar',
@@ -146,15 +227,16 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'measure-timer',
-    title: 'Kronometre',
+    title: 'Kronometre Alanı',
     content: `
-      <p>Merkezdeki kronometre alanı:</p>
+      <p>Merkezdeki kronometre, uygulamanın en önemli bileşenidir. Ölçüm burada gerçekleşir.</p>
       <ul class="tut-list">
-        <li><strong>Dokunma/Tıklama:</strong> İlk dokunuşta başlar, sonrakilerde tur kaydeder</li>
-        <li><strong>Halka:</strong> Dakika ilerlemesini gösterir</li>
-        <li><strong>Süre:</strong> Geçen zamanı MM:SS.ms formatında gösterir</li>
+        <li><strong>İlk Dokunuş:</strong> Kronometreyi başlatır. İşçi işe başladığında dokunun.</li>
+        <li><strong>Sonraki Dokunuşlar:</strong> Her dokunuşta bir tur kaydedilir ve kronometre sıfırlanır. İşçi işi tamamladığında dokunun.</li>
+        <li><strong>Görsel Halka:</strong> Dakika ilerlemesini gösterir. Uzun süren işlerde referans sağlar.</li>
+        <li><strong>Süre Göstergesi:</strong> Geçen zamanı dakika:saniye.milisaniye formatında gösterir.</li>
       </ul>
-      <p class="tut-tip">💡 Her dokunuşta hafif titreşim geri bildirimi alırsınız.</p>
+      <p class="tut-tip">💡 Dokunduğunuzda hafif titreşim hissedersiniz - bu, turun kaydedildiğinin onayıdır. Gözünüz işçide kalabilir!</p>
     `,
     screen: 'measure',
     highlight: '.timer-ring',
@@ -162,15 +244,17 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'measure-tempo',
-    title: 'Tempo Ayarı',
+    title: 'Tempo Değerlendirmesi',
     content: `
-      <p>Sağdaki tempo tekerleği çalışan hızını ayarlar:</p>
+      <p>Tempo ayarı, zaman etüdünün en kritik özelliklerinden biridir. Çalışanın performans hızını değerlendirmenizi sağlar.</p>
       <ul class="tut-list">
-        <li><strong>%100:</strong> Normal hız</li>
-        <li><strong>%100+:</strong> Normalden hızlı çalışıyor</li>
-        <li><strong>%100-:</strong> Normalden yavaş çalışıyor</li>
+        <li><strong>%100 (Normal):</strong> Çalışan standart, sürdürülebilir bir hızda çalışıyor</li>
+        <li><strong>%100 üzeri:</strong> Çalışan normalden hızlı çalışıyor (örn: %110, %120)</li>
+        <li><strong>%100 altı:</strong> Çalışan normalden yavaş çalışıyor (örn: %90, %85)</li>
       </ul>
-      <p class="tut-tip">💡 Tempo, "Normal Süre" hesaplamasında kullanılır.</p>
+      <p style="margin-top:12px">Tempo değerlendirmesi sayesinde <strong>"Normal Süre"</strong> hesaplanır:</p>
+      <p style="background:var(--bg3);padding:8px 12px;border-radius:6px;margin-top:8px;font-family:monospace">Normal Süre = Gözlenen Süre × (Tempo / 100)</p>
+      <p class="tut-tip">💡 Tekerleği yukarı/aşağı kaydırarak veya +/- tuşlarıyla tempo değiştirin. Her tur için ayrı tempo belirlenebilir.</p>
     `,
     screen: 'measure',
     highlight: '.tempo-picker',
@@ -180,13 +264,15 @@ const TUTORIAL_STEPS = [
     id: 'measure-tags',
     title: 'Anomali Etiketleri',
     content: `
-      <p>Renkli butonlar anomali etiketleridir:</p>
+      <p>Etiketler, normal çevrim dışı durumları işaretlemenizi sağlar. Etiketli turlar istatistiklerden hariç tutulabilir.</p>
       <ul class="tut-list">
-        <li>Dokunulduğunda <strong>etiketli tur</strong> kaydeder</li>
-        <li>Bekleme, hurda, arıza gibi durumları işaretler</li>
-        <li>Etiketler özelleştirilebilir</li>
+        <li><strong>Bekleme:</strong> Malzeme bekleme, talimat bekleme gibi duraklamalar</li>
+        <li><strong>Hurda:</strong> Hatalı parça, yeniden işleme gerektiren durumlar</li>
+        <li><strong>Arıza:</strong> Makine veya ekipman arızaları</li>
+        <li><strong>Ayar:</strong> Makine ayarı, kalıp değişimi gibi hazırlık işleri</li>
       </ul>
-      <p class="tut-tip">💡 Klavyede 1, 2, 3, 4 tuşları da kullanılabilir.</p>
+      <p style="margin-top:12px">Etiketli tur kaydetmek için: İşçi anormal bir durumla karşılaştığında, kronometre yerine ilgili etiket butonuna dokunun.</p>
+      <p class="tut-tip">💡 Etiketleri ana menüden özelleştirebilirsiniz. Sektörünüze uygun isimler ve renkler belirleyin!</p>
     `,
     screen: 'measure',
     highlight: '.tag-strip',
@@ -196,7 +282,7 @@ const TUTORIAL_STEPS = [
     id: 'measure-laps',
     title: 'Tur Kartları',
     content: `
-      <p>Kaydedilen her tur bir kart olarak görünür:</p>
+      <p>Kaydedilen her tur, detaylı bilgilerle birlikte bir kart olarak listelenir. En son tur en üstte görünür.</p>
       <div class="tut-lap-demo">
         <div class="tut-lap-card">
           <div class="tut-lap-num">#3</div>
@@ -204,7 +290,14 @@ const TUTORIAL_STEPS = [
           <div class="tut-lap-tag" style="background:#ffab00">Bekleme</div>
         </div>
       </div>
-      <p>Her kartta: Tur no, süre, tempo, etiket ve not görünür.</p>
+      <p style="margin-top:12px">Her kartta şunları görebilirsiniz:</p>
+      <ul class="tut-list">
+        <li><strong>Tur numarası:</strong> Kaçıncı tur olduğu (#1, #2, #3...)</li>
+        <li><strong>Süre:</strong> O turun kaç saniye sürdüğü</li>
+        <li><strong>Tempo rozeti:</strong> Eğer %100'den farklıysa gösterilir</li>
+        <li><strong>Etiket rozeti:</strong> Varsa anomali etiketi</li>
+        <li><strong>Not:</strong> Eklendiyse açıklama metni</li>
+      </ul>
     `,
     screen: 'measure',
     highlight: '.lap-wrap',
@@ -212,39 +305,40 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'lap-interactions',
-    title: 'Tur Kartı Etkileşimleri',
+    title: 'Tur Kartı İşlemleri',
     content: `
-      <p>Tur kartlarıyla şu şekillerde etkileşime geçebilirsiniz:</p>
+      <p>Kaydedilen turları düzenlemek veya yönetmek için çeşitli hareketler kullanabilirsiniz:</p>
       <div class="tut-interactions">
         <div class="tut-interaction">
           <span class="tut-int-icon">👉</span>
           <div>
             <strong>Sağa Kaydır</strong>
-            <span>Not ekleme panelini açar</span>
+            <span>Not ekleme/düzenleme panelini açar. Tura açıklama eklemek için kullanın.</span>
           </div>
         </div>
         <div class="tut-interaction">
           <span class="tut-int-icon">👈</span>
           <div>
             <strong>Sola Kaydır</strong>
-            <span>Turu siler</span>
+            <span>Turu siler. Yanlışlıkla kaydedilen veya geçersiz turları kaldırın.</span>
           </div>
         </div>
         <div class="tut-interaction">
           <span class="tut-int-icon">👆</span>
           <div>
-            <strong>Uzun Basma</strong>
-            <span>Etiket seçici açar (mobil)</span>
+            <strong>Uzun Basma (Mobil)</strong>
+            <span>Etiket seçici açar. Mevcut bir tura sonradan etiket ekleyin veya değiştirin.</span>
           </div>
         </div>
         <div class="tut-interaction">
           <span class="tut-int-icon">🖱️</span>
           <div>
-            <strong>Sağ Tık</strong>
-            <span>Etiket seçici açar (PC)</span>
+            <strong>Sağ Tık (PC)</strong>
+            <span>Uzun basma ile aynı işlevi görür. Bilgisayarda etiket seçici açar.</span>
           </div>
         </div>
       </div>
+      <p class="tut-tip">💡 Hatalı kayıtları hemen silmenize gerek yok - özet ekranında da düzenleme yapabilirsiniz.</p>
     `,
     screen: 'measure',
     highlight: '.lap-wrap',
@@ -252,18 +346,19 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'keyboard',
-    title: 'Klavye Kısayolları (PC)',
+    title: 'Klavye Kısayolları',
     content: `
-      <p>Bilgisayarda bu kısayolları kullanabilirsiniz:</p>
+      <p>Bilgisayarda kullanırken klavye kısayolları ile çok daha hızlı çalışabilirsiniz. Eller klavyeden ayrılmadan tam kontrol:</p>
       <div class="tut-shortcuts">
-        <div class="tut-shortcut"><kbd>Space</kbd> <span>Tur kaydet</span></div>
-        <div class="tut-shortcut"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> <span>Etiketli tur</span></div>
-        <div class="tut-shortcut"><kbd>+</kbd><kbd>−</kbd> <span>Tempo ayarla</span></div>
-        <div class="tut-shortcut"><kbd>P</kbd> <span>Duraklat</span></div>
-        <div class="tut-shortcut"><kbd>N</kbd> <span>Not ekle</span></div>
-        <div class="tut-shortcut"><kbd>Q</kbd> <span>Bitir</span></div>
-        <div class="tut-shortcut"><kbd>Del</kbd> <span>Son turu sil</span></div>
+        <div class="tut-shortcut"><kbd>Space</kbd> <span>Tur kaydet (tıklama yerine)</span></div>
+        <div class="tut-shortcut"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd> <span>Etiketli tur kaydet</span></div>
+        <div class="tut-shortcut"><kbd>+</kbd><kbd>−</kbd> <span>Tempo artır/azalt (%5'lik adımlarla)</span></div>
+        <div class="tut-shortcut"><kbd>P</kbd> <span>Duraklat / Devam et</span></div>
+        <div class="tut-shortcut"><kbd>N</kbd> <span>Son tura not ekle</span></div>
+        <div class="tut-shortcut"><kbd>Q</kbd> <span>Ölçümü bitir</span></div>
+        <div class="tut-shortcut"><kbd>Del</kbd> <span>Son turu sil (geri al)</span></div>
       </div>
+      <p class="tut-tip">💡 Video kaydı izlerken zaman etüdü yapıyorsanız klavye kısayolları vazgeçilmezdir!</p>
     `,
     screen: 'measure',
     highlight: '.kb-bar',
@@ -271,16 +366,18 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'summary',
-    title: 'Özet Ekranı',
+    title: 'Özet ve İstatistikler',
     content: `
-      <p>Ölçüm bittiğinde detaylı istatistikler görürsünüz:</p>
+      <p>Ölçüm tamamlandığında kapsamlı bir istatistik raporu görürsünüz. Bu veriler, standart süre belirlemenin temelidir.</p>
       <ul class="tut-list">
-        <li><strong>Gözlem sayısı</strong> ve gerekli gözlem</li>
-        <li><strong>Ortalama, Medyan, Min, Max</strong></li>
-        <li><strong>Standart Sapma, CV%</strong></li>
-        <li><strong>%95 Güven Aralığı</strong></li>
-        <li><strong>Saatlik üretim</strong> kapasitesi</li>
+        <li><strong>Gözlem Sayısı:</strong> Kaç tur kaydettiğiniz ve istatistiksel güvenilirlik için kaç gözlem gerektiği</li>
+        <li><strong>Ortalama / Medyan:</strong> Merkezi eğilim ölçüleri. Medyan aykırı değerlerden etkilenmez.</li>
+        <li><strong>Min / Max:</strong> En kısa ve en uzun süren turlar</li>
+        <li><strong>Standart Sapma:</strong> Sürelerin ortalamadan ne kadar saptığı (tutarlılık göstergesi)</li>
+        <li><strong>CV% (Değişkenlik Katsayısı):</strong> Göreceli değişkenlik. %15'in altı iyi kabul edilir.</li>
+        <li><strong>Saatlik Üretim:</strong> Bu süreyle saatte kaç adet üretilebileceği</li>
       </ul>
+      <p class="tut-tip">💡 CV% yüksekse, süreçte tutarsızlık var demektir. Nedenini araştırın!</p>
     `,
     screen: 'summary',
     highlight: '.sum-compare',
@@ -288,14 +385,19 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'summary-actions',
-    title: 'Özet İşlemleri',
+    title: 'Özet Ekranı İşlemleri',
     content: `
-      <p>Özet ekranında yapabilecekleriniz:</p>
+      <p>Özet ekranında ölçüm verilerinizi yönetebilir ve dışa aktarabilirsiniz:</p>
       <ul class="tut-list">
-        <li><strong>Excel:</strong> Detaylı raporu indir</li>
-        <li><strong>Devam Et:</strong> Ölçüme geri dön</li>
-        <li><strong>Tur düzenleme:</strong> Etiket, tempo değiştir veya sil</li>
-        <li><strong>Filtreler:</strong> Aykırı verileri hariç tut</li>
+        <li><strong>Excel İndir:</strong> Tüm detayları içeren profesyonel bir Excel raporu oluşturur. Tur tur veriler, istatistikler ve grafikler için hazır format.</li>
+        <li><strong>Devam Et:</strong> Ölçüme geri döner ve daha fazla tur eklemenizi sağlar. Yeterli veri toplamadıysanız kullanın.</li>
+        <li><strong>Menüye Dön:</strong> Ölçümü kaydedip ana menüye döner. Veriler otomatik saklanır.</li>
+      </ul>
+      <p style="margin-top:12px">Ayrıca özet ekranında tur kartlarını düzenleyebilirsiniz:</p>
+      <ul class="tut-list">
+        <li>Etiket veya tempo değiştirin</li>
+        <li>Hatalı turları silin</li>
+        <li>Filtreleme seçenekleriyle aykırı değerleri hariç tutun</li>
       </ul>
     `,
     screen: 'summary',
@@ -304,16 +406,20 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'history',
-    title: 'Geçmiş Veriler',
+    title: 'Geçmiş Kayıtlar',
     content: `
-      <p>Tüm ölçümleriniz otomatik kaydedilir:</p>
+      <p>Tüm ölçümleriniz tarayıcınızda otomatik olarak saklanır. Geçmiş ekranından bunlara her zaman erişebilirsiniz.</p>
       <ul class="tut-list">
-        <li>Kayıtlara tıklayarak özete gidin</li>
-        <li>Excel olarak indirin</li>
-        <li><strong>JSON Yedekle:</strong> Tüm verileri yedekleyin</li>
-        <li><strong>JSON İçe Aktar:</strong> Yedeği geri yükleyin</li>
+        <li><strong>Kayda Tıklama:</strong> O ölçümün özet ekranını açar. Detayları inceleyebilir, Excel alabilirsiniz.</li>
+        <li><strong>Excel Butonu:</strong> Doğrudan Excel raporu indirir</li>
+        <li><strong>Silme Butonu:</strong> Kaydı kalıcı olarak siler</li>
       </ul>
-      <p class="tut-tip">💡 Veriler tarayıcınızda saklanır. Yedek almayı unutmayın!</p>
+      <p style="margin-top:12px"><strong>Veri Yedekleme:</strong></p>
+      <ul class="tut-list">
+        <li><strong>JSON Yedekle:</strong> Tüm verilerinizi tek bir dosyaya aktarır. Düzenli yedek alın!</li>
+        <li><strong>JSON İçe Aktar:</strong> Yedek dosyasından verileri geri yükler. Farklı cihazlar arası aktarım için de kullanılır.</li>
+      </ul>
+      <p class="tut-tip">💡 Tarayıcı verileri temizlenirse kayıplar olabilir. Önemli verilerinizi JSON olarak yedekleyin!</p>
     `,
     screen: 'history',
     highlight: '.hi-toolbar',
@@ -323,14 +429,16 @@ const TUTORIAL_STEPS = [
     id: 'auto-recovery',
     title: 'Otomatik Kurtarma',
     content: `
-      <p>Veri kaybını önlemek için:</p>
+      <p>Uygulama, veri kaybını önlemek için gelişmiş bir otomatik kurtarma sistemine sahiptir:</p>
       <ul class="tut-list">
-        <li>Her tur kaydında otomatik yedek alınır</li>
-        <li>Uygulama kapansa bile veriler korunur</li>
-        <li>Açılışta "Yarım kalan ölçüm" uyarısı çıkar</li>
-        <li>Devam edebilir veya silebilirsiniz</li>
+        <li><strong>Anlık Yedekleme:</strong> Her tur kaydedildiğinde veriler otomatik olarak saklanır</li>
+        <li><strong>Çökme Koruması:</strong> Uygulama beklenmedik şekilde kapansa bile veriler korunur</li>
+        <li><strong>Kurtarma Bildirimi:</strong> Yarım kalan bir ölçüm varsa, uygulama açılışında uyarı gösterilir</li>
+        <li><strong>Seçenek:</strong> Kaldığınız yerden devam edebilir veya yarım ölçümü silebilirsiniz</li>
       </ul>
-      <p class="tut-tip">💡 Pil bitse, internet gitse de verileriniz güvende!</p>
+      <p style="margin-top:12px;background:var(--ok-d);color:var(--ok);padding:10px 12px;border-radius:6px">
+        <strong>Güvende:</strong> Pil bitse, internet gitse, tarayıcı çökse bile verileriniz kaybolmaz!
+      </p>
     `,
     screen: 'menu',
     highlight: null,
@@ -338,20 +446,23 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 'finish',
-    title: 'Hazırsınız!',
+    title: 'Öğretici Tamamlandı!',
     content: `
       <div class="tut-finish">
         <div class="tut-finish-icon">🎉</div>
-        <p>Artık Zaman Etüdü uygulamasını kullanmaya hazırsınız!</p>
+        <p>Tebrikler! Artık Zaman Etüdü uygulamasının tüm özelliklerini biliyorsunuz.</p>
         <div class="tut-finish-tips">
-          <strong>Hatırlatmalar:</strong>
+          <strong>Hızlı Hatırlatmalar:</strong>
           <ul>
-            <li>İlk dokunuş kronometreyi başlatır</li>
-            <li>Sonraki dokunuşlar tur kaydeder</li>
-            <li>Verileriniz otomatik kaydedilir</li>
-            <li>Excel ile detaylı raporlar alabilirsiniz</li>
+            <li>İlk dokunuş kronometreyi başlatır, sonrakiler tur kaydeder</li>
+            <li>Anomalileri etiketle, sonra istatistiklerden hariç tut</li>
+            <li>Tempo değerlendirmesi ile normal süre hesapla</li>
+            <li>En az 10 gözlem yap, CV% değerini kontrol et</li>
+            <li>Excel raporu ile profesyonel dokümantasyon oluştur</li>
+            <li>Düzenli JSON yedekleri al</li>
           </ul>
         </div>
+        <p style="margin-top:16px;text-align:center;color:var(--tx2)">Bu rehbere ana menüdeki <strong>"Nasıl Kullanılır?"</strong> butonundan her zaman ulaşabilirsiniz.</p>
       </div>
     `,
     screen: 'menu',
@@ -668,6 +779,29 @@ function renderStep(stepIndex) {
   }
 }
 
+// Helper: Bind button with touch support
+function bindTutorialButton(id, handler) {
+  const btn = $(id);
+  if (!btn) return;
+
+  let handled = false;
+
+  btn.addEventListener('touchend', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (handled) return;
+    handled = true;
+    setTimeout(() => handled = false, 400);
+    handler();
+  }, { passive: false });
+
+  btn.addEventListener('click', e => {
+    if (handled) return;
+    e.stopPropagation();
+    handler();
+  });
+}
+
 // Start tutorial
 export function startTutorial() {
   currentStep = 0;
@@ -712,11 +846,11 @@ export function startTutorial() {
 
   document.body.appendChild(container);
 
-  // Bind events
-  $('tutClose').onclick = closeTutorial;
-  $('tutSkip').onclick = closeTutorial;
-  $('tutPrev').onclick = prevStep;
-  $('tutNext').onclick = nextStep;
+  // Bind events with touch support
+  bindTutorialButton('tutClose', closeTutorial);
+  bindTutorialButton('tutSkip', closeTutorial);
+  bindTutorialButton('tutPrev', prevStep);
+  bindTutorialButton('tutNext', nextStep);
 
   // Keyboard navigation
   document.addEventListener('keydown', handleTutorialKeydown);
@@ -781,6 +915,22 @@ function handleTutorialKeydown(e) {
 export function initTutorial() {
   const tutBtn = $('goTutorial');
   if (tutBtn) {
-    tutBtn.onclick = startTutorial;
+    // Prevent double-firing
+    let handled = false;
+
+    tutBtn.addEventListener('touchend', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (handled) return;
+      handled = true;
+      setTimeout(() => handled = false, 400);
+      startTutorial();
+    });
+
+    tutBtn.addEventListener('click', e => {
+      if (handled) return;
+      e.stopPropagation();
+      startTutorial();
+    });
   }
 }
