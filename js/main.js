@@ -8,7 +8,7 @@ import { initScreens, showScreen, initPopState, pushPanel, closePanels } from '.
 import { startT, pauseT, resumeT, stopT, startFromTime } from './timer.js';
 import { initTempoPicker, setTempo, isTempoActive } from './tempo.js';
 import { initSequenceMode, initStepPanelEvents, renderStepIndicator } from './steps.js';
-import { recordLap, refreshList } from './laps.js';
+import { recordLap, refreshList, autoSaveProgress } from './laps.js';
 import { initPanelEvents } from './panels.js';
 import { renderTagEditor, buildTagStrip, initTagEditorEvents } from './tags.js';
 import { renderHistory, initHistoryEvents, updateHistoryLaps } from './history.js';
@@ -287,6 +287,7 @@ function init() {
       resumeT();
     } else {
       pauseT();
+      autoSaveProgress(); // Duraklatmada kaydet
     }
     updatePauseBtn();
   };
@@ -307,6 +308,25 @@ function init() {
   document.addEventListener('click', goFS);
   document.addEventListener('touchend', goFS);
 
+  // Arka plana giderken otomatik kaydet (ekran kapatma, uygulama değiştirme)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && S.started) {
+      autoSaveProgress();
+    }
+  });
+
+  // Sayfa kapanırken/yenilenirken son kayıt
+  window.addEventListener('beforeunload', () => {
+    if (S.started) autoSaveProgress();
+  });
+
+  // Periyodik otomatik kayıt (10sn) - beklenmedik kapanmalara karşı
+  setInterval(() => {
+    if (S.started && S.running && !S.paused) {
+      autoSaveProgress();
+    }
+  }, 10000);
+
   // PWA
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -321,17 +341,23 @@ function checkRecovery() {
   const recovery = loadAutoRecovery();
   if (!recovery) return;
 
-  // Kayıt bilgilerini göster
+  // Gerçek geçen süreyi hesapla (kayıt anı + aradan geçen zaman)
   const lapCount = recovery.laps.length;
-  const totalTime = recovery.laps.reduce((sum, l) => sum + l.t, 0);
-  const mins = Math.floor(totalTime / 60000);
-  const secs = Math.floor((totalTime % 60000) / 1000);
+  const savedElapsed = recovery.elapsed || recovery.laps.reduce((sum, l) => sum + l.t, 0);
+  const wasRunning = recovery.timerRunning && !recovery.timerPaused;
+  const timeSinceSave = recovery.savedAt ? Date.now() - recovery.savedAt : 0;
+  const realElapsed = savedElapsed + (wasRunning && timeSinceSave > 0 ? timeSinceSave : 0);
+
+  const mins = Math.floor(realElapsed / 60000);
+  const secs = Math.floor((realElapsed % 60000) / 1000);
   const timeStr = mins > 0 ? `${mins} dk ${secs} sn` : `${secs} saniye`;
+
+  const stateStr = wasRunning ? 'çalışıyordu' : 'duraklatılmıştı';
 
   const info = $('recoveryInfo');
   info.innerHTML = `
     <strong>${recovery.job || 'İsimsiz'}</strong> - ${recovery.op || 'Operasyon'}<br>
-    <span style="color:var(--tx2)">${lapCount} tur, toplam ${timeStr}</span><br>
+    <span style="color:var(--tx2)">${lapCount} tur, kronometre ${timeStr} (${stateStr})</span><br>
     <span style="color:var(--tx3);font-size:12px">Son kayıt: ${new Date(recovery.savedAt).toLocaleString('tr-TR')}</span>
   `;
 
@@ -367,39 +393,23 @@ function restoreRecovery(recovery) {
   S.op = recovery.op || '';
   S.laps = recovery.laps || [];
 
-  // Toplam süreyi hesapla
-  const cumTime = S.laps.reduce((sum, l) => sum + l.t, 0);
+  // Kaydedilen elapsed + aradan geçen gerçek süre
+  const savedElapsed = recovery.elapsed || S.laps.reduce((sum, l) => sum + l.t, 0);
+  const lastLapTime = recovery.lastLapTime || S.laps.reduce((sum, l) => sum + l.t, 0);
 
-  // Ölçüm ekranına git ve devam et modunda başlat
+  // Kronometre çalışır durumdayken kapandıysa, aradan geçen süreyi ekle
+  const wasRunning = recovery.timerRunning && !recovery.timerPaused;
+  const timeSinceSave = recovery.savedAt ? Date.now() - recovery.savedAt : 0;
+  const cumTime = savedElapsed + (wasRunning && timeSinceSave > 0 ? timeSinceSave : 0);
+
+  // Ölçüm ekranına git
   $('dJob').textContent = S.job;
   $('dOp').textContent = S.op;
   showScreen('measure');
 
-  // resumeMeasurement benzeri durum ayarla
-  const now = getNow();
-
-  S.started = true;
-  S.running = false;
-  S.paused = true;
-  S.resumeFromTime = cumTime;
-  S.lastLapTime = cumTime;
-  S.startTime = now - cumTime;
-  S.pauseStart = now;
-  S.totalPaused = 0;
-
-  // Ekranı güncelle
-  const mins = Math.floor(cumTime / 60000);
-  const secs = Math.floor((cumTime % 60000) / 1000);
-  const ms = Math.floor((cumTime % 1000) / 10);
-  $('tTime').textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
-  $('tMs').textContent = '.' + String(ms).padStart(2, '0');
-  $('tState').textContent = 'DURAKLATILDI';
-  $('tapHint').textContent = 'Devam etmek için butona dokun';
-  $('timerArea').classList.add('paused');
-  $('lapCtr').style.display = 'flex';
-  $('lapN').textContent = S.laps.length;
-
   // Tur kartlarını yükle
+  $('lapCtr').style.display = S.laps.length ? 'flex' : 'none';
+  $('lapN').textContent = S.laps.length;
   refreshList();
 
   // Tag strip'i göster
@@ -407,24 +417,16 @@ function restoreRecovery(recovery) {
 
   // Sequence modunda adım göstergesini ayarla
   if (recovery.mode === 'sequence') {
-    if (recovery.currentStep !== null) {
-      setCurrentStep(recovery.currentStep);
-    }
-    if (recovery.cycle !== null) {
-      setSequenceCycle(recovery.cycle);
-    }
+    if (recovery.currentStep !== null) setCurrentStep(recovery.currentStep);
+    if (recovery.cycle !== null) setSequenceCycle(recovery.cycle);
     renderStepIndicator();
-    $('stepIndicator').classList.add('visible');
-    $('tagStrip').style.display = 'none';
-  } else {
-    $('stepIndicator').classList.remove('visible');
-    $('tagStrip').style.display = 'grid';
   }
+  // buildTagStrip() already handles stepIndicator visibility and tagStrip display for both modes
 
-  // Pause butonunu güncelle
-  if (window.updatePauseIcon) window.updatePauseIcon();
+  // Kronometre direkt çalışır durumda devam etsin
+  startFromTime(cumTime, lastLapTime);
 
-  toast('Ölçüm kurtarıldı. Devam etmek için butona dokun.', 't-ok');
+  toast('Ölçüm kurtarıldı, kronometre devam ediyor', 't-ok');
 }
 
 // Save current session to history

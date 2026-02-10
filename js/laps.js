@@ -63,13 +63,15 @@ export function recordLap(tagIdx = null) {
 
 // Ölçüm ilerlemesini otomatik kaydet
 export function autoSaveProgress() {
+  if (!S.started) return;
   saveAutoRecovery({
     job: S.job,
     op: S.op,
     laps: S.laps,
-    startTime: S.startTime,
-    totalPaused: S.totalPaused,
+    elapsed: getEl(),
     lastLapTime: S.lastLapTime,
+    timerRunning: S.running,
+    timerPaused: S.paused,
     mode: measurementMode,
     steps: measurementMode === 'sequence' ? sequenceSteps : null,
     currentStep: measurementMode === 'sequence' ? currentStep : null,

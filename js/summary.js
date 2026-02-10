@@ -98,32 +98,37 @@ export function rebuildSummary() {
   if (isSeqMode) {
     // SEQUENCE MODE SUMMARY
     const stepCount = sequenceSteps.length || 4;
-    const completeCycles = Math.floor(laps.length / stepCount);
+    const totalCompleteCycles = Math.floor(laps.length / stepCount);
     const partialSteps = laps.length % stepCount;
 
-    // Calculate cycle times (sum of all steps in each cycle)
-    const cycleTimes = [];
-    for (let c = 0; c < completeCycles; c++) {
-      let cycleTime = 0;
+    // Filter: use excludedNums from tag/outlier filter above
+    // For cycles: only include cycles where ALL laps pass the filter
+    const filtCycleTimes = [];
+    const filtCycleNT = [];
+    for (let c = 0; c < totalCompleteCycles; c++) {
+      let allIncluded = true;
+      let ct = 0, cnt = 0;
       for (let s = 0; s < stepCount; s++) {
-        const lapIdx = c * stepCount + s;
-        if (laps[lapIdx]) cycleTime += laps[lapIdx].t;
+        const idx = c * stepCount + s;
+        if (!laps[idx] || excludedNums.has(laps[idx].num)) allIncluded = false;
+        ct += laps[idx]?.t || 0;
+        cnt += laps[idx]?.nt || laps[idx]?.t || 0;
       }
-      cycleTimes.push(cycleTime);
+      if (allIncluded) {
+        filtCycleTimes.push(ct);
+        filtCycleNT.push(cnt);
+      }
     }
-    const cycleStats = calcStats(cycleTimes);
+    const cycleStats = calcStats(filtCycleTimes);
+    const cycleStatsNT = calcStats(filtCycleNT);
 
-    // Step analysis - use step index from laps
-    // For backwards compatibility, if laps don't have step property,
-    // infer step from lap position (lap index % stepCount)
+    // Step analysis - filtered by excludedNums
     const stepAnalysis = [];
     for (let i = 0; i < stepCount; i++) {
-      // Try to filter by step property first, fallback to position-based inference
-      let stepLaps = laps.filter(l => l.step === i);
-
-      // If no laps have step property, infer from position
+      let stepLaps = laps.filter(l => !excludedNums.has(l.num) && l.step === i);
+      // Fallback: if no step property, infer from position
       if (stepLaps.length === 0 && laps.length > 0 && laps[0].step === undefined) {
-        stepLaps = laps.filter((l, idx) => (idx % stepCount) === i);
+        stepLaps = laps.filter((l, idx) => !excludedNums.has(l.num) && (idx % stepCount) === i);
       }
 
       const times = stepLaps.map(l => l.t);
@@ -132,8 +137,8 @@ export function rebuildSummary() {
       const ntStats = calcStats(normalTimes);
       const stepDef = sequenceSteps[i] || { name: 'Adım ' + (i + 1), color: STEP_COLORS[i % STEP_COLORS.length] };
 
-      // Safely spread stats (handle null case)
-      const safeStats = stats || { n: 0, sum: 0, mean: 0, median: 0, stdDev: 0, cv: 0, min: 0, max: 0, range: 0 };
+      const safeStats = stats || { n: 0, sum: 0, mean: 0, median: 0, stdDev: 0, cv: 0, min: 0, max: 0, range: 0, nReq: 0 };
+      const ratio = cycleStats?.mean ? ((safeStats.mean || 0) / cycleStats.mean) * 100 : 0;
 
       stepAnalysis.push({
         name: stepDef.name,
@@ -142,11 +147,12 @@ export function rebuildSummary() {
         count: stepLaps.length,
         ...safeStats,
         ntMean: ntStats?.mean || 0,
-        ntSum: ntStats?.sum || 0
+        ntSum: ntStats?.sum || 0,
+        ratio
       });
     }
 
-    // Anomaly analysis
+    // Anomaly analysis (from ALL laps, not filtered)
     const anomalyLaps = laps.filter(l => l.tag !== null && l.tag !== undefined);
     const anomalyCount = anomalyLaps.length;
 
@@ -157,33 +163,38 @@ export function rebuildSummary() {
     const seqHasTempoVariation = laps.some(l => (l.tempo || 100) !== 100);
 
     if (cycleStats && cycleStats.n > 0) {
-      // Calculate normal cycle time from step normal times
       const normalCycleTime = stepAnalysis.reduce((sum, sa) => sum + (sa.ntMean || 0), 0);
       const seqObsPerHour = cycleStats.mean > 0 ? (3600000 / cycleStats.mean).toFixed(1) : '—';
       const seqNormPerHour = normalCycleTime > 0 ? (3600000 / normalCycleTime).toFixed(1) : '—';
+      const reqOk = cycleStats.n >= cycleStats.nReq;
 
       h += `<div class="sum-compare">`;
       h += `<div class="sum-compare-header">
         <span class="sch-n">${cycleStats.n}</span>
-        <span class="sch-label">Tam Çevrim</span>
+        <span class="sch-label">Çevrim${filtCycleTimes.length < totalCompleteCycles ? ' (filtreli)' : ''}</span>
+        <span class="sch-req ${reqOk ? 'ok' : 'warn'}">Gerekli Çevrim: ${cycleStats.nReq} ${reqOk ? '✓' : '✗'}</span>
       </div>`;
 
       if (seqHasTempoVariation) {
         h += `<table class="sum-compare-table"><thead><tr><th></th><th>Gözlem</th><th>Normal</th></tr></thead><tbody>`;
         h += `<tr><td>Ort. Çevrim</td><td>${ffull(cycleStats.mean)}</td><td>${ffull(normalCycleTime)}</td></tr>`;
-        h += `<tr><td>Min</td><td>${ffull(cycleStats.min)}</td><td>—</td></tr>`;
-        h += `<tr><td>Max</td><td>${ffull(cycleStats.max)}</td><td>—</td></tr>`;
-        h += `<tr><td>Std Sapma</td><td>${ffull(cycleStats.stdDev)}</td><td>—</td></tr>`;
-        h += `<tr><td>CV%</td><td>${cycleStats.cv.toFixed(1)}%</td><td>—</td></tr>`;
+        h += `<tr><td>Medyan</td><td>${ffull(cycleStats.median)}</td><td>${ffull(cycleStatsNT?.median)}</td></tr>`;
+        h += `<tr><td>Min</td><td>${ffull(cycleStats.min)}</td><td>${ffull(cycleStatsNT?.min)}</td></tr>`;
+        h += `<tr><td>Max</td><td>${ffull(cycleStats.max)}</td><td>${ffull(cycleStatsNT?.max)}</td></tr>`;
+        h += `<tr><td>Std Sapma</td><td>${ffull(cycleStats.stdDev)}</td><td>${ffull(cycleStatsNT?.stdDev)}</td></tr>`;
+        h += `<tr><td>CV%</td><td>${cycleStats.cv.toFixed(1)}%</td><td>${cycleStatsNT?.cv?.toFixed(1) || '—'}%</td></tr>`;
+        h += `<tr><td>%95 Güven Aralığı</td><td class="sct-ci">${ffull(cycleStats.ci95Low)} — ${ffull(cycleStats.ci95High)}</td><td class="sct-ci">${ffull(cycleStatsNT?.ci95Low)} — ${ffull(cycleStatsNT?.ci95High)}</td></tr>`;
         h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${seqObsPerHour}</td><td>${seqNormPerHour}</td></tr>`;
         h += `</tbody></table>`;
       } else {
         h += `<table class="sum-compare-table"><thead><tr><th></th><th>Değer</th></tr></thead><tbody>`;
         h += `<tr><td>Ort. Çevrim</td><td>${ffull(cycleStats.mean)}</td></tr>`;
+        h += `<tr><td>Medyan</td><td>${ffull(cycleStats.median)}</td></tr>`;
         h += `<tr><td>Min</td><td>${ffull(cycleStats.min)}</td></tr>`;
         h += `<tr><td>Max</td><td>${ffull(cycleStats.max)}</td></tr>`;
         h += `<tr><td>Std Sapma</td><td>${ffull(cycleStats.stdDev)}</td></tr>`;
         h += `<tr><td>CV%</td><td>${cycleStats.cv.toFixed(1)}%</td></tr>`;
+        h += `<tr><td>%95 Güven Aralığı</td><td class="sct-ci">${ffull(cycleStats.ci95Low)} — ${ffull(cycleStats.ci95High)}</td></tr>`;
         h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${seqObsPerHour}</td></tr>`;
         h += `</tbody></table>`;
       }
@@ -193,21 +204,21 @@ export function rebuildSummary() {
     h += `<div class="sum-section-title">Adım Bazlı Analiz</div>`;
     h += `<div class="sum-step-table-wrap">`;
     if (seqHasTempoVariation) {
-      h += `<table class="sum-tag-table"><thead><tr><th>Adım</th><th>Adet</th><th>Ort.</th><th>Normal</th><th>Min</th><th>Max</th></tr></thead><tbody>`;
+      h += `<table class="sum-tag-table"><thead><tr><th>Adım</th><th>n</th><th>Ort.</th><th>Normal</th><th>Min</th><th>Max</th><th>Std.S</th><th>CV%</th><th>Oran</th></tr></thead><tbody>`;
       if (stepAnalysis.length === 0) {
-        h += `<tr><td colspan="6" style="text-align:center;color:var(--tx3)">Adım verisi bulunamadı</td></tr>`;
+        h += `<tr><td colspan="9" style="text-align:center;color:var(--tx3)">Adım verisi bulunamadı</td></tr>`;
       } else {
         stepAnalysis.forEach(sa => {
-          h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.ntMean ? ffull(sa.ntMean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td></tr>`;
+          h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.ntMean ? ffull(sa.ntMean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td><td>${sa.stdDev ? ffull(sa.stdDev) : '—'}</td><td>${sa.cv ? sa.cv.toFixed(1) + '%' : '—'}</td><td>${sa.ratio ? sa.ratio.toFixed(0) + '%' : '—'}</td></tr>`;
         });
       }
     } else {
-      h += `<table class="sum-tag-table"><thead><tr><th>Adım</th><th>Adet</th><th>Ort.</th><th>Min</th><th>Max</th></tr></thead><tbody>`;
+      h += `<table class="sum-tag-table"><thead><tr><th>Adım</th><th>n</th><th>Ort.</th><th>Min</th><th>Max</th><th>Std.S</th><th>CV%</th><th>Oran</th></tr></thead><tbody>`;
       if (stepAnalysis.length === 0) {
-        h += `<tr><td colspan="5" style="text-align:center;color:var(--tx3)">Adım verisi bulunamadı</td></tr>`;
+        h += `<tr><td colspan="8" style="text-align:center;color:var(--tx3)">Adım verisi bulunamadı</td></tr>`;
       } else {
         stepAnalysis.forEach(sa => {
-          h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td></tr>`;
+          h += `<tr><td style="color:${sa.color};font-weight:700">${esc(sa.name)}</td><td>${sa.count}</td><td>${sa.mean ? ffull(sa.mean) : '—'}</td><td>${sa.min ? ffull(sa.min) : '—'}</td><td>${sa.max ? ffull(sa.max) : '—'}</td><td>${sa.stdDev ? ffull(sa.stdDev) : '—'}</td><td>${sa.cv ? sa.cv.toFixed(1) + '%' : '—'}</td><td>${sa.ratio ? sa.ratio.toFixed(0) + '%' : '—'}</td></tr>`;
         });
       }
     }
@@ -275,13 +286,15 @@ export function rebuildSummary() {
     h += `<div class="sum-section-title" style="text-align:center;margin:16px 0;color:var(--tx3)">Filtre sonucu veri yok</div>`;
   }
 
-  // Filter section (for repeat mode)
-  if (laps.length && !isSeqMode) {
-    h += `<div class="sum-filters"><div class="sum-filters-title">Analiz Filtresi</div>`;
+  // Filter section (for both modes)
+  if (laps.length) {
+    const filterTitle = isSeqMode ? 'Anomali Filtresi' : 'Analiz Filtresi';
+    const noTagLabel = isSeqMode ? 'Anomalisiz' : 'Etiketsiz';
+    h += `<div class="sum-filters"><div class="sum-filters-title">${filterTitle}</div>`;
     tags.forEach((tag, i) => {
       h += `<label class="sf-row"><input type="checkbox" data-sf-tag="${i}" ${sumFilterTags.has(i) ? 'checked' : ''}><span class="sf-dot" style="background:${tag.color}"></span>${esc(tag.name)}</label>`;
     });
-    h += `<label class="sf-row"><input type="checkbox" data-sf-tag="none" ${sumFilterTags.has('none') ? 'checked' : ''}><span class="sf-dot" style="background:#666"></span>Etiketsiz</label>`;
+    h += `<label class="sf-row"><input type="checkbox" data-sf-tag="none" ${sumFilterTags.has('none') ? 'checked' : ''}><span class="sf-dot" style="background:#666"></span>${noTagLabel}</label>`;
     h += `<label class="sf-row" style="width:100%;margin-top:clamp(2px,.5vw,4px)"><input type="checkbox" id="sfOutlier" ${sumIncludeOutliers ? 'checked' : ''}>Aykırı veriler dahil mi?${outlierCount ? ' (' + outlierCount + ')' : ''}</label>`;
     h += `</div>`;
   }
@@ -295,7 +308,7 @@ export function rebuildSummary() {
   screens.summary.innerHTML = h;
   screens.summary.scrollTop = scrollY;
   bindSumActions();
-  if (!isSeqMode) bindSumFilters();
+  bindSumFilters();
 
   $('btnExcel').onclick = () => {
     const sess = {
@@ -528,7 +541,7 @@ export function resumeMeasurement() {
   // Refresh lap list
   refreshList();
 
-  // If sequence mode, restore step/cycle state and show indicator
+  // If sequence mode, restore step/cycle state
   if (measurementMode === 'sequence') {
     // Find the last lap to get current step and cycle
     const lastLap = S.laps[S.laps.length - 1];
@@ -543,12 +556,8 @@ export function resumeMeasurement() {
     } else {
       initSequenceMode();
     }
-    $('stepIndicator').classList.add('visible');
-    $('tagStrip').style.display = 'none';
-  } else {
-    $('stepIndicator').classList.remove('visible');
-    $('tagStrip').style.display = 'grid';
   }
+  // buildTagStrip() already handles stepIndicator visibility and tagStrip display for both modes
 
   // Clear history view index since we're continuing the measurement
   setHistoryViewIdx(null);

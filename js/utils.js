@@ -55,9 +55,11 @@ export function dimColor(hex, a = 0.15) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-// Get current high-precision time
+// Get current time (Date.now for background reliability)
+// performance.now() pauses on iOS Safari when backgrounded/screen off
+// Date.now() tracks wall-clock time, survives background suspension
 export function getNow() {
-  return performance.now();
+  return Date.now();
 }
 
 // Request fullscreen (if not already)

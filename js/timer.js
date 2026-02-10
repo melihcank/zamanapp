@@ -28,6 +28,15 @@ export function tick() {
   }
 }
 
+// Arka plandan dönüş: RAF durmuş olabilir, yeniden başlat
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && S.started && S.running && !S.paused) {
+    // RAF arka planda durmuştu, yeniden başlat
+    if (S.raf) cancelAnimationFrame(S.raf);
+    tick();
+  }
+});
+
 
 // Start timer
 export function startT() {
@@ -59,7 +68,8 @@ export function startT() {
 }
 
 // Start timer from a specific cumulative time (for resuming)
-export function startFromTime(cumTime) {
+// lastLap: opsiyonel, devam eden tur varsa son tamamlanan tur anı
+export function startFromTime(cumTime, lastLap) {
   // Önce varsa eski animasyonu iptal et
   if (S.raf) {
     cancelAnimationFrame(S.raf);
@@ -71,7 +81,8 @@ export function startFromTime(cumTime) {
   S.paused = false;
   S.startTime = getNow() - cumTime;
   S.totalPaused = 0;
-  S.lastLapTime = cumTime;
+  S.deletedTime = 0;
+  S.lastLapTime = lastLap !== undefined ? lastLap : cumTime;
   S.resumeFromTime = 0;
 
   $('tState').textContent = 'Çalışıyor';
