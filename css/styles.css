@@ -132,6 +132,24 @@ html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--sans);back
 .tag-btn svg{width:clamp(16px,4.5vw,22px);height:clamp(16px,4.5vw,22px);flex-shrink:0;fill:#000}
 @keyframes tagPulse{0%{transform:scale(1)}30%{transform:scale(1.08)}100%{transform:scale(1)}}
 
+/* Live nReq indicator */
+.nreq-live{display:none;position:absolute;top:clamp(4px,1vh,8px);left:clamp(8px,2vw,16px);padding:3px 10px;font-size:clamp(10px,2.5vw,12px);font-weight:600;font-family:var(--mono);color:var(--tx3);background:var(--bg2);border-radius:var(--r-pill);z-index:2;transition:color .3s,background .3s}
+.nreq-live.visible{display:flex;align-items:center;gap:5px}
+.nreq-live.ok{color:var(--ok);background:rgba(76,175,80,0.12)}
+.nreq-live.warn{color:var(--wrn);background:rgba(255,152,0,0.12)}
+
+/* nReq Parameter Pills */
+.nreq-params{background:var(--bg2);border-radius:var(--r-md);padding:clamp(12px,3vw,16px);margin:clamp(4px,1vh,8px) 0}
+.nreq-title{font-size:clamp(11px,3vw,13px);font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:.5px;text-align:center;margin-bottom:2px}
+.nreq-sub{font-size:clamp(9px,2.5vw,11px);color:var(--tx3);text-align:center;margin-bottom:clamp(10px,2.5vw,14px);line-height:1.4}
+.nreq-row{display:flex;align-items:center;justify-content:space-between;gap:clamp(8px,2vw,12px);margin-bottom:clamp(6px,1.5vw,10px)}
+.nreq-row:last-child{margin-bottom:0}
+.nreq-row>label{font-size:clamp(10px,2.8vw,12px);font-weight:600;color:var(--tx2);white-space:nowrap;flex-shrink:0}
+.nreq-pills{display:flex;gap:clamp(4px,1vw,6px)}
+.nreq-pill{padding:clamp(6px,1.5vw,8px) clamp(10px,2.5vw,14px);font-size:clamp(11px,3vw,13px);font-weight:700;font-family:var(--mono);background:var(--bg);border:2px solid var(--bg4);border-radius:var(--r-pill);color:var(--tx2);cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+.nreq-pill:hover{border-color:var(--tx2)}
+.nreq-pill.sel{border-color:var(--acc);color:var(--acc);background:var(--acc-d)}
+
 /* Timer */
 .timer-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(8px,2vh,24px) 0 clamp(4px,1vh,14px);flex-shrink:0;position:relative;cursor:pointer}
 .timer-ring{position:relative;width:clamp(220px,65vw,340px);height:clamp(220px,65vw,340px);display:flex;align-items:center;justify-content:center}

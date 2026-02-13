@@ -52,8 +52,12 @@ export function quartiles(times) {
   };
 }
 
+// Z-values for nReq formula (gerekli gözlem sayısı)
+const Z_MAP = { 0.90: 1.645, 0.95: 1.96, 0.99: 2.576 };
+
 // Calculate statistics for an array of times
-export function calcStats(times) {
+// opts: { confidence: 0.90|0.95|0.99, errorMargin: 0.03|0.05|0.10 }
+export function calcStats(times, opts = {}) {
   const n = times.length;
   if (!n) return null;
 
@@ -72,21 +76,24 @@ export function calcStats(times) {
   const ci95Low = Math.max(0, mean - t * se);
   const ci95High = mean + t * se;
 
-  // Required observation count (±5%, 95% confidence): n'=(40*sqrt(n*Σx²-(Σx)²)/Σx)²
+  // Required observation count: n'=(z/e * sqrt(n*Σx²-(Σx)²) / Σx)²
+  const z = Z_MAP[opts.confidence] || 1.96;
+  const e = opts.errorMargin || 0.05;
+  const k = z / e;
   const sumSq = times.reduce((a, t) => a + t * t, 0);
   const inner = n * sumSq - sum * sum;
-  const nReq = sum > 0 && inner > 0 ? Math.ceil(Math.pow(40 * Math.sqrt(inner) / sum, 2)) : n;
+  const nReq = sum > 0 && inner > 0 ? Math.ceil(Math.pow(k * Math.sqrt(inner) / sum, 2)) : n;
 
   return { n, sum, mean, median, stdDev, cv, min, max, range, ci95Low, ci95High, se, nReq };
 }
 
 // Tag analysis for summary
-export function tagAnalysis(laps, tgs) {
+export function tagAnalysis(laps, tgs, opts = {}) {
   const res = [];
   tgs.forEach((tag, i) => {
     const fl = laps.filter(l => l.tag === i);
     if (fl.length) {
-      const s = calcStats(fl.map(l => l.t));
+      const s = calcStats(fl.map(l => l.t), opts);
       res.push({ name: tag.name, color: tag.color, idx: i, count: fl.length, ...s });
     } else {
       res.push({ name: tag.name, color: tag.color, idx: i, count: 0, sum: 0, mean: 0, median: 0, stdDev: 0, cv: 0, min: 0, max: 0, range: 0, ci95Low: 0, ci95High: 0, se: 0, nReq: 0 });
@@ -95,7 +102,7 @@ export function tagAnalysis(laps, tgs) {
 
   const un = laps.filter(l => l.tag === null);
   if (un.length) {
-    const s = calcStats(un.map(l => l.t));
+    const s = calcStats(un.map(l => l.t), opts);
     res.push({ name: 'Etiketsiz', color: '#666', idx: -1, count: un.length, ...s });
   } else {
     res.push({ name: 'Etiketsiz', color: '#666', idx: -1, count: 0, sum: 0, mean: 0, median: 0, stdDev: 0, cv: 0, min: 0, max: 0, range: 0, ci95Low: 0, ci95High: 0, se: 0, nReq: 0 });
@@ -118,4 +125,102 @@ export function detectOutliers(times) {
   });
 
   return s;
+}
+
+// Frequency distribution (histogram bins)
+export function freqDist(times, binCount = 10) {
+  if (!times.length) return [];
+  const min = Math.min(...times);
+  const max = Math.max(...times);
+  const range = max - min || 1;
+  const binSize = range / binCount;
+
+  const bins = [];
+  for (let i = 0; i < binCount; i++) {
+    const lo = min + i * binSize;
+    const hi = min + (i + 1) * binSize;
+    const count = times.filter(t => t >= lo && (i === binCount - 1 ? t <= hi : t < hi)).length;
+    bins.push({
+      binStart: lo,
+      binEnd: hi,
+      count,
+      freq: (count / times.length) * 100
+    });
+  }
+  return bins;
+}
+
+// Moving average
+export function movingAvg(times, window = 5) {
+  const result = [];
+  for (let i = 0; i < times.length; i++) {
+    const start = Math.max(0, i - window + 1);
+    const slice = times.slice(start, i + 1);
+    result.push(slice.reduce((a, b) => a + b, 0) / slice.length);
+  }
+  return result;
+}
+
+// Linear regression (y = intercept + slope * x, R²)
+export function linearRegression(times) {
+  const n = times.length;
+  if (n < 2) return { slope: 0, intercept: 0, r2: 0 };
+
+  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+  for (let i = 0; i < n; i++) {
+    sumX += i;
+    sumY += times[i];
+    sumXY += i * times[i];
+    sumX2 += i * i;
+    sumY2 += times[i] * times[i];
+  }
+
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+
+  // R² calculation
+  const yMean = sumY / n;
+  let ssTot = 0, ssRes = 0;
+  for (let i = 0; i < n; i++) {
+    const pred = intercept + slope * i;
+    ssTot += (times[i] - yMean) ** 2;
+    ssRes += (times[i] - pred) ** 2;
+  }
+  const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+
+  return { slope, intercept, r2 };
+}
+
+// Skewness (örneklem çarpıklık — n-1 düzeltmeli)
+export function skewness(times, mean, stdDev) {
+  if (!times.length || stdDev === 0) return 0;
+  const n = times.length;
+  if (n < 3) return 0;
+  const m3 = times.reduce((sum, t) => sum + Math.pow((t - mean) / stdDev, 3), 0);
+  return (n / ((n - 1) * (n - 2))) * m3;
+}
+
+// Kurtosis (örneklem excess kurtosis — n-1 düzeltmeli)
+export function kurtosis(times, mean, stdDev) {
+  if (!times.length || stdDev === 0) return 0;
+  const n = times.length;
+  if (n < 4) return 0;
+  const m4 = times.reduce((sum, t) => sum + Math.pow((t - mean) / stdDev, 4), 0);
+  const k = (n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3)) * m4;
+  return k - (3 * (n - 1) * (n - 1)) / ((n - 2) * (n - 3));
+}
+
+// Mode — en sık değer (10ms yuvarlama ile)
+export function findMode(times) {
+  if (!times.length) return 0;
+  const freq = {};
+  times.forEach(t => {
+    const rounded = Math.round(t / 10) * 10;
+    freq[rounded] = (freq[rounded] || 0) + 1;
+  });
+  let mode = times[0], maxFreq = 0;
+  Object.entries(freq).forEach(([val, f]) => {
+    if (f > maxFreq) { maxFreq = f; mode = +val; }
+  });
+  return mode;
 }

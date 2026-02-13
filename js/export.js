@@ -2,8 +2,8 @@
 // Kapsamlı Excel & JSON Export Sistemi
 
 import { $, toast, ffull, fmt, fms } from './utils.js';
-import { STEP_COLORS, TEMPO_VALUES } from './config.js';
-import { calcStats, tagAnalysis, detectOutliers, percentile, quartiles, tCritical } from './stats.js';
+import { TEMPO_VALUES } from './config.js';
+import { calcStats, tagAnalysis, detectOutliers, percentile, quartiles, tCritical, freqDist, movingAvg, linearRegression, skewness, kurtosis, findMode } from './stats.js';
 import { loadHistory, saveHistory, loadTags, saveTags } from './storage.js';
 import { tags, setTags, sequenceSteps } from './state.js';
 import { renderHistory } from './history.js';
@@ -23,86 +23,6 @@ function loadXLSX(cb) {
 // Convert ms to seconds with precision
 function toSec(ms, decimals = 3) {
   return ms != null ? +(ms / 1000).toFixed(decimals) : null;
-}
-
-// Calculate frequency distribution
-function freqDist(times, binCount = 10) {
-  if (!times.length) return [];
-  const min = Math.min(...times);
-  const max = Math.max(...times);
-  const range = max - min || 1;
-  const binSize = range / binCount;
-
-  const bins = [];
-  for (let i = 0; i < binCount; i++) {
-    const lo = min + i * binSize;
-    const hi = min + (i + 1) * binSize;
-    const count = times.filter(t => t >= lo && (i === binCount - 1 ? t <= hi : t < hi)).length;
-    bins.push({
-      binStart: lo,
-      binEnd: hi,
-      count,
-      freq: (count / times.length) * 100
-    });
-  }
-  return bins;
-}
-
-// Calculate moving average
-function movingAvg(times, window = 5) {
-  const result = [];
-  for (let i = 0; i < times.length; i++) {
-    const start = Math.max(0, i - window + 1);
-    const slice = times.slice(start, i + 1);
-    result.push(slice.reduce((a, b) => a + b, 0) / slice.length);
-  }
-  return result;
-}
-
-// Linear regression
-function linearRegression(times) {
-  const n = times.length;
-  if (n < 2) return { slope: 0, intercept: 0, r2: 0 };
-
-  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
-  for (let i = 0; i < n; i++) {
-    sumX += i;
-    sumY += times[i];
-    sumXY += i * times[i];
-    sumX2 += i * i;
-    sumY2 += times[i] * times[i];
-  }
-
-  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-  const intercept = (sumY - slope * sumX) / n;
-
-  // R² calculation
-  const yMean = sumY / n;
-  let ssTot = 0, ssRes = 0;
-  for (let i = 0; i < n; i++) {
-    const pred = intercept + slope * i;
-    ssTot += (times[i] - yMean) ** 2;
-    ssRes += (times[i] - pred) ** 2;
-  }
-  const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
-
-  return { slope, intercept, r2 };
-}
-
-// Calculate skewness
-function skewness(times, mean, stdDev) {
-  if (!times.length || stdDev === 0) return 0;
-  const n = times.length;
-  const m3 = times.reduce((sum, t) => sum + Math.pow((t - mean) / stdDev, 3), 0) / n;
-  return m3;
-}
-
-// Calculate kurtosis
-function kurtosis(times, mean, stdDev) {
-  if (!times.length || stdDev === 0) return 0;
-  const n = times.length;
-  const m4 = times.reduce((sum, t) => sum + Math.pow((t - mean) / stdDev, 4), 0) / n;
-  return m4 - 3; // Excess kurtosis
 }
 
 // ============ MAIN EXPORT FUNCTION ============
@@ -128,10 +48,13 @@ export function exportExcel(session, fn) {
 // ============ REPEAT MODE EXCEL ============
 
 function buildRepeatExcel(wb, session, sTags) {
+  const nReqOpts = { confidence: session.nReqConfidence || 0.95, errorMargin: session.nReqError || 0.05 };
+  const confPct = Math.round((session.nReqConfidence || 0.95) * 100);
+  const errPct = Math.round((session.nReqError || 0.05) * 100);
   const times = session.laps.map(l => l.t);
   const normalTimes = session.laps.map(l => l.nt || l.t);
-  const st = calcStats(times);
-  const stNT = calcStats(normalTimes);
+  const st = calcStats(times, nReqOpts);
+  const stNT = calcStats(normalTimes, nReqOpts);
   const outliers = detectOutliers(times);
   const q = quartiles(times);
   const qNT = quartiles(normalTimes);
@@ -189,7 +112,7 @@ function buildRepeatExcel(wb, session, sTags) {
     ['%95 GA Üst Sınır', toSec(st?.ci95High), 'sn'],
     ['%99 GA Alt Sınır', toSec(st ? Math.max(0, st.mean - tCritical(st.n, 0.99) * st.se) : 0), 'sn'],
     ['%99 GA Üst Sınır', toSec(st ? st.mean + tCritical(st.n, 0.99) * st.se : 0), 'sn'],
-    ['Gerekli Gözlem (±%5, %95)', st?.nReq || 0],
+    [`Gerekli Gözlem (±%${errPct}, %${confPct})`, st?.nReq || 0],
     ['Yeterli Gözlem?', st && st.n >= st.nReq ? 'EVET' : 'HAYIR'],
     [],
     ['TREND ANALİZİ'],
@@ -212,7 +135,7 @@ function buildRepeatExcel(wb, session, sTags) {
     'Tur No', 'Süre (ms)', 'Süre (sn)', 'Süre (mm:ss.cc)',
     'Tempo (%)', 'Normal (ms)', 'Normal (sn)', 'Normal (mm:ss.cc)',
     'Kümülatif (ms)', 'Kümülatif (sn)', 'Kümülatif (mm:ss.cc)',
-    'Etiket Kodu', 'Etiket Adı', 'Etiket Rengi',
+    'Etiket Kodu', 'Etiket Adı',
     'Not', 'Aykırı Değer?',
     'Ortalamadan Sapma (ms)', 'Ortalamadan Sapma (%)',
     'Z-Skor', 'Hareketli Ort. (5)', 'Trend Değeri'
@@ -221,7 +144,6 @@ function buildRepeatExcel(wb, session, sTags) {
 
   session.laps.forEach((l, i) => {
     const tagName = l.tag !== null && sTags[l.tag] ? sTags[l.tag].name : '';
-    const tagColor = l.tag !== null && sTags[l.tag] ? sTags[l.tag].color : '';
     const tempo = l.tempo || 100;
     const nt = l.nt || l.t;
     const isOutlier = outliers.has(i);
@@ -244,7 +166,6 @@ function buildRepeatExcel(wb, session, sTags) {
       ffull(l.cum),
       l.tag !== null ? l.tag : '',
       tagName,
-      tagColor,
       l.note || '',
       isOutlier ? 'EVET' : '',
       +devMs.toFixed(1),
@@ -260,7 +181,7 @@ function buildRepeatExcel(wb, session, sTags) {
     { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
     { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
     { wch: 12 }, { wch: 12 }, { wch: 14 },
-    { wch: 10 }, { wch: 15 }, { wch: 10 },
+    { wch: 10 }, { wch: 15 },
     { wch: 30 }, { wch: 12 },
     { wch: 16 }, { wch: 16 },
     { wch: 10 }, { wch: 14 }, { wch: 12 }
@@ -268,11 +189,11 @@ function buildRepeatExcel(wb, session, sTags) {
   XLSX.utils.book_append_sheet(wb, s2, 'Ham Veri');
 
   // ========== SHEET 3: ETİKET ANALİZİ ==========
-  const ta = tagAnalysis(session.laps, sTags);
+  const ta = tagAnalysis(session.laps, sTags, nReqOpts);
   const s3Data = [
     ['ETİKET ANALİZİ'],
     [],
-    ['Etiket', 'Renk', 'Adet', 'Oran (%)', 'Toplam (sn)', 'Ortalama (sn)', 'Medyan (sn)',
+    ['Etiket', 'Adet', 'Oran (%)', 'Toplam (sn)', 'Ortalama (sn)', 'Medyan (sn)',
      'Min (sn)', 'Max (sn)', 'Aralık (sn)', 'Std Sapma (sn)', 'CV (%)',
      'Q1 (sn)', 'Q3 (sn)', 'IQR (sn)', '%95 GA Alt', '%95 GA Üst']
   ];
@@ -284,7 +205,6 @@ function buildRepeatExcel(wb, session, sTags) {
 
     s3Data.push([
       ts.name,
-      ts.color,
       ts.count,
       +((ts.count / (st?.n || 1)) * 100).toFixed(1),
       toSec(ts.sum),
@@ -304,7 +224,7 @@ function buildRepeatExcel(wb, session, sTags) {
   });
 
   const s3 = XLSX.utils.aoa_to_sheet(s3Data);
-  s3['!cols'] = Array(17).fill({ wch: 12 });
+  s3['!cols'] = Array(16).fill({ wch: 12 });
   s3['!cols'][0] = { wch: 15 };
   XLSX.utils.book_append_sheet(wb, s3, 'Etiket Analizi');
 
@@ -418,7 +338,7 @@ function buildRepeatExcel(wb, session, sTags) {
   // Add stats without outliers
   const cleanTimes = times.filter((_, i) => !outliers.has(i));
   if (cleanTimes.length > 0 && outliers.size > 0) {
-    const cleanStats = calcStats(cleanTimes);
+    const cleanStats = calcStats(cleanTimes, nReqOpts);
     s6Data.push([], ['AYKIRI DEĞERLER HARİÇ İSTATİSTİKLER']);
     s6Data.push(['Gözlem Sayısı', cleanStats?.n || 0]);
     s6Data.push(['Ortalama', toSec(cleanStats?.mean), 'sn']);
@@ -449,7 +369,7 @@ function buildRepeatExcel(wb, session, sTags) {
 
   Object.keys(tempoGroups).sort((a, b) => +b - +a).forEach(tempo => {
     const tTimes = tempoGroups[tempo];
-    const tStats = calcStats(tTimes);
+    const tStats = calcStats(tTimes, nReqOpts);
     s7Data.push([
       +tempo,
       tStats?.n || 0,
@@ -505,31 +425,37 @@ function buildRepeatExcel(wb, session, sTags) {
     ['KONFİGÜRASYON'],
     [],
     ['ETİKETLER'],
-    ['No', 'İsim', 'Renk', 'İkon'],
+    ['No', 'İsim', 'İkon'],
   ];
   sTags.forEach((t, i) => {
-    s9Data.push([i + 1, t.name, t.color, t.icon || 'tag']);
+    s9Data.push([i + 1, t.name, t.icon || 'tag']);
   });
 
   s9Data.push([], ['ÖLÇÜM MODU'], ['Mod', 'Tekrarlı (repeat)']);
+  s9Data.push([], ['NREQ PARAMETRELERİ']);
+  s9Data.push(['Güven Düzeyi', `%${confPct}`]);
+  s9Data.push(['Hata Payı', `±%${errPct}`]);
   s9Data.push([], ['VERSİYON BİLGİSİ']);
   s9Data.push(['Export Versiyonu', '3.0']);
   s9Data.push(['Uygulama', 'Zaman Etüdü PWA']);
 
   const s9 = XLSX.utils.aoa_to_sheet(s9Data);
-  s9['!cols'] = [{ wch: 18 }, { wch: 20 }, { wch: 12 }, { wch: 12 }];
+  s9['!cols'] = [{ wch: 18 }, { wch: 20 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, s9, 'Konfigürasyon');
 }
 
 // ============ SEQUENCE MODE EXCEL ============
 
 function buildSequenceExcel(wb, session, sTags, sSteps) {
+  const nReqOpts = { confidence: session.nReqConfidence || 0.95, errorMargin: session.nReqError || 0.05 };
+  const confPct = Math.round((session.nReqConfidence || 0.95) * 100);
+  const errPct = Math.round((session.nReqError || 0.05) * 100);
   const stepCount = sSteps.length || 4;
   const completeCycles = Math.floor(session.laps.length / stepCount);
   const times = session.laps.map(l => l.t);
   const normalTimes = session.laps.map(l => l.nt || l.t);
-  const st = calcStats(times);
-  const stNT = calcStats(normalTimes);
+  const st = calcStats(times, nReqOpts);
+  const stNT = calcStats(normalTimes, nReqOpts);
   const outliers = detectOutliers(times);
 
   // Calculate cycle times
@@ -547,8 +473,8 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     cycleTimes.push(ct);
     cycleNormalTimes.push(cnt);
   }
-  const cycleStats = calcStats(cycleTimes);
-  const cycleStatsNT = calcStats(cycleNormalTimes);
+  const cycleStats = calcStats(cycleTimes, nReqOpts);
+  const cycleStatsNT = calcStats(cycleNormalTimes, nReqOpts);
   const cycleQ = quartiles(cycleTimes);
   const cycleReg = linearRegression(cycleTimes);
   const cycleOutliers = detectOutliers(cycleTimes);
@@ -586,7 +512,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     ['GÜVEN ARALIĞI'],
     ['%95 GA Alt', toSec(cycleStats?.ci95Low), 'sn'],
     ['%95 GA Üst', toSec(cycleStats?.ci95High), 'sn'],
-    ['Gerekli Çevrim (±%5, %95)', cycleStats?.nReq || 0],
+    [`Gerekli Çevrim (±%${errPct}, %${confPct})`, cycleStats?.nReq || 0],
     ['Yeterli Çevrim?', cycleStats && completeCycles >= cycleStats.nReq ? 'EVET' : 'HAYIR'],
     [],
     ['TREND'],
@@ -623,7 +549,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   const lapReg = linearRegression(times);
 
   const s2Header = [
-    'Kayıt No', 'Çevrim', 'Adım No', 'Adım Adı', 'Adım Rengi',
+    'Kayıt No', 'Çevrim', 'Adım No', 'Adım Adı',
     'Süre (ms)', 'Süre (sn)', 'Süre (mm:ss.cc)',
     'Tempo (%)', 'Normal (ms)', 'Normal (sn)', 'Normal (mm:ss.cc)',
     'Kümülatif (ms)', 'Kümülatif (sn)', 'Kümülatif (mm:ss.cc)',
@@ -635,7 +561,6 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   session.laps.forEach((l, i) => {
     const stepIdx = l.step !== undefined ? l.step : i % stepCount;
     const stepName = l.stepName || sSteps[stepIdx]?.name || `Adım ${stepIdx + 1}`;
-    const stepColor = sSteps[stepIdx]?.color || STEP_COLORS[stepIdx % STEP_COLORS.length];
     const anomaly = l.tag !== null && sTags[l.tag] ? sTags[l.tag].name : '';
     const tempo = l.tempo || 100;
     const nt = l.nt || l.t;
@@ -646,7 +571,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     const trendVal = lapReg.intercept + lapReg.slope * i;
 
     s2Data.push([
-      i + 1, cycle, stepIdx + 1, stepName, stepColor,
+      i + 1, cycle, stepIdx + 1, stepName,
       l.t, toSec(l.t), ffull(l.t),
       tempo, nt, toSec(nt), ffull(nt),
       l.cum, toSec(l.cum), ffull(l.cum),
@@ -659,7 +584,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
 
   const s2 = XLSX.utils.aoa_to_sheet(s2Data);
   s2['!cols'] = [
-    { wch: 10 }, { wch: 8 }, { wch: 8 }, { wch: 20 }, { wch: 10 },
+    { wch: 10 }, { wch: 8 }, { wch: 8 }, { wch: 20 },
     { wch: 12 }, { wch: 10 }, { wch: 12 },
     { wch: 8 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
     { wch: 12 }, { wch: 12 }, { wch: 14 },
@@ -718,7 +643,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   const s4Data = [
     ['ADIM ANALİZİ'],
     [],
-    ['Adım', 'Renk', 'Adet', 'Toplam (sn)', 'Ortalama (sn)', 'Normal Ort (sn)',
+    ['Adım', 'Adet', 'Toplam (sn)', 'Ortalama (sn)', 'Normal Ort (sn)',
      'Medyan (sn)', 'Min (sn)', 'Max (sn)', 'Aralık (sn)',
      'Std Sapma (sn)', 'CV (%)', 'Q1 (sn)', 'Q3 (sn)', '%95 GA Alt', '%95 GA Üst',
      'Oran (%)', 'Trend Eğimi']
@@ -728,17 +653,16 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     const stepLaps = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === i);
     const stepTimes = stepLaps.map(l => l.t);
     const stepNT = stepLaps.map(l => l.nt || l.t);
-    const stats = calcStats(stepTimes);
-    const ntStats = calcStats(stepNT);
+    const stats = calcStats(stepTimes, nReqOpts);
+    const ntStats = calcStats(stepNT, nReqOpts);
     const stepQ = quartiles(stepTimes);
     const stepReg = linearRegression(stepTimes);
     const stepName = sSteps[i]?.name || `Adım ${i + 1}`;
-    const stepColor = sSteps[i]?.color || STEP_COLORS[i % STEP_COLORS.length];
     const ratio = cycleStats?.mean ? ((stats?.mean || 0) / cycleStats.mean) * 100 : 0;
 
     if (stats) {
       s4Data.push([
-        stepName, stepColor, stats.n, toSec(stats.sum), toSec(stats.mean), toSec(ntStats?.mean),
+        stepName, stats.n, toSec(stats.sum), toSec(stats.mean), toSec(ntStats?.mean),
         toSec(stats.median), toSec(stats.min), toSec(stats.max), toSec(stats.range),
         toSec(stats.stdDev), +stats.cv.toFixed(2), toSec(stepQ.q1), toSec(stepQ.q3),
         toSec(stats.ci95Low), toSec(stats.ci95High),
@@ -749,10 +673,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
 
   // Add totals row
   s4Data.push([]);
-  s4Data.push(['TOPLAM', '', st?.n || 0, toSec(st?.sum), '', '', '', '', '', '', '', '', '', '', '', '', '100%', '']);
+  s4Data.push(['TOPLAM', st?.n || 0, toSec(st?.sum), '', '', '', '', '', '', '', '', '', '', '', '', '100%', '']);
 
   const s4 = XLSX.utils.aoa_to_sheet(s4Data);
-  s4['!cols'] = Array(18).fill({ wch: 12 });
+  s4['!cols'] = Array(17).fill({ wch: 12 });
   s4['!cols'][0] = { wch: 18 };
   XLSX.utils.book_append_sheet(wb, s4, 'Adım Analizi');
 
@@ -789,7 +713,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
 
   for (let s = 0; s < stepCount; s++) {
     const stepTimes = session.laps.filter(l => l.step === s).map(l => l.t);
-    const stepStats = calcStats(stepTimes);
+    const stepStats = calcStats(stepTimes, nReqOpts);
     avgRow.push(toSec(stepStats?.mean));
     minRow.push(toSec(stepStats?.min));
     maxRow.push(toSec(stepStats?.max));
@@ -814,16 +738,16 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     ['ANOMALİ ANALİZİ'],
     [],
     ['ÖZET'],
-    ['Anomali Türü', 'Renk', 'Adet', 'Oran (%)', 'Toplam Süre (sn)', 'Ortalama (sn)', 'Min (sn)', 'Max (sn)']
+    ['Anomali Türü', 'Adet', 'Oran (%)', 'Toplam Süre (sn)', 'Ortalama (sn)', 'Min (sn)', 'Max (sn)']
   ];
 
   sTags.forEach((t, i) => {
     const tagLaps = anomalyLaps.filter(l => l.tag === i);
     const tagTimes = tagLaps.map(l => l.t);
-    const tagStats = calcStats(tagTimes);
+    const tagStats = calcStats(tagTimes, nReqOpts);
     if (tagLaps.length > 0) {
       s6Data.push([
-        t.name, t.color, tagLaps.length,
+        t.name, tagLaps.length,
         +((tagLaps.length / session.laps.length) * 100).toFixed(1),
         toSec(tagStats?.sum), toSec(tagStats?.mean), toSec(tagStats?.min), toSec(tagStats?.max)
       ]);
@@ -844,7 +768,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   });
 
   const s6 = XLSX.utils.aoa_to_sheet(s6Data);
-  s6['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+  s6['!cols'] = [{ wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, s6, 'Anomali Analizi');
 
   // ========== SHEET 7: ÇEVRİM TREND ==========
@@ -922,7 +846,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     const stepLaps = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === si);
     const stepTimes = stepLaps.map(l => l.t);
     const stepQ = quartiles(stepTimes);
-    const stepSt = calcStats(stepTimes);
+    const stepSt = calcStats(stepTimes, nReqOpts);
     const stepName = sSteps[si]?.name || `Adım ${si + 1}`;
     dData.push([
       stepName, stepTimes.length,
@@ -964,7 +888,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   // Clean stats without outliers
   const cleanCycleTimes = cycleTimes.filter((_, i) => !cycleOutliers.has(i));
   if (cleanCycleTimes.length > 0 && cycleOutliers.size > 0) {
-    const cleanCycleStats = calcStats(cleanCycleTimes);
+    const cleanCycleStats = calcStats(cleanCycleTimes, nReqOpts);
     oData.push([], ['AYKIRI DEĞERLER HARİÇ ÇEVRİM İSTATİSTİKLERİ']);
     oData.push(['Çevrim Sayısı', cleanCycleStats?.n || 0]);
     oData.push(['Ortalama', toSec(cleanCycleStats?.mean), 'sn']);
@@ -1008,7 +932,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
 
   Object.keys(tempoGroups).sort((a, b) => +b - +a).forEach(tempo => {
     const tTimes = tempoGroups[tempo];
-    const tStats = calcStats(tTimes);
+    const tStats = calcStats(tTimes, nReqOpts);
     tpData.push([
       +tempo, tStats?.n || 0,
       +((tStats?.n / (st?.n || 1)) * 100).toFixed(1),
@@ -1062,42 +986,31 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     ['KONFİGÜRASYON'],
     [],
     ['ADIMLAR'],
-    ['No', 'Adım Adı', 'Renk'],
+    ['No', 'Adım Adı'],
   ];
   sSteps.forEach((s, i) => {
-    cfgData.push([i + 1, s.name, s.color || STEP_COLORS[i % STEP_COLORS.length]]);
+    cfgData.push([i + 1, s.name]);
   });
 
-  cfgData.push([], ['ANOMALİ ETİKETLERİ'], ['No', 'İsim', 'Renk', 'İkon']);
+  cfgData.push([], ['ANOMALİ ETİKETLERİ'], ['No', 'İsim', 'İkon']);
   sTags.forEach((t, i) => {
-    cfgData.push([i + 1, t.name, t.color, t.icon || 'tag']);
+    cfgData.push([i + 1, t.name, t.icon || 'tag']);
   });
 
   cfgData.push([], ['ÖLÇÜM MODU'], ['Mod', 'Ardışık İşlem (sequence)']);
+  cfgData.push([], ['NREQ PARAMETRELERİ']);
+  cfgData.push(['Güven Düzeyi', `%${confPct}`]);
+  cfgData.push(['Hata Payı', `±%${errPct}`]);
   cfgData.push([], ['VERSİYON BİLGİSİ']);
   cfgData.push(['Export Versiyonu', '3.0']);
   cfgData.push(['Uygulama', 'Zaman Etüdü PWA']);
 
   const cfgSheet = XLSX.utils.aoa_to_sheet(cfgData);
-  cfgSheet['!cols'] = [{ wch: 18 }, { wch: 25 }, { wch: 12 }, { wch: 12 }];
+  cfgSheet['!cols'] = [{ wch: 18 }, { wch: 25 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, cfgSheet, 'Konfigürasyon');
 }
 
 // Find mode (most frequent value rounded to 10ms)
-function findMode(times) {
-  if (!times.length) return 0;
-  const freq = {};
-  times.forEach(t => {
-    const rounded = Math.round(t / 10) * 10;
-    freq[rounded] = (freq[rounded] || 0) + 1;
-  });
-  let mode = times[0], maxFreq = 0;
-  Object.entries(freq).forEach(([val, f]) => {
-    if (f > maxFreq) { maxFreq = f; mode = +val; }
-  });
-  return mode;
-}
-
 // ============ JSON EXPORT ============
 
 export function exportAllJSON() {

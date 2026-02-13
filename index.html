@@ -51,6 +51,12 @@
     <div class="setup-mode-hint" id="setupModeHint" style="font-size:clamp(10px,3vw,13px);color:var(--tx2);text-align:center;margin-bottom:clamp(8px,2vh,16px);line-height:1.5"></div>
     <div class="inp-grp"><label>Operatör Adı</label><input type="text" id="inpOp" placeholder="İşi yapan kişinin adını girin" autocomplete="off" required></div>
     <div class="inp-grp"><label>İş / Proses Adı</label><input type="text" id="inpJob" placeholder="İş tanımını girin" autocomplete="off" required></div>
+    <div class="nreq-params" id="nreqParams">
+      <div class="nreq-title">Ne Kadar Ölçüm Gerekli?</div>
+      <div class="nreq-sub">Güven düzeyi ve kabul edilebilir hata payını belirleyin</div>
+      <div class="nreq-row"><label>Güven Düzeyi</label><div class="nreq-pills" id="nreqConfPills"><button type="button" class="nreq-pill" data-val="0.90">%90</button><button type="button" class="nreq-pill sel" data-val="0.95">%95</button><button type="button" class="nreq-pill" data-val="0.99">%99</button></div></div>
+      <div class="nreq-row"><label>Hata Payı</label><div class="nreq-pills" id="nreqErrPills"><button type="button" class="nreq-pill" data-val="0.03">±%3</button><button type="button" class="nreq-pill sel" data-val="0.05">±%5</button><button type="button" class="nreq-pill" data-val="0.10">±%10</button></div></div>
+    </div>
     <div id="setupStepsPreview" style="display:none;margin:clamp(8px,2vh,12px) 0"></div>
     <button type="submit" class="btn-go">BAŞLAT</button>
     <button type="button" class="btn-back" id="setupBack">Geri Dön</button>
@@ -98,6 +104,7 @@
     <div class="step-dots" id="stepDots"></div>
   </div>
   <div class="timer-area" id="timerArea">
+    <div class="nreq-live" id="nreqLive"></div>
     <div class="timer-tempo-wrap">
       <div class="timer-ring">
         <svg class="timer-ring-svg" viewBox="0 0 200 200"><circle class="ring-bg" cx="100" cy="100" r="90"/><circle class="ring-prog" id="ringProg" cx="100" cy="100" r="90"/></svg>

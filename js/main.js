@@ -2,7 +2,7 @@
 
 import { $, toast, vib, esc, dimColor, getNow, goFS } from './utils.js';
 import { STEP_COLORS } from './config.js';
-import { S, setMeasurementMode, setSequenceSteps, measurementMode, sequenceSteps, tags, setTags, setCurrentStep, setSequenceCycle } from './state.js';
+import { S, setMeasurementMode, setSequenceSteps, measurementMode, sequenceSteps, tags, setTags, setCurrentStep, setSequenceCycle, nReqConfidence, nReqError, setNReqConfidence, setNReqError } from './state.js';
 import { loadTags, saveHistory, loadHistory, loadAutoRecovery, clearAutoRecovery } from './storage.js';
 import { initScreens, showScreen, initPopState, pushPanel, closePanels } from './nav.js';
 import { startT, pauseT, resumeT, stopT, startFromTime } from './timer.js';
@@ -162,6 +162,14 @@ function init() {
 
   $('setupBack').onclick = () => showScreen('modeSelect');
 
+  // nReq parameter pill buttons
+  document.querySelectorAll('#nreqConfPills .nreq-pill').forEach(btn => {
+    btn.onclick = (e) => { e.preventDefault(); document.querySelectorAll('#nreqConfPills .nreq-pill').forEach(b => b.classList.remove('sel')); btn.classList.add('sel'); };
+  });
+  document.querySelectorAll('#nreqErrPills .nreq-pill').forEach(btn => {
+    btn.onclick = (e) => { e.preventDefault(); document.querySelectorAll('#nreqErrPills .nreq-pill').forEach(b => b.classList.remove('sel')); btn.classList.add('sel'); };
+  });
+
   // Setup form submission
   $('setupForm').onsubmit = e => {
     e.preventDefault();
@@ -170,6 +178,11 @@ function init() {
     if (!op || !job) return;
     S.op = op;
     S.job = job;
+    // nReq parametrelerini oku
+    const confPill = document.querySelector('#nreqConfPills .nreq-pill.sel');
+    const errPill = document.querySelector('#nreqErrPills .nreq-pill.sel');
+    if (confPill) setNReqConfidence(+confPill.dataset.val);
+    if (errPill) setNReqError(+errPill.dataset.val);
     $('dJob').textContent = job;
     $('dOp').textContent = op;
     buildTagStrip();
@@ -383,6 +396,10 @@ function restoreRecovery(recovery) {
   // Mod ayarla
   setMeasurementMode(recovery.mode || 'repeat');
 
+  // nReq parametrelerini yükle
+  if (recovery.nReqConfidence) setNReqConfidence(recovery.nReqConfidence);
+  if (recovery.nReqError) setNReqError(recovery.nReqError);
+
   // Sequence modundaysa adımları yükle
   if (recovery.mode === 'sequence' && recovery.steps) {
     setSequenceSteps(recovery.steps);
@@ -444,8 +461,10 @@ function saveSession() {
       step: l.step, stepName: l.stepName, cycle: l.cycle, mode: l.mode
     })),
     mode: measurementMode,
-    cycles: measurementMode === 'sequence' ? S.laps.length > 0 ? Math.ceil(S.laps.length / sequenceSteps.length) : 0 : null,
-    steps: measurementMode === 'sequence' ? JSON.parse(JSON.stringify(sequenceSteps)) : null
+    cycles: measurementMode === 'sequence' ? S.laps.length > 0 ? Math.floor(S.laps.length / sequenceSteps.length) : 0 : null,
+    steps: measurementMode === 'sequence' ? JSON.parse(JSON.stringify(sequenceSteps)) : null,
+    nReqConfidence,
+    nReqError
   });
   saveHistory(hist);
 

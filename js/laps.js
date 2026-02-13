@@ -5,12 +5,13 @@ import { SVG_ICONS, STEP_COLORS } from './config.js';
 import {
   S, tags, measurementMode,
   currentStep, sequenceSteps, sequenceCycle,
-  currentTempo
+  currentTempo, nReqConfidence, nReqError
 } from './state.js';
 import { getEl } from './timer.js';
 import { advanceStep } from './steps.js';
 import { openTP, openNote } from './panels.js';
 import { saveAutoRecovery } from './storage.js';
+import { calcStats } from './stats.js';
 
 // Record a lap
 export function recordLap(tagIdx = null) {
@@ -59,6 +60,8 @@ export function recordLap(tagIdx = null) {
 
   // Otomatik kaydet - veri kaybını önle
   autoSaveProgress();
+
+  updateLiveNReq();
 }
 
 // Ölçüm ilerlemesini otomatik kaydet
@@ -75,7 +78,9 @@ export function autoSaveProgress() {
     mode: measurementMode,
     steps: measurementMode === 'sequence' ? sequenceSteps : null,
     currentStep: measurementMode === 'sequence' ? currentStep : null,
-    cycle: measurementMode === 'sequence' ? sequenceCycle : null
+    cycle: measurementMode === 'sequence' ? sequenceCycle : null,
+    nReqConfidence,
+    nReqError
   });
 }
 
@@ -200,6 +205,7 @@ export function delLap(lap, card) {
     $('lapN').textContent = S.laps.length;
     if (!S.laps.length) $('lapCtr').style.display = 'none';
     toast('Tur silindi', 't-dng');
+    updateLiveNReq();
   }, 250);
 
   vib([10, 30, 10]);
@@ -257,4 +263,45 @@ function setupSwipe(card, lap) {
 export function recalcLaps() {
   let cum = 0;
   S.laps.forEach((l, i) => { l.num = i + 1; cum += l.t; l.cum = cum; });
+}
+
+// Live nReq indicator on timer area
+export function updateLiveNReq() {
+  const el = $('nreqLive');
+  if (!el) return;
+
+  let times, n, label;
+
+  if (measurementMode === 'sequence') {
+    const stepCount = sequenceSteps.length;
+    if (stepCount < 1) { el.classList.remove('visible'); return; }
+    const completeCycles = Math.floor(S.laps.length / stepCount);
+    const cycleTimes = [];
+    for (let c = 0; c < completeCycles; c++) {
+      let ct = 0;
+      for (let s = 0; s < stepCount; s++) ct += S.laps[c * stepCount + s].t;
+      cycleTimes.push(ct);
+    }
+    times = cycleTimes;
+    n = times.length;
+    label = 'çevrim';
+  } else {
+    times = S.laps.map(l => l.t);
+    n = times.length;
+    label = 'gözlem';
+  }
+
+  if (n < 2) { el.classList.remove('visible'); return; }
+
+  const stats = calcStats(times, { confidence: nReqConfidence, errorMargin: nReqError });
+  if (!stats) { el.classList.remove('visible'); return; }
+
+  const unit = measurementMode === 'sequence' ? 'çevrim' : 'tur';
+  const ok = n >= stats.nReq;
+  el.classList.add('visible');
+  el.classList.toggle('ok', ok);
+  el.classList.toggle('warn', !ok);
+  el.textContent = ok
+    ? `${n} ${unit} ✓ Yeterli`
+    : `${n} ${unit} · ${stats.nReq} gerekli`;
 }

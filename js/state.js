@@ -46,6 +46,10 @@ export let currentStep = 0;
 export let sequenceSteps = [];
 export let sequenceCycle = 1;
 
+// nReq parameters (gerekli gözlem sayısı)
+export let nReqConfidence = 0.95;
+export let nReqError = 0.05;
+
 // Step edit state
 export let stepEditIdx = null;
 
@@ -77,6 +81,8 @@ export function setTpTarget(val) { tpTarget = val; }
 export function setTeTarget(val) { teTarget = val; }
 export function setSelNoteLap(val) { selNoteLap = val; }
 export function setCurScreen(val) { curScreen = val; }
+export function setNReqConfidence(val) { nReqConfidence = val; }
+export function setNReqError(val) { nReqError = val; }
 
 // Reset all state
 export function resetAllState() {
@@ -109,4 +115,6 @@ export function resetAllState() {
   sequenceSteps = [];
   currentTempo = 100;
   tempoIdx = 10;
+  nReqConfidence = 0.95;
+  nReqError = 0.05;
 }

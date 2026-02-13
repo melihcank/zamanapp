@@ -2,7 +2,7 @@
 
 import { $, toast, vib, ffull, esc, dimColor, tagIcon } from './utils.js';
 import { SVG_ICONS, STEP_COLORS } from './config.js';
-import { calcStats, tagAnalysis, detectOutliers } from './stats.js';
+import { calcStats, detectOutliers } from './stats.js';
 import { loadHistory, saveHistory, loadTags, clearAutoRecovery } from './storage.js';
 import {
   S, tags, setTags, measurementMode, sequenceSteps,
@@ -13,7 +13,8 @@ import {
   sumTimeStr, setSumTimeStr,
   sumDelTarget, setSumDelTarget,
   tpTarget, setTpTarget,
-  setCurrentStep, setSequenceCycle
+  setCurrentStep, setSequenceCycle,
+  nReqConfidence, nReqError, setNReqConfidence, setNReqError
 } from './state.js';
 import { screens, showScreen, pushPanel } from './nav.js';
 import { recalcLaps, refreshList } from './laps.js';
@@ -68,10 +69,9 @@ export function rebuildSummary() {
     }
   });
 
-  const st = calcStats(finalTimes);
-  const stNT = calcStats(finalNT);
-  const tot = finalTimes.reduce((a, b) => a + b, 0);
-  const totNT = finalNT.reduce((a, b) => a + b, 0);
+  const nReqOpts = { confidence: nReqConfidence, errorMargin: nReqError };
+  const st = calcStats(finalTimes, nReqOpts);
+  const stNT = calcStats(finalNT, nReqOpts);
 
   // Build set of all excluded lap nums for visual dimming
   const excludedNums = new Set();
@@ -93,13 +93,17 @@ export function rebuildSummary() {
     ${laps.length ? '<button class="sum-action-btn sab-resume" id="btnResume"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Devam Et</button>' : ''}
     <button class="sum-action-btn sab-back" id="btnNew"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>${backBtnText}</button>
   </div>`;
-  let h = `<div class="sum-hdr"><h2>Ölçüm Tamamlandı${modeBadge}</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:clamp(9px,2.5vw,12px);color:var(--tx3);margin-top:clamp(2px,.6vw,4px)">${sumDateStr} ${sumTimeStr}</p>${actionBtns}</div>`;
+  // nReq parametre kontrolleri (özet ekranı)
+  const confPills = [0.90, 0.95, 0.99].map(v => `<button class="nreq-pill${v === nReqConfidence ? ' sel' : ''}" data-nconf="${v}">%${Math.round(v * 100)}</button>`).join('');
+  const errPills = [0.03, 0.05, 0.10].map(v => `<button class="nreq-pill${v === nReqError ? ' sel' : ''}" data-nerr="${v}">±%${Math.round(v * 100)}</button>`).join('');
+  const nreqSection = `<div class="nreq-params" style="margin-bottom:clamp(8px,2vw,14px)"><div class="nreq-title">Ne Kadar Ölçüm Gerekli?</div><div class="nreq-sub">Güven düzeyi ve kabul edilebilir hata payını belirleyin</div><div class="nreq-row"><label>Güven Düzeyi</label><div class="nreq-pills">${confPills}</div></div><div class="nreq-row"><label>Hata Payı</label><div class="nreq-pills">${errPills}</div></div></div>`;
+
+  let h = `<div class="sum-hdr"><h2>Ölçüm Tamamlandı${modeBadge}</h2><p>${esc(S.job)} — ${esc(S.op)}</p><p style="font-size:clamp(9px,2.5vw,12px);color:var(--tx3);margin-top:clamp(2px,.6vw,4px)">${sumDateStr} ${sumTimeStr}</p>${actionBtns}</div>${nreqSection}`;
 
   if (isSeqMode) {
     // SEQUENCE MODE SUMMARY
     const stepCount = sequenceSteps.length || 4;
     const totalCompleteCycles = Math.floor(laps.length / stepCount);
-    const partialSteps = laps.length % stepCount;
 
     // Filter: use excludedNums from tag/outlier filter above
     // For cycles: only include cycles where ALL laps pass the filter
@@ -119,8 +123,8 @@ export function rebuildSummary() {
         filtCycleNT.push(cnt);
       }
     }
-    const cycleStats = calcStats(filtCycleTimes);
-    const cycleStatsNT = calcStats(filtCycleNT);
+    const cycleStats = calcStats(filtCycleTimes, nReqOpts);
+    const cycleStatsNT = calcStats(filtCycleNT, nReqOpts);
 
     // Step analysis - filtered by excludedNums
     const stepAnalysis = [];
@@ -133,8 +137,8 @@ export function rebuildSummary() {
 
       const times = stepLaps.map(l => l.t);
       const normalTimes = stepLaps.map(l => l.nt || l.t);
-      const stats = calcStats(times);
-      const ntStats = calcStats(normalTimes);
+      const stats = calcStats(times, nReqOpts);
+      const ntStats = calcStats(normalTimes, nReqOpts);
       const stepDef = sequenceSteps[i] || { name: 'Adım ' + (i + 1), color: STEP_COLORS[i % STEP_COLORS.length] };
 
       const safeStats = stats || { n: 0, sum: 0, mean: 0, median: 0, stdDev: 0, cv: 0, min: 0, max: 0, range: 0, nReq: 0 };
@@ -163,9 +167,8 @@ export function rebuildSummary() {
     const seqHasTempoVariation = laps.some(l => (l.tempo || 100) !== 100);
 
     if (cycleStats && cycleStats.n > 0) {
-      const normalCycleTime = stepAnalysis.reduce((sum, sa) => sum + (sa.ntMean || 0), 0);
       const seqObsPerHour = cycleStats.mean > 0 ? (3600000 / cycleStats.mean).toFixed(1) : '—';
-      const seqNormPerHour = normalCycleTime > 0 ? (3600000 / normalCycleTime).toFixed(1) : '—';
+      const seqNormPerHour = cycleStatsNT?.mean > 0 ? (3600000 / cycleStatsNT.mean).toFixed(1) : '—';
       const reqOk = cycleStats.n >= cycleStats.nReq;
 
       h += `<div class="sum-compare">`;
@@ -177,7 +180,7 @@ export function rebuildSummary() {
 
       if (seqHasTempoVariation) {
         h += `<table class="sum-compare-table"><thead><tr><th></th><th>Gözlem</th><th>Normal</th></tr></thead><tbody>`;
-        h += `<tr><td>Ort. Çevrim</td><td>${ffull(cycleStats.mean)}</td><td>${ffull(normalCycleTime)}</td></tr>`;
+        h += `<tr><td>Ort. Çevrim</td><td>${ffull(cycleStats.mean)}</td><td>${ffull(cycleStatsNT?.mean)}</td></tr>`;
         h += `<tr><td>Medyan</td><td>${ffull(cycleStats.median)}</td><td>${ffull(cycleStatsNT?.median)}</td></tr>`;
         h += `<tr><td>Min</td><td>${ffull(cycleStats.min)}</td><td>${ffull(cycleStatsNT?.min)}</td></tr>`;
         h += `<tr><td>Max</td><td>${ffull(cycleStats.max)}</td><td>${ffull(cycleStatsNT?.max)}</td></tr>`;
@@ -242,7 +245,6 @@ export function rebuildSummary() {
     const obsPerHour = st.mean > 0 ? (3600000 / st.mean).toFixed(1) : '—';
     const normPerHour = stNT.mean > 0 ? (3600000 / stNT.mean).toFixed(1) : '—';
     const reqOk = st.n >= st.nReq;
-    const reqNTOk = stNT && st.n >= stNT.nReq;
 
     h += `<div class="sum-compare">`;
     // Header with observation count
@@ -255,7 +257,7 @@ export function rebuildSummary() {
     if (hasTempoVariation) {
       // Two column table: Gözlem vs Normal
       h += `<table class="sum-compare-table"><thead><tr><th></th><th>Gözlem</th><th>Normal</th></tr></thead><tbody>`;
-      h += `<tr><td>Toplam</td><td>${ffull(tot)}</td><td>${ffull(totNT)}</td></tr>`;
+      h += `<tr><td>Toplam</td><td>${ffull(st.sum)}</td><td>${ffull(stNT.sum)}</td></tr>`;
       h += `<tr><td>Ortalama</td><td>${ffull(st.mean)}</td><td>${ffull(stNT.mean)}</td></tr>`;
       h += `<tr><td>Medyan</td><td>${ffull(st.median)}</td><td>${ffull(stNT.median)}</td></tr>`;
       h += `<tr><td>Min</td><td>${ffull(st.min)}</td><td>${ffull(stNT.min)}</td></tr>`;
@@ -268,7 +270,7 @@ export function rebuildSummary() {
     } else {
       // Single column table: Only Gözlem (all tempos are 100)
       h += `<table class="sum-compare-table"><thead><tr><th></th><th>Değer</th></tr></thead><tbody>`;
-      h += `<tr><td>Toplam</td><td>${ffull(tot)}</td></tr>`;
+      h += `<tr><td>Toplam</td><td>${ffull(st.sum)}</td></tr>`;
       h += `<tr><td>Ortalama</td><td>${ffull(st.mean)}</td></tr>`;
       h += `<tr><td>Medyan</td><td>${ffull(st.median)}</td></tr>`;
       h += `<tr><td>Min</td><td>${ffull(st.min)}</td></tr>`;
@@ -309,6 +311,7 @@ export function rebuildSummary() {
   screens.summary.scrollTop = scrollY;
   bindSumActions();
   bindSumFilters();
+  bindNReqPills();
 
   $('btnExcel').onclick = () => {
     const sess = {
@@ -319,7 +322,9 @@ export function rebuildSummary() {
         t: l.t, cum: l.cum, tag: l.tag, note: l.note, tempo: l.tempo || 100, nt: l.nt || l.t,
         step: l.step, stepName: l.stepName, cycle: l.cycle
       })),
-      mode: measurementMode
+      mode: measurementMode,
+      nReqConfidence,
+      nReqError
     };
     const fn = 'zaman_etudu_' + S.job.replace(/[^a-zA-Z0-9\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.xlsx';
     exportExcel(sess, fn);
@@ -415,6 +420,26 @@ function bindSumFilters() {
   if (oCb) oCb.onchange = () => { setSumIncludeOutliers(oCb.checked); rebuildSummary(); };
 }
 
+// Bind nReq parameter pills in summary
+function bindNReqPills() {
+  screens.summary.querySelectorAll('[data-nconf]').forEach(btn => {
+    btn.onclick = () => {
+      screens.summary.querySelectorAll('[data-nconf]').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      setNReqConfidence(+btn.dataset.nconf);
+      rebuildSummary();
+    };
+  });
+  screens.summary.querySelectorAll('[data-nerr]').forEach(btn => {
+    btn.onclick = () => {
+      screens.summary.querySelectorAll('[data-nerr]').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+      setNReqError(+btn.dataset.nerr);
+      rebuildSummary();
+    };
+  });
+}
+
 // Open tag picker for summary
 function openSumTP(lap) {
   setTpTarget({ lap, card: null });
@@ -487,6 +512,10 @@ export function resetAll() {
   $('lapN').textContent = '0';
   $('ringProg').style.strokeDashoffset = '565.48';
   $('timerArea').classList.remove('running', 'paused', 'pulse');
+  const nreq = $('nreqLive'); if (nreq) nreq.classList.remove('visible', 'ok', 'warn');
+  // nReq pill butonlarını sıfırla (setup ekranı)
+  document.querySelectorAll('#nreqConfPills .nreq-pill').forEach(b => { b.classList.toggle('sel', b.dataset.val === '0.95'); });
+  document.querySelectorAll('#nreqErrPills .nreq-pill').forEach(b => { b.classList.toggle('sel', b.dataset.val === '0.05'); });
   $('inpOp').value = '';
   $('inpJob').value = '';
   $('stepIndicator').classList.remove('visible');

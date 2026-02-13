@@ -5,7 +5,8 @@ import { loadHistory, saveHistory, loadTags } from './storage.js';
 import {
   S, tags, setTags, setMeasurementMode, setSequenceSteps,
   historyViewIdx, setHistoryViewIdx, hiDelTarget, setHiDelTarget,
-  setSumFilterTags, setSumIncludeOutliers, setSumDateStr, setSumTimeStr
+  setSumFilterTags, setSumIncludeOutliers, setSumDateStr, setSumTimeStr,
+  setNReqConfidence, setNReqError
 } from './state.js';
 import { showScreen, pushPanel } from './nav.js';
 import { exportExcel, exportAllJSON, triggerImportJSON } from './export.js';
@@ -109,6 +110,9 @@ export function openHistorySummary(record, idx) {
   setSumTimeStr(d ? d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '');
   setSumFilterTags(new Set([0, 1, 2, 3, 'none']));
   setSumIncludeOutliers(true);
+  // nReq parametrelerini kayıttan yükle (yoksa varsayılan)
+  setNReqConfidence(record.nReqConfidence || 0.95);
+  setNReqError(record.nReqError || 0.05);
 
   // Import and call rebuildSummary
   import('./summary.js').then(m => {
