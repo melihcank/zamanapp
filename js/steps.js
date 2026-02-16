@@ -78,7 +78,7 @@ export function openStepNameEdit(idx) {
   $('stepOv').classList.add('open');
   $('stepPanel').classList.add('open');
   $('stepPanel').style.transform = 'translateX(-50%) translateY(0)';
-  $('stepNameInput').focus();
+  $('stepNameInput').focus({ preventScroll: true });
   pushPanel();
 }
 

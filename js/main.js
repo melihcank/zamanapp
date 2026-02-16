@@ -188,7 +188,7 @@ function init() {
     // Focus the new input
     setTimeout(() => {
       const inputs = $('stepSetupList').querySelectorAll('.step-setup-input');
-      if (inputs.length) inputs[inputs.length - 1].focus();
+      if (inputs.length) inputs[inputs.length - 1].focus({ preventScroll: true });
     }, 50);
   };
 
@@ -425,9 +425,17 @@ function init() {
     showSummary();
   };
 
-  // Fullscreen - request on every interaction if not already fullscreen
-  document.addEventListener('click', goFS);
-  document.addEventListener('touchend', goFS);
+  // Fullscreen - request once on first interaction
+  let fsRequested = false;
+  function reqFS() {
+    if (fsRequested) return;
+    goFS();
+    fsRequested = true;
+    document.removeEventListener('click', reqFS);
+    document.removeEventListener('touchend', reqFS);
+  }
+  document.addEventListener('click', reqFS);
+  document.addEventListener('touchend', reqFS);
 
   // Arka plana giderken otomatik kaydet (ekran kapatma, uygulama değiştirme)
   document.addEventListener('visibilitychange', () => {
@@ -480,6 +488,7 @@ function checkRecovery() {
 
   // Modalı göster
   $('recoveryModal').classList.add('open');
+  pushPanel();
 
   // Sil butonu
   $('recDiscard').onclick = () => {

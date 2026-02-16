@@ -2,6 +2,8 @@
   "name": "Zaman Etüdü",
   "short_name": "Zaman",
   "description": "Saha kronometresi ve zaman etüdü uygulaması",
+  "id": "zaman-etudu",
+  "scope": "./",
   "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "portrait",

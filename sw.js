@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zaman-etudu-v76';
+const CACHE_NAME = 'zaman-etudu-v78';
 const ASSETS = [
   './',
   './index.html',
@@ -22,8 +22,7 @@ const ASSETS = [
   './js/export.js',
   './js/keyboard.js',
   './js/tutorial.js',
-  './js/settings.js',
-  'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js'
+  './js/settings.js'
 ];
 
 self.addEventListener('install', (e) => {

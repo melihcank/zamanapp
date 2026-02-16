@@ -2,9 +2,10 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1a1a1a">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="css/styles.css">
@@ -71,11 +72,11 @@
       <div class="setting-control">
         <div class="setting-range-row">
           <label>Min</label>
-          <input type="number" id="setTempoMin" min="10" max="95" step="5" value="50">
+          <input type="number" id="setTempoMin" min="10" max="95" step="5" value="50" inputmode="numeric">
           <label>Max</label>
-          <input type="number" id="setTempoMax" min="105" max="200" step="5" value="150">
+          <input type="number" id="setTempoMax" min="105" max="200" step="5" value="150" inputmode="numeric">
           <label>Adım</label>
-          <input type="number" id="setTempoStep" min="1" max="25" step="1" value="5">
+          <input type="number" id="setTempoStep" min="1" max="25" step="1" value="5" inputmode="numeric">
         </div>
       </div>
     </div>
@@ -87,7 +88,7 @@
       <div class="setting-control">
         <div class="setting-slider-wrap">
           <input type="range" id="setTempoDefault" min="50" max="150" step="1" value="100">
-          <input type="number" class="setting-slider-input" id="setTempoDefaultVal" min="1" max="999" value="100">
+          <input type="number" class="setting-slider-input" id="setTempoDefaultVal" min="1" max="999" value="100" inputmode="numeric">
         </div>
       </div>
     </div>
@@ -126,12 +127,12 @@
   <div class="mode-title">Ölçüm Modu Seçin</div>
   <div class="mode-sub">Yapmak istediğiniz zaman etüdü türüne göre bir mod seçin</div>
   <div class="mode-cards">
-    <div class="mode-card" id="modeRepeat">
+    <div class="mode-card" id="modeRepeat" role="button" tabindex="0">
       <div class="mode-card-icon"><svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></div>
       <h3>Tekrarlı Ölçüm</h3>
       <p>Aynı işlem tekrar tekrar yapılır ve her tekrar ölçülür. Ortalama süre, standart sapma ve gerekli gözlem sayısı hesaplanır.</p>
     </div>
-    <div class="mode-card" id="modeSequence">
+    <div class="mode-card" id="modeSequence" role="button" tabindex="0">
       <div class="mode-card-icon mode-seq"><svg viewBox="0 0 24 24"><path d="M3 5h2v14H3V5zm4 0h2v14H7V5zm4 0h2v14h-2V5zm4 0h2v14h-2V5zm4 0h2v14h-2V5z"/></svg></div>
       <h3>Ardışık İşlem</h3>
       <p>Birbirini takip eden farklı iş adımları sırasıyla ölçülür. Her adım için ayrı istatistikler hesaplanır.</p>

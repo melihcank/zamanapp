@@ -218,12 +218,13 @@ function setupSwipe(card, lap) {
   const th = 80;
 
   function onStart(x, y) { sx = x; sy = y; cx = x; drag = true; hz = null; cc.style.transition = 'none'; }
-  function onMove(x, y) {
+  function onMove(x, y, e) {
     if (!drag) return;
     cx = x;
     const dx = cx - sx, dy = y - sy;
     if (hz === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) hz = Math.abs(dx) > Math.abs(dy);
     if (!hz) return;
+    if (e) e.preventDefault(); // prevent vertical scroll during horizontal swipe
     cc.style.transform = `translateX(${Math.max(-120, Math.min(120, dx))}px)`;
   }
   function onEnd() {
@@ -246,7 +247,7 @@ function setupSwipe(card, lap) {
 
   // Touch
   cc.addEventListener('touchstart', e => { onStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
-  cc.addEventListener('touchmove', e => { onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  cc.addEventListener('touchmove', e => { onMove(e.touches[0].clientX, e.touches[0].clientY, e); }, { passive: false });
   cc.addEventListener('touchend', onEnd);
   // Mouse drag
   cc.addEventListener('mousedown', e => {

@@ -59,7 +59,8 @@ export function isPanel() {
     $('tePanel')?.classList.contains('open') ||
     $('stepPanel')?.classList.contains('open') ||
     $('stepChoiceModal')?.classList.contains('open') ||
-    $('settingsInfoModal')?.classList.contains('open');
+    $('settingsInfoModal')?.classList.contains('open') ||
+    $('recoveryModal')?.classList.contains('open');
 }
 
 // Close all panels
@@ -128,6 +129,12 @@ export function closePanels() {
   const settingsInfoModal = $('settingsInfoModal');
   if (settingsInfoModal?.classList.contains('open')) {
     settingsInfoModal.classList.remove('open');
+    return true;
+  }
+
+  const recoveryModal = $('recoveryModal');
+  if (recoveryModal?.classList.contains('open')) {
+    recoveryModal.classList.remove('open');
     return true;
   }
 

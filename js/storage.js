@@ -17,7 +17,9 @@ export function loadTags() {
 }
 
 export function saveTags(t) {
-  localStorage.setItem('zt_tags', JSON.stringify(t));
+  try {
+    localStorage.setItem('zt_tags', JSON.stringify(t));
+  } catch (e) {}
 }
 
 // History storage
@@ -30,7 +32,9 @@ export function loadHistory() {
 }
 
 export function saveHistory(h) {
-  localStorage.setItem('zt_hist', JSON.stringify(h));
+  try {
+    localStorage.setItem('zt_hist', JSON.stringify(h));
+  } catch (e) {}
 }
 
 // Otomatik kurtarma - ölçüm sırasında veri kaybını önler
