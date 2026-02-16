@@ -7,10 +7,12 @@ import { currentTempo, tempoIdx, setCurrentTempo, setTempoIdx } from './state.js
 // Dynamic tempo values (can be rebuilt from settings)
 let tempoValues = [...TEMPO_VALUES];
 
-// Rebuild tempo values from settings
+// Rebuild tempo values from settings (centered on 100)
 export function rebuildTempoValues(min, max, step) {
   const vals = [];
-  for (let v = max; v >= min; v -= step) vals.push(v);
+  for (let v = 100; v >= min; v -= step) vals.push(v);
+  for (let v = 100 + step; v <= max; v += step) vals.push(v);
+  vals.sort((a, b) => b - a);
   if (vals.length < 2) { tempoValues = [...TEMPO_VALUES]; return; }
   tempoValues = vals;
   // Adjust current index if out of range

@@ -40,17 +40,19 @@ function init() {
 
   // Menu navigation
   $('goMeasure').onclick = () => showScreen('modeSelect');
-  $('goTags').onclick = () => { renderTagEditor(); showScreen('tagEditor'); };
   $('goHistory').onclick = () => { renderHistory(); showScreen('history'); };
   $('goSettings').onclick = () => showScreen('settings');
   $('modeBack').onclick = () => showScreen('menu');
-  $('teBack').onclick = () => showScreen('menu');
+  $('teBack').onclick = () => showScreen('settingsMeasure');
   $('hiBack').onclick = () => showScreen('menu');
 
   // Settings navigation
   $('settingsBack').onclick = () => showScreen('menu');
   $('settingsMeasureBack').onclick = () => showScreen('settings');
   $('goSettingsMeasure').onclick = () => { loadMeasureSettings(); showScreen('settingsMeasure'); };
+  $('settingsStatsBack').onclick = () => showScreen('settings');
+  $('goSettingsStats').onclick = () => { loadStatsSettings(); showScreen('settingsStats'); };
+  $('goTagEditor').onclick = () => { renderTagEditor(); showScreen('tagEditor'); };
 
   // Settings info buttons
   document.querySelectorAll('.setting-info-btn').forEach(btn => {
@@ -64,24 +66,30 @@ function init() {
   });
   $('settingsInfoClose').onclick = () => $('settingsInfoModal').classList.remove('open');
 
-  // Settings: tempo range → slider/input sınırlarını anlık güncelle
-  // Sadece min < max ve ikisi de geçerli sayı olduğunda çalışır
+  // Settings: tempo range → slider/input sınırlarını anlık güncelle (100-merkezli)
   function syncTempoDefaultLimits() {
     const min = parseInt($('setTempoMin').value);
     const max = parseInt($('setTempoMax').value);
-    if (isNaN(min) || isNaN(max) || min < 1 || min >= max) return;
+    const step = parseInt($('setTempoStep').value);
+    if (isNaN(min) || isNaN(max) || isNaN(step) || min < 1 || min >= max || step < 1) return;
+    // 100'den merkezli hizalanmış min/max hesapla
+    let alignedMin = 100;
+    while (alignedMin - step >= min) alignedMin -= step;
+    let alignedMax = 100;
+    while (alignedMax + step <= max) alignedMax += step;
     const slider = $('setTempoDefault');
     const valInput = $('setTempoDefaultVal');
-    slider.min = min;
-    slider.max = max;
-    valInput.min = min;
-    valInput.max = max;
-    // Browser range input'u min/max'a göre otomatik clamp eder
-    // Input'u her zaman slider'ın güncel değerine eşitle
+    slider.min = alignedMin;
+    slider.max = alignedMax;
+    slider.step = step;
+    valInput.min = alignedMin;
+    valInput.max = alignedMax;
+    valInput.step = step;
     valInput.value = slider.value;
   }
   $('setTempoMin').oninput = syncTempoDefaultLimits;
   $('setTempoMax').oninput = syncTempoDefaultLimits;
+  $('setTempoStep').oninput = syncTempoDefaultLimits;
 
   // Settings: tempo default slider ↔ input sync
   $('setTempoDefault').oninput = () => {
@@ -89,13 +97,11 @@ function init() {
   };
   $('setTempoDefaultVal').onchange = () => {
     let v = parseInt($('setTempoDefaultVal').value);
-    if (isNaN(v) || v < 1) v = 1;
-    const min = parseInt($('setTempoMin').value) || 50;
-    const max = parseInt($('setTempoMax').value) || 150;
-    if (v < min) v = min;
-    if (v > max) v = max;
-    $('setTempoDefaultVal').value = v;
-    $('setTempoDefault').value = v;
+    if (isNaN(v) || v < 1) v = 100;
+    // Slider'a atayınca browser otomatik step'e snap eder
+    const slider = $('setTempoDefault');
+    slider.value = v;
+    $('setTempoDefaultVal').value = slider.value;
   };
   // Prevent negative values on keypress
   $('setTempoDefaultVal').onkeydown = (e) => {
@@ -142,12 +148,142 @@ function init() {
     toast('Varsayılan ayarlara sıfırlandı', 't-ok');
   };
 
+  // ===== STATS SETTINGS =====
+
+  // Stats: slider ↔ input sync
+  $('setIqrMultiplier').oninput = () => $('setIqrMultiplierVal').value = $('setIqrMultiplier').value;
+  $('setIqrMultiplierVal').onchange = () => {
+    let v = parseFloat($('setIqrMultiplierVal').value);
+    if (isNaN(v) || v < 0.5) v = 0.5;
+    if (v > 3.0) v = 3.0;
+    $('setIqrMultiplier').value = v;
+    $('setIqrMultiplierVal').value = v;
+    // Update preset pill selection
+    document.querySelectorAll('#iqrPresets .nreq-pill').forEach(x => {
+      x.classList.toggle('sel', parseFloat(x.dataset.val) === v);
+    });
+  };
+
+  $('setMovingAvgWindow').oninput = () => $('setMovingAvgWindowVal').value = $('setMovingAvgWindow').value;
+  $('setMovingAvgWindowVal').onchange = () => {
+    let v = parseInt($('setMovingAvgWindowVal').value);
+    if (isNaN(v) || v < 2) v = 2;
+    if (v > 10) v = 10;
+    $('setMovingAvgWindow').value = v;
+    $('setMovingAvgWindowVal').value = v;
+  };
+
+  $('setHistogramBins').oninput = () => $('setHistogramBinsVal').value = $('setHistogramBins').value;
+  $('setHistogramBinsVal').onchange = () => {
+    let v = parseInt($('setHistogramBinsVal').value);
+    if (isNaN(v) || v < 5) v = 5;
+    if (v > 30) v = 30;
+    $('setHistogramBins').value = v;
+    $('setHistogramBinsVal').value = v;
+  };
+
+  $('setTrendThreshold').oninput = () => $('setTrendThresholdVal').value = $('setTrendThreshold').value;
+  $('setTrendThresholdVal').onchange = () => {
+    let v = parseFloat($('setTrendThresholdVal').value);
+    if (isNaN(v) || v < 0.01) v = 0.01;
+    if (v > 0.50) v = 0.50;
+    $('setTrendThreshold').value = v;
+    $('setTrendThresholdVal').value = v;
+  };
+
+  // Stats: IQR preset pills → update slider + input
+  document.querySelectorAll('#iqrPresets .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#iqrPresets .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      const v = parseFloat(b.dataset.val);
+      $('setIqrMultiplier').value = v;
+      $('setIqrMultiplierVal').value = v;
+    };
+  });
+
+  // Stats: single-select pill groups
+  document.querySelectorAll('#modeRoundingPills .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#modeRoundingPills .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+  });
+  document.querySelectorAll('#defaultConfPills .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#defaultConfPills .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+  });
+  document.querySelectorAll('#defaultErrPills .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#defaultErrPills .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+  });
+
+  // Stats: percentile pills (multi-select toggle)
+  document.querySelectorAll('#percentilePills .nreq-pill').forEach(b => {
+    b.onclick = () => b.classList.toggle('sel');
+  });
+
+  // Stats: save
+  $('settingsStatsSave').onclick = () => {
+    const settings = loadSettings();
+    const iqr = parseFloat($('setIqrMultiplierVal').value) || 1.5;
+    const maw = parseInt($('setMovingAvgWindowVal').value) || 5;
+    const bins = parseInt($('setHistogramBinsVal').value) || 10;
+    const modeRPill = document.querySelector('#modeRoundingPills .nreq-pill.sel');
+    const modeR = modeRPill ? parseInt(modeRPill.dataset.val) : 10;
+    const percArr = [];
+    document.querySelectorAll('#percentilePills .nreq-pill.sel').forEach(b => percArr.push(parseInt(b.dataset.val)));
+    percArr.sort((a, b) => a - b);
+    const trend = parseFloat($('setTrendThresholdVal').value) || 0.10;
+    const confPill = document.querySelector('#defaultConfPills .nreq-pill.sel');
+    const conf = confPill ? parseFloat(confPill.dataset.val) : 0.95;
+    const errPill = document.querySelector('#defaultErrPills .nreq-pill.sel');
+    const errM = errPill ? parseFloat(errPill.dataset.val) : 0.05;
+
+    // Validation
+    if (iqr < 0.5 || iqr > 3.0) { toast('IQR çarpanı 0.5 - 3.0 arasında olmalı', 't-wrn'); return; }
+    if (maw < 2 || maw > 10) { toast('Hareketli ortalama penceresi 2 - 10 arasında olmalı', 't-wrn'); return; }
+    if (bins < 5 || bins > 30) { toast('Histogram bin sayısı 5 - 30 arasında olmalı', 't-wrn'); return; }
+    if (percArr.length === 0) { toast('En az bir yüzdelik dilim seçilmeli', 't-wrn'); return; }
+    if (trend < 0.01 || trend > 0.50) { toast('Trend eşiği 0.01 - 0.50 arasında olmalı', 't-wrn'); return; }
+
+    settings.stats = {
+      iqrMultiplier: iqr,
+      movingAvgWindow: maw,
+      histogramBins: bins,
+      modeRounding: modeR,
+      percentiles: percArr,
+      trendThreshold: trend,
+      defaultConfidence: conf,
+      defaultErrorMargin: errM
+    };
+    saveSettings(settings);
+    applySettings();
+    toast('İstatistik ayarları kaydedildi', 't-ok');
+    showScreen('settings');
+  };
+
+  // Stats: reset
+  $('settingsStatsReset').onclick = () => {
+    const settings = loadSettings();
+    settings.stats = getDefaults('stats');
+    saveSettings(settings);
+    loadStatsSettings();
+    applySettings();
+    toast('Varsayılan ayarlara sıfırlandı', 't-ok');
+  };
+
   // Mode selection
   $('modeRepeat').onclick = () => {
     setMeasurementMode('repeat');
     $('setupTitle').textContent = 'Yeni Ölçüm — Tekrarlı';
     $('setupModeHint').textContent = 'Aynı işlem tekrar tekrar ölçülecek. Etiketler anomalileri işaretlemek için kullanılabilir.';
     $('setupStepsPreview').style.display = 'none';
+    applySetupDefaults();
     showScreen('setup');
   };
 
@@ -216,7 +352,20 @@ function init() {
     const preview = $('setupStepsPreview');
     preview.style.display = 'block';
     preview.innerHTML = '<div style="font-size:clamp(9px,2.5vw,11px);color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Tanımlı Adımlar (ölçüm sırasında düzenlenebilir)</div><div style="display:flex;gap:6px;flex-wrap:wrap">' + sequenceSteps.map((s, i) => `<span style="padding:4px 10px;background:${dimColor(s.color)};color:${s.color};border-radius:var(--r-pill);font-size:clamp(10px,2.8vw,12px);font-weight:600">${i + 1}. ${esc(s.name)}</span>`).join('') + '</div>';
+    applySetupDefaults();
     showScreen('setup');
+  }
+
+  // Apply stats defaults to setup screen nReq pills
+  function applySetupDefaults() {
+    const defConf = getSetting('stats', 'defaultConfidence');
+    const defErr = getSetting('stats', 'defaultErrorMargin');
+    document.querySelectorAll('#nreqConfPills .nreq-pill').forEach(b => {
+      b.classList.toggle('sel', parseFloat(b.dataset.val) === defConf);
+    });
+    document.querySelectorAll('#nreqErrPills .nreq-pill').forEach(b => {
+      b.classList.toggle('sel', parseFloat(b.dataset.val) === defErr);
+    });
   }
 
   // Render step setup list
@@ -598,14 +747,18 @@ let autoSaveTimer = null;
 function applySettings() {
   const s = loadSettings();
   const m = s.measure;
-  // Rebuild tempo values
+  // Rebuild tempo values (100-centered)
   rebuildTempoValues(m.tempoMin, m.tempoMax, m.tempoStep);
-  // Update slider range to match settings
+  // Update slider range to match aligned settings
   const slider = $('setTempoDefault');
   if (slider) {
-    slider.min = m.tempoMin;
-    slider.max = m.tempoMax;
-    slider.step = 1;
+    let aMin = 100;
+    while (aMin - m.tempoStep >= m.tempoMin) aMin -= m.tempoStep;
+    let aMax = 100;
+    while (aMax + m.tempoStep <= m.tempoMax) aMax += m.tempoStep;
+    slider.min = aMin;
+    slider.max = aMax;
+    slider.step = m.tempoStep;
   }
   // Restart autoSave interval
   startAutoSaveInterval();
@@ -624,6 +777,47 @@ function startAutoSaveInterval() {
   }
 }
 
+// Load current stats settings into the settings UI
+function loadStatsSettings() {
+  const s = loadSettings();
+  const st = s.stats;
+
+  // Sliders + inputs
+  $('setIqrMultiplier').value = st.iqrMultiplier;
+  $('setIqrMultiplierVal').value = st.iqrMultiplier;
+  $('setMovingAvgWindow').value = st.movingAvgWindow;
+  $('setMovingAvgWindowVal').value = st.movingAvgWindow;
+  $('setHistogramBins').value = st.histogramBins;
+  $('setHistogramBinsVal').value = st.histogramBins;
+  $('setTrendThreshold').value = st.trendThreshold;
+  $('setTrendThresholdVal').value = st.trendThreshold;
+
+  // IQR presets (single-select)
+  document.querySelectorAll('#iqrPresets .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', parseFloat(b.dataset.val) === st.iqrMultiplier);
+  });
+
+  // Mode rounding (single-select)
+  document.querySelectorAll('#modeRoundingPills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', parseInt(b.dataset.val) === st.modeRounding);
+  });
+
+  // Percentiles (multi-select)
+  document.querySelectorAll('#percentilePills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', st.percentiles.includes(parseInt(b.dataset.val)));
+  });
+
+  // Default confidence (single-select)
+  document.querySelectorAll('#defaultConfPills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', parseFloat(b.dataset.val) === st.defaultConfidence);
+  });
+
+  // Default error margin (single-select)
+  document.querySelectorAll('#defaultErrPills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', parseFloat(b.dataset.val) === st.defaultErrorMargin);
+  });
+}
+
 // Load current measure settings into the settings UI
 function loadMeasureSettings() {
   const s = loadSettings();
@@ -632,16 +826,22 @@ function loadMeasureSettings() {
   $('setTempoMax').value = m.tempoMax;
   $('setTempoStep').value = m.tempoStep;
 
-  // Update slider range before setting value
+  // Update slider range (100-centered alignment)
+  const step = m.tempoStep;
+  let aMin = 100;
+  while (aMin - step >= m.tempoMin) aMin -= step;
+  let aMax = 100;
+  while (aMax + step <= m.tempoMax) aMax += step;
   const slider = $('setTempoDefault');
-  slider.min = m.tempoMin;
-  slider.max = m.tempoMax;
-  slider.step = 1;
+  slider.min = aMin;
+  slider.max = aMax;
+  slider.step = step;
   slider.value = m.tempoDefault;
   const valInput = $('setTempoDefaultVal');
-  valInput.value = m.tempoDefault;
-  valInput.min = m.tempoMin;
-  valInput.max = m.tempoMax;
+  valInput.value = slider.value; // snap to aligned value
+  valInput.min = aMin;
+  valInput.max = aMax;
+  valInput.step = step;
 
   // AutoSave pills
   document.querySelectorAll('#autoSavePills .nreq-pill').forEach(b => {

@@ -1,5 +1,7 @@
 // ===== STATISTICS FUNCTIONS =====
 
+import { getSetting } from './settings.js';
+
 // t-distribution critical values (two-tailed, α/2 = 0.025 for 95% CI)
 // df = n-1, index 0 = df=1, index 29 = df=30
 const T_CRIT_95 = [
@@ -22,7 +24,8 @@ const T_CRIT_99 = [
 ];
 
 // Get t-critical value for given sample size and confidence level
-export function tCritical(n, confidence = 0.95) {
+export function tCritical(n, confidence) {
+  if (confidence === undefined) confidence = getSetting('stats', 'defaultConfidence');
   const df = n - 1;
   if (df < 1) return confidence === 0.99 ? 2.576 : 1.96;
   const table = confidence === 0.99 ? T_CRIT_99 : T_CRIT_95;
@@ -77,8 +80,8 @@ export function calcStats(times, opts = {}) {
   const ci95High = mean + t * se;
 
   // Required observation count: n'=(z/e * sqrt(n*Σx²-(Σx)²) / Σx)²
-  const z = Z_MAP[opts.confidence] || 1.96;
-  const e = opts.errorMargin || 0.05;
+  const z = Z_MAP[opts.confidence] || Z_MAP[getSetting('stats', 'defaultConfidence')] || 1.96;
+  const e = opts.errorMargin || getSetting('stats', 'defaultErrorMargin');
   const k = z / e;
   const sumSq = times.reduce((a, t) => a + t * t, 0);
   const inner = n * sumSq - sum * sum;
@@ -116,8 +119,9 @@ export function detectOutliers(times) {
   if (times.length < 4) return new Set();
 
   const q = quartiles(times);
-  const low = q.q1 - 1.5 * q.iqr;
-  const high = q.q3 + 1.5 * q.iqr;
+  const k = getSetting('stats', 'iqrMultiplier');
+  const low = q.q1 - k * q.iqr;
+  const high = q.q3 + k * q.iqr;
 
   const s = new Set();
   times.forEach((t, i) => {
@@ -128,7 +132,8 @@ export function detectOutliers(times) {
 }
 
 // Frequency distribution (histogram bins)
-export function freqDist(times, binCount = 10) {
+export function freqDist(times, binCount) {
+  if (binCount === undefined) binCount = getSetting('stats', 'histogramBins');
   if (!times.length) return [];
   const min = Math.min(...times);
   const max = Math.max(...times);
@@ -151,7 +156,8 @@ export function freqDist(times, binCount = 10) {
 }
 
 // Moving average
-export function movingAvg(times, window = 5) {
+export function movingAvg(times, window) {
+  if (window === undefined) window = getSetting('stats', 'movingAvgWindow');
   const result = [];
   for (let i = 0; i < times.length; i++) {
     const start = Math.max(0, i - window + 1);
@@ -213,9 +219,10 @@ export function kurtosis(times, mean, stdDev) {
 // Mode — en sık değer (10ms yuvarlama ile)
 export function findMode(times) {
   if (!times.length) return 0;
+  const rounding = getSetting('stats', 'modeRounding');
   const freq = {};
   times.forEach(t => {
-    const rounded = Math.round(t / 10) * 10;
+    const rounded = Math.round(t / rounding) * rounding;
     freq[rounded] = (freq[rounded] || 0) + 1;
   });
   let mode = times[0], maxFreq = 0;
