@@ -8,6 +8,7 @@ export const screens = {
   menu: null,
   settings: null,
   settingsMeasure: null,
+  settingsStats: null,
   modeSelect: null,
   setup: null,
   stepSetup: null,
@@ -22,6 +23,7 @@ export function initScreens() {
   screens.menu = $('menuScreen');
   screens.settings = $('settingsScreen');
   screens.settingsMeasure = $('settingsMeasureScreen');
+  screens.settingsStats = $('settingsStatsScreen');
   screens.modeSelect = $('modeSelectScreen');
   screens.setup = $('setupScreen');
   screens.stepSetup = $('stepSetupScreen');
