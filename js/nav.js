@@ -6,6 +6,8 @@ import { curScreen, setCurScreen } from './state.js';
 // Screen elements
 export const screens = {
   menu: null,
+  settings: null,
+  settingsMeasure: null,
   modeSelect: null,
   setup: null,
   stepSetup: null,
@@ -18,6 +20,8 @@ export const screens = {
 // Initialize screens (call after DOM loaded)
 export function initScreens() {
   screens.menu = $('menuScreen');
+  screens.settings = $('settingsScreen');
+  screens.settingsMeasure = $('settingsMeasureScreen');
   screens.modeSelect = $('modeSelectScreen');
   screens.setup = $('setupScreen');
   screens.stepSetup = $('stepSetupScreen');
@@ -54,7 +58,8 @@ export function isPanel() {
     $('hiDelModal')?.classList.contains('open') ||
     $('tePanel')?.classList.contains('open') ||
     $('stepPanel')?.classList.contains('open') ||
-    $('stepChoiceModal')?.classList.contains('open');
+    $('stepChoiceModal')?.classList.contains('open') ||
+    $('settingsInfoModal')?.classList.contains('open');
 }
 
 // Close all panels
@@ -117,6 +122,12 @@ export function closePanels() {
   const stepChoiceModal = $('stepChoiceModal');
   if (stepChoiceModal?.classList.contains('open')) {
     stepChoiceModal.classList.remove('open');
+    return true;
+  }
+
+  const settingsInfoModal = $('settingsInfoModal');
+  if (settingsInfoModal?.classList.contains('open')) {
+    settingsInfoModal.classList.remove('open');
     return true;
   }
 

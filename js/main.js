@@ -6,7 +6,8 @@ import { S, setMeasurementMode, setSequenceSteps, measurementMode, sequenceSteps
 import { loadTags, saveHistory, loadHistory, loadAutoRecovery, clearAutoRecovery } from './storage.js';
 import { initScreens, showScreen, initPopState, pushPanel, closePanels } from './nav.js';
 import { startT, pauseT, resumeT, stopT, startFromTime } from './timer.js';
-import { initTempoPicker, setTempo, isTempoActive } from './tempo.js';
+import { initTempoPicker, setTempo, isTempoActive, rebuildTempoValues } from './tempo.js';
+import { loadSettings, saveSettings, getInfoText, getDefaults, getSetting } from './settings.js';
 import { initSequenceMode, initStepPanelEvents, renderStepIndicator } from './steps.js';
 import { recordLap, refreshList, autoSaveProgress } from './laps.js';
 import { initPanelEvents } from './panels.js';
@@ -34,13 +35,112 @@ function init() {
   initKeyboard();
   initTutorial();
 
+  // Load settings & apply tempo values
+  applySettings();
+
   // Menu navigation
   $('goMeasure').onclick = () => showScreen('modeSelect');
   $('goTags').onclick = () => { renderTagEditor(); showScreen('tagEditor'); };
   $('goHistory').onclick = () => { renderHistory(); showScreen('history'); };
+  $('goSettings').onclick = () => showScreen('settings');
   $('modeBack').onclick = () => showScreen('menu');
   $('teBack').onclick = () => showScreen('menu');
   $('hiBack').onclick = () => showScreen('menu');
+
+  // Settings navigation
+  $('settingsBack').onclick = () => showScreen('menu');
+  $('settingsMeasureBack').onclick = () => showScreen('settings');
+  $('goSettingsMeasure').onclick = () => { loadMeasureSettings(); showScreen('settingsMeasure'); };
+
+  // Settings info buttons
+  document.querySelectorAll('.setting-info-btn').forEach(btn => {
+    btn.onclick = () => {
+      const info = getInfoText(btn.dataset.info);
+      $('settingsInfoTitle').textContent = info.title;
+      $('settingsInfoText').textContent = info.text;
+      $('settingsInfoModal').classList.add('open');
+      pushPanel();
+    };
+  });
+  $('settingsInfoClose').onclick = () => $('settingsInfoModal').classList.remove('open');
+
+  // Settings: tempo range → slider/input sınırlarını anlık güncelle
+  // Sadece min < max ve ikisi de geçerli sayı olduğunda çalışır
+  function syncTempoDefaultLimits() {
+    const min = parseInt($('setTempoMin').value);
+    const max = parseInt($('setTempoMax').value);
+    if (isNaN(min) || isNaN(max) || min < 1 || min >= max) return;
+    const slider = $('setTempoDefault');
+    const valInput = $('setTempoDefaultVal');
+    slider.min = min;
+    slider.max = max;
+    valInput.min = min;
+    valInput.max = max;
+    // Browser range input'u min/max'a göre otomatik clamp eder
+    // Input'u her zaman slider'ın güncel değerine eşitle
+    valInput.value = slider.value;
+  }
+  $('setTempoMin').oninput = syncTempoDefaultLimits;
+  $('setTempoMax').oninput = syncTempoDefaultLimits;
+
+  // Settings: tempo default slider ↔ input sync
+  $('setTempoDefault').oninput = () => {
+    $('setTempoDefaultVal').value = $('setTempoDefault').value;
+  };
+  $('setTempoDefaultVal').onchange = () => {
+    let v = parseInt($('setTempoDefaultVal').value);
+    if (isNaN(v) || v < 1) v = 1;
+    const min = parseInt($('setTempoMin').value) || 50;
+    const max = parseInt($('setTempoMax').value) || 150;
+    if (v < min) v = min;
+    if (v > max) v = max;
+    $('setTempoDefaultVal').value = v;
+    $('setTempoDefault').value = v;
+  };
+  // Prevent negative values on keypress
+  $('setTempoDefaultVal').onkeydown = (e) => {
+    if (e.key === '-' || e.key === 'e') e.preventDefault();
+  };
+
+  // Settings: auto-save pills
+  document.querySelectorAll('#autoSavePills .nreq-pill').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('#autoSavePills .nreq-pill').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+    };
+  });
+
+  // Settings: save measure settings
+  $('settingsMeasureSave').onclick = () => {
+    const settings = loadSettings();
+    const min = parseInt($('setTempoMin').value) || 50;
+    const max = parseInt($('setTempoMax').value) || 150;
+    const step = parseInt($('setTempoStep').value) || 5;
+    const def = parseInt($('setTempoDefault').value) || 100;
+    const autoSavePill = document.querySelector('#autoSavePills .nreq-pill.sel');
+    const autoSave = autoSavePill ? parseInt(autoSavePill.dataset.val) : 10000;
+
+    // Validation
+    if (min >= max) { toast('Min değer Max değerden küçük olmalı', 't-wrn'); return; }
+    if (step < 1 || step > (max - min)) { toast('Adım değeri geçersiz', 't-wrn'); return; }
+    if (def < min || def > max) { toast('Varsayılan tempo aralık içinde olmalı', 't-wrn'); return; }
+
+    settings.measure = { tempoMin: min, tempoMax: max, tempoStep: step, tempoDefault: def, autoSaveInterval: autoSave };
+    saveSettings(settings);
+    applySettings();
+    toast('Ölçüm ayarları kaydedildi', 't-ok');
+    showScreen('settings');
+  };
+
+  // Settings: reset measure settings
+  $('settingsMeasureReset').onclick = () => {
+    const settings = loadSettings();
+    settings.measure = getDefaults('measure');
+    saveSettings(settings);
+    loadMeasureSettings();
+    applySettings();
+    toast('Varsayılan ayarlara sıfırlandı', 't-ok');
+  };
 
   // Mode selection
   $('modeRepeat').onclick = () => {
@@ -176,6 +276,12 @@ function init() {
     const op = $('inpOp').value.trim();
     const job = $('inpJob').value.trim();
     if (!op || !job) return;
+
+    // Yeni ölçüm: önceki ölçümden kalan veriyi temizle
+    S.laps = [];
+    S.deletedTime = 0;
+    S.resumeFromTime = 0;
+
     S.op = op;
     S.job = job;
     // nReq parametrelerini oku
@@ -185,6 +291,8 @@ function init() {
     if (errPill) setNReqError(+errPill.dataset.val);
     $('dJob').textContent = job;
     $('dOp').textContent = op;
+    // Varsayılan tempo değerini ayarlardan uygula
+    setTempo(getSetting('measure', 'tempoDefault'));
     buildTagStrip();
     if (measurementMode === 'sequence') {
       initSequenceMode();
@@ -333,12 +441,8 @@ function init() {
     if (S.started) autoSaveProgress();
   });
 
-  // Periyodik otomatik kayıt (10sn) - beklenmedik kapanmalara karşı
-  setInterval(() => {
-    if (S.started && S.running && !S.paused) {
-      autoSaveProgress();
-    }
-  }, 10000);
+  // Periyodik otomatik kayıt - süre ayarlardan okunur
+  startAutoSaveInterval();
 
   // PWA
   if ('serviceWorker' in navigator) {
@@ -449,6 +553,11 @@ function restoreRecovery(recovery) {
 // Save current session to history
 function saveSession() {
   if (!S.laps.length) return;
+
+  // cum değerlerini t'lerden yeniden hesapla (veri bütünlüğü)
+  let cumAcc = 0;
+  S.laps.forEach(l => { cumAcc += l.t; l.cum = cumAcc; });
+
   const hist = loadHistory();
   hist.push({
     op: S.op,
@@ -470,6 +579,66 @@ function saveSession() {
 
   // Başarılı kayıt sonrası geçici veriyi sil
   clearAutoRecovery();
+}
+
+// ===== SETTINGS HELPERS =====
+
+let autoSaveTimer = null;
+
+// Apply loaded settings to app components
+function applySettings() {
+  const s = loadSettings();
+  const m = s.measure;
+  // Rebuild tempo values
+  rebuildTempoValues(m.tempoMin, m.tempoMax, m.tempoStep);
+  // Update slider range to match settings
+  const slider = $('setTempoDefault');
+  if (slider) {
+    slider.min = m.tempoMin;
+    slider.max = m.tempoMax;
+    slider.step = 1;
+  }
+  // Restart autoSave interval
+  startAutoSaveInterval();
+}
+
+// Start (or restart) autoSave periodic timer
+function startAutoSaveInterval() {
+  if (autoSaveTimer) clearInterval(autoSaveTimer);
+  const interval = getSetting('measure', 'autoSaveInterval');
+  if (interval > 0) {
+    autoSaveTimer = setInterval(() => {
+      if (S.started && S.running && !S.paused) {
+        autoSaveProgress();
+      }
+    }, interval);
+  }
+}
+
+// Load current measure settings into the settings UI
+function loadMeasureSettings() {
+  const s = loadSettings();
+  const m = s.measure;
+  $('setTempoMin').value = m.tempoMin;
+  $('setTempoMax').value = m.tempoMax;
+  $('setTempoStep').value = m.tempoStep;
+
+  // Update slider range before setting value
+  const slider = $('setTempoDefault');
+  slider.min = m.tempoMin;
+  slider.max = m.tempoMax;
+  slider.step = 1;
+  slider.value = m.tempoDefault;
+  const valInput = $('setTempoDefaultVal');
+  valInput.value = m.tempoDefault;
+  valInput.min = m.tempoMin;
+  valInput.max = m.tempoMax;
+
+  // AutoSave pills
+  document.querySelectorAll('#autoSavePills .nreq-pill').forEach(b => {
+    b.classList.remove('sel');
+    if (parseInt(b.dataset.val) === m.autoSaveInterval) b.classList.add('sel');
+  });
 }
 
 // Start application when DOM is ready

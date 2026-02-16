@@ -4,6 +4,27 @@ import { $, vib } from './utils.js';
 import { TEMPO_VALUES } from './config.js';
 import { currentTempo, tempoIdx, setCurrentTempo, setTempoIdx } from './state.js';
 
+// Dynamic tempo values (can be rebuilt from settings)
+let tempoValues = [...TEMPO_VALUES];
+
+// Rebuild tempo values from settings
+export function rebuildTempoValues(min, max, step) {
+  const vals = [];
+  for (let v = max; v >= min; v -= step) vals.push(v);
+  if (vals.length < 2) { tempoValues = [...TEMPO_VALUES]; return; }
+  tempoValues = vals;
+  // Adjust current index if out of range
+  const idx = tempoValues.indexOf(currentTempo);
+  if (idx >= 0) {
+    setTempoIdx(idx);
+  } else {
+    // Find closest value
+    const closest = tempoValues.reduce((a, b) => Math.abs(b - currentTempo) < Math.abs(a - currentTempo) ? b : a);
+    setTempoIdx(tempoValues.indexOf(closest));
+    setCurrentTempo(closest);
+  }
+}
+
 // Track if tempo is being adjusted (to prevent accidental lap recording)
 let isAdjustingTempo = false;
 let tempoAdjustTimeout = null;
@@ -27,7 +48,7 @@ export function renderTempoWheel() {
   const itemH = wheel.offsetHeight / 5; // show 5 items
   let html = '';
 
-  TEMPO_VALUES.forEach((v, i) => {
+  tempoValues.forEach((v, i) => {
     const dist = Math.abs(i - tempoIdx);
     let cls = 'tempo-item';
     if (dist === 0) cls += ' ti-active';
@@ -42,25 +63,34 @@ export function renderTempoWheel() {
   items.style.transform = `translateY(${offset}px)`;
 }
 
-// Set tempo value
+// Set tempo value (snaps to closest in tempoValues if not exact match)
 export function setTempo(val) {
-  setCurrentTempo(val);
-  const idx = TEMPO_VALUES.indexOf(val);
+  let idx = tempoValues.indexOf(val);
   if (idx < 0) {
-    setTempoIdx(10);
-    setCurrentTempo(100);
-  } else {
-    setTempoIdx(idx);
+    // Snap to closest valid value
+    let minDiff = Infinity;
+    tempoValues.forEach((v, i) => {
+      const diff = Math.abs(v - val);
+      if (diff < minDiff) { minDiff = diff; idx = i; }
+    });
   }
-  renderTempoWheel();
+  setTempoIdx(idx);
+  setCurrentTempo(tempoValues[idx]);
+  // Defer render if measure screen not yet visible (offsetHeight=0)
+  const wheel = $('tempoWheel');
+  if (wheel && wheel.offsetHeight > 0) {
+    renderTempoWheel();
+  } else {
+    setTimeout(renderTempoWheel, 100);
+  }
 }
 
 // Change tempo by delta (for keyboard/wheel)
 export function changeTempo(delta) {
-  const newIdx = Math.max(0, Math.min(TEMPO_VALUES.length - 1, tempoIdx + delta));
+  const newIdx = Math.max(0, Math.min(tempoValues.length - 1, tempoIdx + delta));
   if (newIdx !== tempoIdx) {
     setTempoIdx(newIdx);
-    setCurrentTempo(TEMPO_VALUES[newIdx]);
+    setCurrentTempo(tempoValues[newIdx]);
     renderTempoWheel();
     vib(5);
     markTempoActive();
@@ -89,11 +119,11 @@ export function initTempoPicker() {
     const itemH = wheel.offsetHeight / 5;
     const sensitivity = itemH * 1.3;
     const delta = Math.round((y - startY) / sensitivity);
-    let newIdx = Math.max(0, Math.min(TEMPO_VALUES.length - 1, startIdx - delta));
+    let newIdx = Math.max(0, Math.min(tempoValues.length - 1, startIdx - delta));
 
     if (newIdx !== tempoIdx) {
       setTempoIdx(newIdx);
-      setCurrentTempo(TEMPO_VALUES[newIdx]);
+      setCurrentTempo(tempoValues[newIdx]);
       renderTempoWheel();
       vib(5);
       markTempoActive();

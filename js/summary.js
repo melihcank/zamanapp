@@ -537,6 +537,7 @@ export function resumeMeasurement() {
   S.started = true;
   S.running = false;
   S.paused = true;
+  S.deletedTime = 0;           // Önceki oturumdan kalan deletedTime'ı sıfırla
   S.resumeFromTime = cumTime;  // This tells startFromTime() where to continue from
   S.lastLapTime = cumTime;
 
