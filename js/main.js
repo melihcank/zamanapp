@@ -19,6 +19,29 @@ import { initKeyboard } from './keyboard.js';
 import { renderStdTimeList, initStdTimeEvents } from './stdtime.js';
 import { initTutorial } from './tutorial.js';
 
+// DEBUG: Viewport diagnostic overlay (temporary - remove after diagnosis)
+function initViewportDebug() {
+  const d = document.createElement('div');
+  d.id = 'vpDbg';
+  d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.85);color:#0f0;font:11px/1.4 monospace;padding:6px 10px;z-index:99999;pointer-events:none;white-space:pre';
+  document.body.appendChild(d);
+  function upd() {
+    const vv = window.visualViewport;
+    const fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    d.textContent =
+      `innerW: ${window.innerWidth}  innerH: ${window.innerHeight}\n` +
+      `clientW: ${document.documentElement.clientWidth}  clientH: ${document.documentElement.clientHeight}\n` +
+      `screen: ${screen.width}x${screen.height}  DPR: ${devicePixelRatio}\n` +
+      (vv ? `vvW: ${vv.width}  vvH: ${vv.height}  scale: ${vv.scale}\n` : '') +
+      `FS: ${fs}  mode: ${window.matchMedia('(display-mode: fullscreen)').matches ? 'fullscreen' : window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'}`;
+  }
+  upd();
+  window.addEventListener('resize', upd);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', upd);
+  document.addEventListener('fullscreenchange', upd);
+  document.addEventListener('webkitfullscreenchange', upd);
+}
+
 // Fullscreen - debounce-based approach (no brittle flag state)
 let lastFsAttempt = 0;
 function reqFS() {
@@ -43,18 +66,14 @@ document.addEventListener('webkitfullscreenchange', onFsChange);
 function onFsChange() {
   if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
     lastFsAttempt = 0;
-    // Fix Chrome mobile zoom bug: force viewport reset after fullscreen exit
-    const meta = document.querySelector('meta[name="viewport"]');
-    if (meta) {
-      const orig = meta.content;
-      meta.content = 'width=device-width, initial-scale=1.0';
-      setTimeout(() => { meta.content = orig; }, 60);
-    }
   }
 }
 
 // Initialize application
 function init() {
+  // DEBUG: viewport diagnostic (temporary)
+  initViewportDebug();
+
   // Initialize screens
   initScreens();
   initPopState();
