@@ -22,10 +22,16 @@ import { initTutorial } from './tutorial.js';
 // Fullscreen - module scope for applySettings access
 let fsRequested = false;
 function reqFS() {
+  if (document.fullscreenElement || document.webkitFullscreenElement) return;
   if (fsRequested) return;
-  goFS();
   fsRequested = true;
-  removeFsListeners();
+  goFS();
+  // Fallback: if requestFullscreen() rejects silently, reset after 1s
+  setTimeout(() => {
+    if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
+      fsRequested = false;
+    }
+  }, 1000);
 }
 function addFsListeners() {
   document.addEventListener('click', reqFS);
@@ -34,6 +40,22 @@ function addFsListeners() {
 function removeFsListeners() {
   document.removeEventListener('click', reqFS);
   document.removeEventListener('touchend', reqFS);
+  fsRequested = false;
+}
+// Manage fullscreen lifecycle: remove listeners on enter, re-arm on exit
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
+function onFsChange() {
+  const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if (isFS) {
+    // Fullscreen entered — stop listening for clicks until exit
+    document.removeEventListener('click', reqFS);
+    document.removeEventListener('touchend', reqFS);
+  } else if (getSetting('ux', 'fullscreen') !== false) {
+    // Fullscreen exited (Escape, back button, gesture) — re-arm
+    fsRequested = false;
+    addFsListeners();
+  }
 }
 
 // Initialize application
