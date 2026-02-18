@@ -40,13 +40,13 @@ input,textarea,select{-webkit-user-select:auto;user-select:auto}
 .screen.visible{opacity:1;pointer-events:auto;transform:scale(1);visibility:visible}
 
 /* ===== MAIN MENU ===== */
-#menuScreen{align-items:center;padding:clamp(16px,3vh,24px);background:var(--bg);overflow-y:auto}
-.menu-logo{width:clamp(56px,14vw,96px);height:clamp(56px,14vw,96px);border-radius:50%;background:var(--acc-d);border:3px solid var(--acc);display:flex;align-items:center;justify-content:center;margin-top:auto;margin-bottom:clamp(10px,2vh,28px)}
+#menuScreen{align-items:center;padding:clamp(16px,4vh,32px);background:var(--bg);overflow-y:auto}
+.menu-logo{width:clamp(64px,18vw,120px);height:clamp(64px,18vw,120px);border-radius:50%;background:var(--acc-d);border:3px solid var(--acc);display:flex;align-items:center;justify-content:center;margin-top:auto;margin-bottom:clamp(12px,3vh,36px)}
 .menu-logo svg{width:50%;height:50%;fill:var(--acc)}
-.menu-title{font-size:clamp(22px,6vw,32px);font-weight:700;margin-bottom:4px;letter-spacing:-.3px}
-.menu-sub{font-size:clamp(12px,3vw,15px);color:var(--tx2);margin-bottom:clamp(16px,3.5vh,48px)}
-.menu-btns{width:100%;max-width:380px;display:flex;flex-direction:column;gap:clamp(8px,1.5vh,14px);margin-bottom:auto}
-.menu-btn{padding:clamp(14px,2.5vh,24px) 20px;font-size:clamp(16px,4.5vw,20px);font-weight:700;font-family:var(--sans);border:none;border-radius:var(--r-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;transition:transform .15s,box-shadow .2s,border-color .2s,background .2s}
+.menu-title{font-size:clamp(24px,7vw,36px);font-weight:700;margin-bottom:6px;letter-spacing:-.3px}
+.menu-sub{font-size:clamp(13px,3.5vw,17px);color:var(--tx2);margin-bottom:clamp(20px,5vh,56px)}
+.menu-btns{width:100%;max-width:min(440px,100%);display:flex;flex-direction:column;gap:clamp(10px,2vh,18px);margin-bottom:auto}
+.menu-btn{padding:clamp(16px,3vh,28px) 24px;font-size:clamp(16px,4.5vw,22px);font-weight:700;font-family:var(--sans);border:none;border-radius:var(--r-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;transition:transform .15s,box-shadow .2s,border-color .2s,background .2s}
 .menu-btn:hover{transform:scale(1.03)}
 .menu-btn:active{transform:scale(.97)}
 .menu-btn svg{width:24px;height:24px;fill:currentColor;flex-shrink:0}

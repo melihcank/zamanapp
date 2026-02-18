@@ -21,8 +21,7 @@ import { initTutorial } from './tutorial.js';
 
 // Fullscreen - debounce-based approach (no brittle flag state)
 let lastFsAttempt = 0;
-function reqFS(e) {
-  if (e && e.type === 'touchend') e.preventDefault();
+function reqFS() {
   if (document.fullscreenElement || document.webkitFullscreenElement) return;
   const now = Date.now();
   if (now - lastFsAttempt < 1500) return;
@@ -30,12 +29,12 @@ function reqFS(e) {
   goFS();
 }
 function addFsListeners() {
-  document.addEventListener('click', reqFS);
-  document.addEventListener('touchend', reqFS, { passive: false });
+  document.addEventListener('click', reqFS, true);
+  document.addEventListener('touchend', reqFS, true);
 }
 function removeFsListeners() {
-  document.removeEventListener('click', reqFS);
-  document.removeEventListener('touchend', reqFS);
+  document.removeEventListener('click', reqFS, true);
+  document.removeEventListener('touchend', reqFS, true);
   lastFsAttempt = 0;
 }
 // Reset debounce when fullscreen exits so next click can re-enter immediately
