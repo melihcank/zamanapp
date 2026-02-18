@@ -40,7 +40,7 @@ export function renderStdTimeList() {
     card.dataset.idx = idx;
     const avg = h.laps.length ? h.laps.reduce((a, l) => a + (l.nt || l.t), 0) / h.laps.length : 0;
     const modeBadge = h.mode === 'sequence'
-      ? '<span style="display:inline-block;padding:1px 5px;background:var(--inf-d);color:var(--inf);border-radius:var(--r-pill);font-size:clamp(7px,2vw,9px);font-weight:700;margin-left:4px">ARDIŞIK</span>'
+      ? '<span style="display:inline-block;padding:2px 6px;background:var(--inf-d);color:var(--inf);border-radius:var(--r-pill);font-size:clamp(9px,2.5vw,11px);font-weight:700;margin-left:4px">ARDIŞIK</span>'
       : '';
     const stData = h.standardTime;
     const stBadge = stData
