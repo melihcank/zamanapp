@@ -43,6 +43,13 @@ document.addEventListener('webkitfullscreenchange', onFsChange);
 function onFsChange() {
   if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
     lastFsAttempt = 0;
+    // Fix Chrome mobile zoom bug: force viewport reset after fullscreen exit
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (meta) {
+      const orig = meta.content;
+      meta.content = 'width=device-width, initial-scale=1.0';
+      setTimeout(() => { meta.content = orig; }, 60);
+    }
   }
 }
 
