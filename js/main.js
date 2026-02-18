@@ -1,11 +1,11 @@
 // ===== MAIN APPLICATION =====
 
-import { $, toast, vib, esc, dimColor, getNow, goFS } from './utils.js';
+import { $, toast, vib, esc, dimColor, getNow, goFS, exitFS } from './utils.js';
 import { STEP_COLORS } from './config.js';
 import { S, setMeasurementMode, setSequenceSteps, measurementMode, sequenceSteps, tags, setTags, setCurrentStep, setSequenceCycle, nReqConfidence, nReqError, setNReqConfidence, setNReqError } from './state.js';
 import { loadTags, saveHistory, loadHistory, loadAutoRecovery, clearAutoRecovery } from './storage.js';
 import { initScreens, showScreen, initPopState, pushPanel, closePanels } from './nav.js';
-import { startT, pauseT, resumeT, stopT, startFromTime } from './timer.js';
+import { startT, pauseT, resumeT, stopT, startFromTime, onPauseChange } from './timer.js';
 import { initTempoPicker, setTempo, isTempoActive, rebuildTempoValues } from './tempo.js';
 import { loadSettings, saveSettings, getInfoText, getDefaults, getSetting } from './settings.js';
 import { initSequenceMode, initStepPanelEvents, renderStepIndicator } from './steps.js';
@@ -17,6 +17,23 @@ import { showSummary, rebuildSummary, initSummaryEvents, resetAll } from './summ
 import { initExportEvents } from './export.js';
 import { initKeyboard } from './keyboard.js';
 import { initTutorial } from './tutorial.js';
+
+// Fullscreen - module scope for applySettings access
+let fsRequested = false;
+function reqFS() {
+  if (fsRequested) return;
+  goFS();
+  fsRequested = true;
+  removeFsListeners();
+}
+function addFsListeners() {
+  document.addEventListener('click', reqFS);
+  document.addEventListener('touchend', reqFS);
+}
+function removeFsListeners() {
+  document.removeEventListener('click', reqFS);
+  document.removeEventListener('touchend', reqFS);
+}
 
 // Initialize application
 function init() {
@@ -52,6 +69,10 @@ function init() {
   $('goSettingsMeasure').onclick = () => { loadMeasureSettings(); showScreen('settingsMeasure'); };
   $('settingsStatsBack').onclick = () => showScreen('settings');
   $('goSettingsStats').onclick = () => { loadStatsSettings(); showScreen('settingsStats'); };
+  $('settingsExcelBtn')?.addEventListener('click', () => { loadExcelSettings(); showScreen('settingsExcel'); });
+  $('settingsExcelBack')?.addEventListener('click', () => showScreen('settings'));
+  $('goSettingsUx')?.addEventListener('click', () => { loadUxSettings(); showScreen('settingsUx'); });
+  $('settingsUxBack')?.addEventListener('click', () => showScreen('settings'));
   $('goTagEditor').onclick = () => { renderTagEditor(); showScreen('tagEditor'); };
 
   // Settings info buttons
@@ -274,6 +295,139 @@ function init() {
     saveSettings(settings);
     loadStatsSettings();
     applySettings();
+    toast('Varsayılan ayarlara sıfırlandı', 't-ok');
+  };
+
+  // ===== EXCEL SETTINGS =====
+
+  // Excel: decimal slider ↔ input sync
+  $('excelDecimalSlider').oninput = () => $('excelDecimalInput').value = $('excelDecimalSlider').value;
+  $('excelDecimalInput').onchange = () => {
+    let v = parseInt($('excelDecimalInput').value);
+    if (isNaN(v) || v < 1) v = 1;
+    if (v > 6) v = 6;
+    $('excelDecimalSlider').value = v;
+    $('excelDecimalInput').value = v;
+  };
+
+  // Excel: date pills (single-select)
+  document.querySelectorAll('#excelDatePills .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#excelDatePills .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+  });
+
+  // Excel: sheet pills (multi-select, mandatory excluded via CSS pointer-events:none)
+  document.querySelectorAll('#excelSheetPills .nreq-pill:not(.mandatory)').forEach(b => {
+    b.onclick = () => b.classList.toggle('sel');
+  });
+  document.querySelectorAll('#excelSeqSheetPills .nreq-pill').forEach(b => {
+    b.onclick = () => b.classList.toggle('sel');
+  });
+
+  // ===== UX SETTINGS =====
+
+  // UX: single-select pill groups
+  document.querySelectorAll('#uxThemePills .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#uxThemePills .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+  });
+  document.querySelectorAll('#uxVibrationPills .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#uxVibrationPills .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+  });
+  document.querySelectorAll('#uxToastPills .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#uxToastPills .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+    };
+  });
+  document.querySelectorAll('#uxFullscreenPills .nreq-pill').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('#uxFullscreenPills .nreq-pill').forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel');
+      // Açık seçilince anında tam ekrana geç
+      if (b.dataset.val === 'true') {
+        goFS();
+        fsRequested = true;
+        addFsListeners();
+      }
+    };
+  });
+
+  // UX: save
+  $('settingsUxSave').onclick = () => {
+    const settings = loadSettings();
+    const themePill = document.querySelector('#uxThemePills .nreq-pill.sel');
+    const vibPill = document.querySelector('#uxVibrationPills .nreq-pill.sel');
+    const toastPill = document.querySelector('#uxToastPills .nreq-pill.sel');
+    const fsPill = document.querySelector('#uxFullscreenPills .nreq-pill.sel');
+    settings.ux = {
+      theme: themePill ? themePill.dataset.val : 'dark',
+      vibration: vibPill ? vibPill.dataset.val === 'true' : true,
+      toastDuration: toastPill ? parseInt(toastPill.dataset.val) : 2000,
+      fullscreen: fsPill ? fsPill.dataset.val === 'true' : true
+    };
+    saveSettings(settings);
+    applySettings();
+    // Kapalı + Kaydet → tam ekrandan çık
+    if (!settings.ux.fullscreen) exitFS();
+    toast('Görünüm ayarları kaydedildi', 't-ok');
+    showScreen('settings');
+  };
+
+  // UX: reset
+  $('settingsUxReset').onclick = () => {
+    const settings = loadSettings();
+    settings.ux = getDefaults('ux');
+    saveSettings(settings);
+    loadUxSettings();
+    applySettings();
+    // Varsayılan: fullscreen açık → tam ekrana geç
+    if (settings.ux.fullscreen) { goFS(); fsRequested = true; addFsListeners(); }
+    toast('Varsayılan ayarlara sıfırlandı', 't-ok');
+  };
+
+  // Excel: save
+  $('settingsExcelSave').onclick = () => {
+    const settings = loadSettings();
+    const dp = parseInt($('excelDecimalInput').value) || 3;
+    const datePill = document.querySelector('#excelDatePills .nreq-pill.sel');
+    const dateFormat = datePill ? datePill.dataset.val : 'tr';
+
+    // Validation
+    if (dp < 1 || dp > 6) { toast('Ondalık hassasiyet 1-6 arasında olmalı', 't-wrn'); return; }
+
+    // Build includeSheets from pills
+    const includeSheets = {};
+    document.querySelectorAll('#excelSheetPills .nreq-pill').forEach(b => {
+      includeSheets[b.dataset.sheet] = b.classList.contains('sel');
+    });
+    document.querySelectorAll('#excelSeqSheetPills .nreq-pill').forEach(b => {
+      includeSheets[b.dataset.sheet] = b.classList.contains('sel');
+    });
+
+    settings.excel = {
+      decimalPrecision: dp,
+      dateFormat: dateFormat,
+      includeSheets: includeSheets
+    };
+    saveSettings(settings);
+    toast('Excel çıktı ayarları kaydedildi', 't-ok');
+    showScreen('settings');
+  };
+
+  // Excel: reset
+  $('settingsExcelReset').onclick = () => {
+    const settings = loadSettings();
+    settings.excel = getDefaults('excel');
+    saveSettings(settings);
+    loadExcelSettings();
     toast('Varsayılan ayarlara sıfırlandı', 't-ok');
   };
 
@@ -561,8 +715,8 @@ function init() {
     }
     updatePauseBtn();
   };
-  // Export for use in timer.js
-  window.updatePauseIcon = updatePauseBtn;
+  // Register callback for timer state changes
+  onPauseChange(updatePauseBtn);
 
   // Finish modal
   $('bStop').onclick = () => { $('finModal').classList.add('open'); pushPanel(); };
@@ -574,17 +728,8 @@ function init() {
     showSummary();
   };
 
-  // Fullscreen - request once on first interaction
-  let fsRequested = false;
-  function reqFS() {
-    if (fsRequested) return;
-    goFS();
-    fsRequested = true;
-    document.removeEventListener('click', reqFS);
-    document.removeEventListener('touchend', reqFS);
-  }
-  document.addEventListener('click', reqFS);
-  document.addEventListener('touchend', reqFS);
+  // Fullscreen - activate based on settings
+  if (getSetting('ux', 'fullscreen') !== false) addFsListeners();
 
   // Arka plana giderken otomatik kaydet (ekran kapatma, uygulama değiştirme)
   document.addEventListener('visibilitychange', () => {
@@ -718,6 +863,7 @@ function saveSession() {
 
   const hist = loadHistory();
   hist.push({
+    version: 1,
     op: S.op,
     job: S.job,
     date: new Date().toLocaleDateString('tr-TR'),
@@ -733,10 +879,15 @@ function saveSession() {
     nReqConfidence,
     nReqError
   });
-  saveHistory(hist);
 
-  // Başarılı kayıt sonrası geçici veriyi sil
-  clearAutoRecovery();
+  try {
+    saveHistory(hist);
+    // Başarılı kayıt sonrası geçici veriyi sil
+    clearAutoRecovery();
+  } catch (e) {
+    toast('Kayıt alanı dolu! Eski verileri silerek yer açın', 't-dng');
+    // Recovery data is preserved so user doesn't lose work
+  }
 }
 
 // ===== SETTINGS HELPERS =====
@@ -762,19 +913,28 @@ function applySettings() {
   }
   // Restart autoSave interval
   startAutoSaveInterval();
+  // Tema
+  const theme = (s.ux || {}).theme || 'dark';
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f5f5f5' : '#1a1a1a');
+
+  // Fullscreen listener yönetimi
+  if ((s.ux || {}).fullscreen !== false && !fsRequested) addFsListeners();
+  else if ((s.ux || {}).fullscreen === false) removeFsListeners();
 }
 
 // Start (or restart) autoSave periodic timer
 function startAutoSaveInterval() {
   if (autoSaveTimer) clearInterval(autoSaveTimer);
   const interval = getSetting('measure', 'autoSaveInterval');
-  if (interval > 0) {
-    autoSaveTimer = setInterval(() => {
-      if (S.started && S.running && !S.paused) {
-        autoSaveProgress();
-      }
-    }, interval);
-  }
+  // interval=0 means per-lap save, but add 60s fallback for safety between laps
+  const effectiveInterval = interval > 0 ? interval : 60000;
+  autoSaveTimer = setInterval(() => {
+    if (S.started && S.running && !S.paused) {
+      autoSaveProgress();
+    }
+  }, effectiveInterval);
 }
 
 // Load current stats settings into the settings UI
@@ -847,6 +1007,54 @@ function loadMeasureSettings() {
   document.querySelectorAll('#autoSavePills .nreq-pill').forEach(b => {
     b.classList.remove('sel');
     if (parseInt(b.dataset.val) === m.autoSaveInterval) b.classList.add('sel');
+  });
+}
+
+// Load current excel settings into the settings UI
+function loadExcelSettings() {
+  const s = loadSettings();
+  const ex = s.excel;
+
+  // Decimal precision
+  $('excelDecimalSlider').value = ex.decimalPrecision;
+  $('excelDecimalInput').value = ex.decimalPrecision;
+
+  // Date format pills
+  document.querySelectorAll('#excelDatePills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', b.dataset.val === ex.dateFormat);
+  });
+
+  // Sheet pills
+  const sheets = ex.includeSheets || {};
+  document.querySelectorAll('#excelSheetPills .nreq-pill').forEach(b => {
+    const key = b.dataset.sheet;
+    b.classList.toggle('sel', sheets[key] !== false);
+  });
+  document.querySelectorAll('#excelSeqSheetPills .nreq-pill').forEach(b => {
+    const key = b.dataset.sheet;
+    b.classList.toggle('sel', sheets[key] !== false);
+  });
+}
+
+// Load current UX settings into the settings UI
+function loadUxSettings() {
+  const s = loadSettings();
+  const ux = s.ux || {};
+  // Theme
+  document.querySelectorAll('#uxThemePills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', b.dataset.val === (ux.theme || 'dark'));
+  });
+  // Vibration
+  document.querySelectorAll('#uxVibrationPills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', b.dataset.val === String(ux.vibration !== false));
+  });
+  // Toast duration
+  document.querySelectorAll('#uxToastPills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', parseInt(b.dataset.val) === (ux.toastDuration || 2000));
+  });
+  // Fullscreen
+  document.querySelectorAll('#uxFullscreenPills .nreq-pill').forEach(b => {
+    b.classList.toggle('sel', b.dataset.val === String(ux.fullscreen !== false));
   });
 }
 

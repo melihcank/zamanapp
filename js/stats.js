@@ -23,14 +23,25 @@ const T_CRIT_99 = [
   2.779, 2.771, 2.763, 2.756, 2.750
 ];
 
+// t-distribution critical values (two-tailed, α/2 = 0.05 for 90% CI)
+const T_CRIT_90 = [
+  6.314, 2.920, 2.353, 2.132, 2.015,
+  1.943, 1.895, 1.860, 1.833, 1.812,
+  1.796, 1.782, 1.771, 1.761, 1.753,
+  1.746, 1.740, 1.734, 1.729, 1.725,
+  1.721, 1.717, 1.714, 1.711, 1.708,
+  1.706, 1.703, 1.701, 1.699, 1.697
+];
+
 // Get t-critical value for given sample size and confidence level
 export function tCritical(n, confidence) {
   if (confidence === undefined) confidence = getSetting('stats', 'defaultConfidence');
   const df = n - 1;
-  if (df < 1) return confidence === 0.99 ? 2.576 : 1.96;
-  const table = confidence === 0.99 ? T_CRIT_99 : T_CRIT_95;
+  const zFallback = confidence === 0.99 ? 2.576 : confidence === 0.90 ? 1.645 : 1.96;
+  if (df < 1) return zFallback;
+  const table = confidence === 0.99 ? T_CRIT_99 : confidence === 0.90 ? T_CRIT_90 : T_CRIT_95;
   if (df <= 30) return table[df - 1];
-  return confidence === 0.99 ? 2.576 : 1.96;
+  return zFallback;
 }
 
 // Percentile calculation (linear interpolation — Excel PERCENTILE.INC compatible)
@@ -75,19 +86,18 @@ export function calcStats(times, opts = {}) {
   const max = sorted[n - 1];
   const range = max - min;
   const se = stdDev / Math.sqrt(n);
-  const t = tCritical(n);
+  const ciConf = opts.confidence || getSetting('stats', 'defaultConfidence') || 0.95;
+  const t = tCritical(n, ciConf);
   const ci95Low = Math.max(0, mean - t * se);
   const ci95High = mean + t * se;
 
-  // Required observation count: n'=(z/e * sqrt(n*Σx²-(Σx)²) / Σx)²
+  // Required observation count: nReq = (z * s / (e * x̄))²
   const z = Z_MAP[opts.confidence] || Z_MAP[getSetting('stats', 'defaultConfidence')] || 1.96;
   const e = opts.errorMargin || getSetting('stats', 'defaultErrorMargin');
   const k = z / e;
-  const sumSq = times.reduce((a, t) => a + t * t, 0);
-  const inner = n * sumSq - sum * sum;
-  const nReq = sum > 0 && inner > 0 ? Math.ceil(Math.pow(k * Math.sqrt(inner) / sum, 2)) : n;
+  const nReq = mean > 0 && n > 1 ? Math.ceil((k * stdDev / mean) ** 2) : n;
 
-  return { n, sum, mean, median, stdDev, cv, min, max, range, ci95Low, ci95High, se, nReq };
+  return { n, sum, mean, median, stdDev, cv, min, max, range, ci95Low, ci95High, se, nReq, ciConf };
 }
 
 // Tag analysis for summary

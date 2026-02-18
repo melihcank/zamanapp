@@ -8,6 +8,7 @@ import {
 } from './state.js';
 import { pushPanel } from './nav.js';
 import { updCard, autoSaveProgress } from './laps.js';
+import { getSetting } from './settings.js';
 
 // ===== TAG PICKER =====
 
@@ -122,7 +123,14 @@ export function saveNote() {
 export function openTempoEdit(lap) {
   setTeTarget(lap);
   $('teTitle').textContent = 'Tempo Düzenle — Tur #' + lap.num;
-  $('teInput').value = lap.tempo || 100;
+  const inp = $('teInput');
+  const tMin = getSetting('measure', 'tempoMin') || 50;
+  const tMax = getSetting('measure', 'tempoMax') || 150;
+  const tStep = getSetting('measure', 'tempoStep') || 5;
+  inp.min = tMin;
+  inp.max = tMax;
+  inp.step = tStep;
+  inp.value = lap.tempo || 100;
   $('teOv').classList.add('open');
   $('tePanel').classList.add('open');
   $('tePanel').style.transform = 'translateX(-50%) translateY(0)';
@@ -138,8 +146,11 @@ export function closeTempoEdit() {
 
 export function saveTempoEdit(updateHistoryLapsCallback, rebuildSummaryCallback) {
   if (!teTarget) return;
-  let newTempo = Math.round((+$('teInput').value || 100) / 5) * 5;
-  newTempo = Math.max(50, Math.min(150, newTempo));
+  const tMin = getSetting('measure', 'tempoMin') || 50;
+  const tMax = getSetting('measure', 'tempoMax') || 150;
+  const tStep = getSetting('measure', 'tempoStep') || 5;
+  let newTempo = Math.round((+$('teInput').value || 100) / tStep) * tStep;
+  newTempo = Math.max(tMin, Math.min(tMax, newTempo));
   teTarget.tempo = newTempo;
   teTarget.nt = teTarget.t * (newTempo / 100);
   closeTempoEdit();
@@ -154,8 +165,8 @@ export function initPanelEvents(updateHistoryLapsCallback, rebuildSummaryCallbac
   $('noteOv').onclick = closeNote;
   $('noteSave').onclick = saveNote;
   $('teOv').onclick = closeTempoEdit;
-  $('teMinus').onclick = () => { const inp = $('teInput'); inp.value = Math.max(50, +inp.value - 5); };
-  $('tePlus').onclick = () => { const inp = $('teInput'); inp.value = Math.min(150, +inp.value + 5); };
+  $('teMinus').onclick = () => { const inp = $('teInput'); const s = getSetting('measure', 'tempoStep') || 5; inp.value = Math.max(getSetting('measure', 'tempoMin') || 50, +inp.value - s); };
+  $('tePlus').onclick = () => { const inp = $('teInput'); const s = getSetting('measure', 'tempoStep') || 5; inp.value = Math.min(getSetting('measure', 'tempoMax') || 150, +inp.value + s); };
   $('tePanel').querySelectorAll('.te-preset').forEach(btn => {
     btn.onclick = () => $('teInput').value = btn.dataset.val;
   });

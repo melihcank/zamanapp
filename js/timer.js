@@ -3,6 +3,11 @@
 import { $, fmt, fms, vib, getNow } from './utils.js';
 import { S, measurementMode } from './state.js';
 
+// Callback for pause/resume/start/stop icon updates
+let pauseCallback = null;
+export function onPauseChange(fn) { pauseCallback = fn; }
+export function notifyPauseChange() { pauseCallback?.(); }
+
 // Get elapsed time
 export function getEl() {
   if (!S.started) return 0;
@@ -64,7 +69,7 @@ export function startT() {
   tick();
   vib(30);
   // Show pause button
-  if (window.updatePauseIcon) window.updatePauseIcon();
+  pauseCallback?.();
 }
 
 // Start timer from a specific cumulative time (for resuming)
@@ -96,7 +101,7 @@ export function startFromTime(cumTime, lastLap) {
   tick();
   vib(30);
   // Show pause button
-  if (window.updatePauseIcon) window.updatePauseIcon();
+  pauseCallback?.();
 }
 
 // Pause timer
@@ -117,7 +122,7 @@ export function pauseT() {
   ef.classList.add('flash-pause');
   vib([20, 50, 20]);
   // Update pause button icon
-  if (window.updatePauseIcon) window.updatePauseIcon();
+  pauseCallback?.();
 }
 
 // Resume timer
@@ -144,7 +149,7 @@ export function resumeT() {
   tick();
   vib(30);
   // Update pause button icon
-  if (window.updatePauseIcon) window.updatePauseIcon();
+  pauseCallback?.();
 }
 
 // Stop timer
@@ -156,5 +161,5 @@ export function stopT() {
   S.raf = null;  // Animasyon kimliğini sıfırla
   $('timerArea').classList.remove('running', 'paused');
   // Hide pause button
-  if (window.updatePauseIcon) window.updatePauseIcon();
+  pauseCallback?.();
 }

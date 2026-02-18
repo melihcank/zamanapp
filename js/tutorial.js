@@ -80,8 +80,9 @@ const STEPS = [
     content: `
       <p>Ana menü, uygulamanın giriş noktasıdır. Buradan tüm temel işlemlere tek dokunuşla erişebilirsiniz.</p>
       <p><strong>Zaman Tut</strong> — Yeni bir ölçüm başlatır. İş ve operatör bilgilerini girdikten sonra ölçüme geçersiniz.</p>
-      <p><strong>Etiketleri Düzenle</strong> — Anomali etiketlerinin isimlerini, renklerini ve simgelerini özelleştirin. Her sektörün ihtiyacına göre uyarlayın.</p>
       <p><strong>Geçmiş Veriler</strong> — Daha önce kaydettiğiniz tüm ölçümlere erişin, inceleyin veya Excel olarak dışa aktarın.</p>
+      <p><strong>Ayarlar</strong> — Ölçüm, istatistik, Excel çıktısı ve görünüm tercihlerini tek yerden yönetin.</p>
+      <p><strong>Nasıl Kullanılır?</strong> — Bu rehberi istediğiniz zaman tekrar açarak uygulamayı adım adım tanıyın.</p>
       <div class="tut-callout tut-callout-tip">
         <span class="tut-callout-icon">💡</span>
         <span>Kurulum gerektirmez, açar açmaz ölçüme başlayabilirsiniz!</span>
@@ -115,7 +116,11 @@ const STEPS = [
       </div>
       <div class="tut-callout tut-callout-tip">
         <span class="tut-callout-icon">💡</span>
-        <span>Çoğu zaman etüdü için <strong>Tekrarlı Ölçüm</strong> idealdir.</span>
+        <span>Çoğu zaman etüdü için <strong>Tekrarlı Ölçüm</strong> idealdir. Ardışık modda adım göstergesi, adım isimlendirme ve çevrim sayacı otomatik çalışır.</span>
+      </div>
+      <div class="tut-callout tut-callout-success">
+        <span class="tut-callout-icon">✓</span>
+        <span><strong>Ardışık Mod Detayları:</strong> Ölçüm ekranında aktif adım ve çevrim sayısı gösterilir. Adım isimlerine dokunarak düzenleyebilir, <strong>+</strong> butonuyla yeni adım ekleyebilirsiniz. Tüm adımlar tamamlandığında bir çevrim tamamlanır.</span>
       </div>
     `,
     screen: 'mode-select',
@@ -130,9 +135,11 @@ const STEPS = [
       <p>Ölçüme başlamadan önce kayıt için gerekli temel bilgileri girin. Bu bilgiler raporlarınızda ve geçmiş kayıtlarında görünecektir.</p>
       <p><strong>Operatör Adı</strong> — İşi yapan kişinin adı. Farklı operatörlerin performansını karşılaştırmanıza olanak tanır.</p>
       <p><strong>İş / Proses Adı</strong> — Ölçtüğünüz işlemin tanımlayıcı adı. Örneğin: "Montaj Hattı A - Vida Takma", "Paketleme İstasyonu 3".</p>
+      <p><strong>Güven Düzeyi</strong> — İstatistiksel güvenilirlik seviyesi. %90, %95 veya %99 arasından seçin. Yüksek güven = daha fazla ölçüm gerektirir.</p>
+      <p><strong>Hata Payı</strong> — Kabul edilebilir sapma oranı. ±%3, ±%5 veya ±%10 arasından seçin. Düşük hata payı = daha hassas sonuç, daha fazla ölçüm.</p>
       <div class="tut-callout tut-callout-tip">
         <span class="tut-callout-icon">💡</span>
-        <span>Açıklayıcı isimler kullanın — geçmiş verilerinizi ararken işinizi kolaylaştırır.</span>
+        <span>Açıklayıcı isimler kullanın — geçmiş verilerinizi ararken işinizi kolaylaştırır. Güven düzeyi ve hata payı, kaç ölçüm yapmanız gerektiğini (nReq) belirler.</span>
       </div>
     `,
     screen: 'setup',
@@ -186,6 +193,7 @@ const STEPS = [
       <p>Merkezdeki kronometre, uygulamanın en önemli bileşenidir. Ölçüm burada gerçekleşir.</p>
       <p><strong>İlk Dokunuş</strong> — Kronometreyi başlatır. İşçi işe başladığında dokunun.</p>
       <p><strong>Sonraki Dokunuşlar</strong> — Her dokunuşta bir tur kaydedilir ve kronometre sıfırlanır. İşçi işi tamamladığında dokunun.</p>
+      <p><strong>Canlı Yeterlilik Göstergesi</strong> — Kronometre üstünde "5 tur · 8 gerekli" veya "✓ Yeterli" yazısı görünür. İstatistiksel olarak ne kadar daha ölçüm yapmanız gerektiğini anlık takip edin.</p>
       <p><strong>Görsel Halka</strong> — Dakika ilerlemesini gösterir. Uzun süren işlerde referans sağlar.</p>
       <p><strong>Süre Göstergesi</strong> — Geçen zamanı dakika:saniye.milisaniye formatında gösterir.</p>
       <div class="tut-callout tut-callout-success">
@@ -210,7 +218,7 @@ const STEPS = [
       <p style="background:var(--bg3);padding:8px 12px;border-radius:6px;font-family:var(--mono);font-size:13px">Normal Süre = Gözlenen Süre × (Tempo / 100)</p>
       <div class="tut-callout tut-callout-tip">
         <span class="tut-callout-icon">💡</span>
-        <span>Tekerleği kaydırarak veya +/- tuşlarıyla tempo değiştirin.</span>
+        <span>Tekerleği kaydırarak veya +/- tuşlarıyla tempo değiştirin. Tempo %100'den farklı turlar varsa, özet ekranında "Gözlem" ve "Normal" sütunları yan yana gösterilir.</span>
       </div>
     `,
     screen: 'measure',
@@ -230,7 +238,7 @@ const STEPS = [
       <p>Etiketli tur kaydetmek için: İşçi anormal bir durumla karşılaştığında, kronometre yerine ilgili <strong>etiket butonuna</strong> dokunun.</p>
       <div class="tut-callout tut-callout-tip">
         <span class="tut-callout-icon">💡</span>
-        <span>Etiketleri ana menüden özelleştirebilirsiniz. Sektörünüze uygun isimler ve renkler belirleyin!</span>
+        <span>Etiketleri Ayarlar > Ölçüm Ayarları > Etiketleri Düzenle yolundan özelleştirebilirsiniz. Her etiketin <strong>adını</strong>, <strong>rengini</strong> ve <strong>ikonunu</strong> sektörünüze göre uyarlayın!</span>
       </div>
     `,
     screen: 'measure',
@@ -249,6 +257,11 @@ const STEPS = [
       <p><strong>Tempo rozeti</strong> — Eğer %100'den farklıysa gösterilir</p>
       <p><strong>Etiket rozeti</strong> — Varsa anomali etiketi</p>
       <p><strong>Not</strong> — Eklendiyse açıklama metni</p>
+      <p><strong>Kümülatif süre</strong> — Her kartın altında "Toplam" göstergesi, başlangıçtan o ana kadar geçen toplam süreyi gösterir.</p>
+      <div class="tut-callout tut-callout-tip">
+        <span class="tut-callout-icon">💡</span>
+        <span>Ardışık modda her tur kartında <strong>adım rozeti</strong> (hangi adıma ait olduğu) ek olarak gösterilir.</span>
+      </div>
     `,
     screen: 'measure',
     highlight: '.lap-wrap'
@@ -312,6 +325,8 @@ const STEPS = [
         <div class="tut-shortcut"><kbd>P</kbd> <span>Duraklat</span></div>
         <div class="tut-shortcut"><kbd>Q</kbd> <span>Bitir</span></div>
         <div class="tut-shortcut"><kbd>Del</kbd> <span>Son turu sil</span></div>
+        <div class="tut-shortcut"><kbd>↑</kbd><kbd>↓</kbd> <span>Tempo ayarla</span></div>
+        <div class="tut-shortcut"><kbd>Esc</kbd> <span>Panel kapat</span></div>
       </div>
       <div class="tut-callout tut-callout-tip">
         <span class="tut-callout-icon">💡</span>
@@ -328,12 +343,17 @@ const STEPS = [
     title: 'Özet ve İstatistikler',
     content: `
       <p>Ölçüm tamamlandığında kapsamlı bir istatistik raporu görürsünüz. Bu veriler, standart süre belirlemenin temelidir.</p>
-      <p><strong>Gözlem Sayısı</strong> — Kaç tur kaydettiğiniz ve istatistiksel güvenilirlik için kaç gözlem gerektiği.</p>
+      <p><strong>Gözlem Sayısı & nReq</strong> — Kaç tur kaydettiğiniz ve istatistiksel güvenilirlik için kaç gözlem gerektiği. Güven düzeyi ve hata payı pill'lerini özet ekranında da değiştirebilirsiniz.</p>
       <p><strong>Ortalama / Medyan</strong> — Merkezi eğilim ölçüleri. Medyan aykırı değerlerden etkilenmez.</p>
-      <p><strong>Min / Max</strong> — En kısa ve en uzun süren turlar.</p>
-      <p><strong>Standart Sapma</strong> — Sürelerin ortalamadan ne kadar saptığı (tutarlılık göstergesi).</p>
-      <p><strong>CV% (Değişkenlik Katsayısı)</strong> — Göreceli değişkenlik. %15'in altı iyi kabul edilir.</p>
+      <p><strong>Standart Sapma & CV%</strong> — Sürelerin tutarlılığı. CV% %15'in altıysa iyi kabul edilir.</p>
+      <p><strong>%95 Güven Aralığı</strong> — Gerçek ortalama sürenin bu aralıkta olma olasılığı %95'tir.</p>
       <p><strong>Saatlik Üretim</strong> — Bu süreyle saatte kaç adet üretilebileceği.</p>
+      <p><strong>Gözlem / Normal Sütunları</strong> — Tempo %100'den farklı turlar varsa, tablo iki sütunlu olur: ham gözlem süreleri ve tempo düzeltmeli normal süreler yan yana gösterilir.</p>
+      <p><strong>Analiz Filtresi</strong> — Etiket bazlı filtreleme ile belirli etiketleri analizden çıkarabilirsiniz. "Aykırı veriler dahil mi?" seçeneği ile istatistiksel sapmaları hariç tutun.</p>
+      <div class="tut-callout tut-callout-tip">
+        <span class="tut-callout-icon">💡</span>
+        <span><strong>Ardışık modda:</strong> Çevrim istatistikleri ve adım bazlı analiz tablosu (her adımın ortalaması, CV%, çevrim oranı) ayrıca gösterilir.</span>
+      </div>
       <div class="tut-callout tut-callout-warn">
         <span class="tut-callout-icon">⚠️</span>
         <span>CV% yüksekse, süreçte tutarsızlık var demektir. Nedenini araştırın!</span>
@@ -352,7 +372,10 @@ const STEPS = [
       <p><strong>Excel İndir</strong> — Tüm detayları içeren profesyonel bir Excel raporu oluşturur. Tur tur veriler, istatistikler ve grafikler için hazır format.</p>
       <p><strong>Devam Et</strong> — Ölçüme geri döner ve daha fazla tur eklemenizi sağlar. Yeterli veri toplamadıysanız kullanın.</p>
       <p><strong>Menüye Dön</strong> — Ölçümü kaydedip ana menüye döner. Veriler otomatik saklanır.</p>
-      <p>Ayrıca özet ekranında tur kartlarını düzenleyebilirsiniz: Etiket veya tempo değiştirin, hatalı turları silin.</p>
+      <p>Özet ekranındaki tur listesinde her tur için şu düzenlemeler yapılabilir:</p>
+      <p><strong>Tempo düzenleme</strong> — Tempo değerine dokunarak açılan panelden değiştirin.</p>
+      <p><strong>Etiket değiştirme</strong> — Etiket ikonuna dokunarak yeni etiket seçin veya kaldırın.</p>
+      <p><strong>Tur silme</strong> — Çöp kutusu ikonuyla geçersiz turları silin.</p>
     `,
     screen: 'summary',
     highlight: '.sum-action-bar'
@@ -369,6 +392,10 @@ const STEPS = [
       <p><strong>Silme Butonu</strong> — Kaydı kalıcı olarak siler.</p>
       <p><strong>JSON Yedekle</strong> — Tüm verilerinizi tek bir dosyaya aktarır. Düzenli yedek alın!</p>
       <p><strong>JSON İçe Aktar</strong> — Yedek dosyasından verileri geri yükler. Farklı cihazlar arası aktarım için de kullanılır.</p>
+      <div class="tut-callout tut-callout-success">
+        <span class="tut-callout-icon">✓</span>
+        <span>Geçmiş kayda tıkladığınızda tam özet ekranı açılır. Burada turları düzenleyebilir, etiket/tempo değiştirebilir ve değişiklikler otomatik kaydedilir.</span>
+      </div>
       <div class="tut-callout tut-callout-warn">
         <span class="tut-callout-icon">⚠️</span>
         <span>Tarayıcı verileri temizlenirse kayıplar olabilir. Önemli verilerinizi JSON olarak yedekleyin!</span>
@@ -378,7 +405,26 @@ const STEPS = [
     highlight: '.hi-toolbar'
   },
 
-  // STEP 16: Otomatik Kurtarma
+  // STEP 16: Ayarlar
+  {
+    id: 'settings',
+    title: 'Ayarlar',
+    content: `
+      <p>Ayarlar ekranı, uygulamayı ihtiyaçlarınıza göre kişiselleştirmenizi sağlar. Dört ana kategoriden oluşur:</p>
+      <p><strong>Ölçüm Ayarları</strong> — Tempo aralığı, otomatik kaydetme tercihi ve anomali etiketlerini düzenleyin.</p>
+      <p><strong>İstatistik Ayarları</strong> — IQR çarpanı, histogram aralığı ve güven düzeyi gibi istatistiksel parametreleri ayarlayın.</p>
+      <p><strong>Excel Çıktı Ayarları</strong> — Ondalık hassasiyeti, tarih formatı ve dahil edilecek sayfaları belirleyin.</p>
+      <p><strong>Görünüm & UX</strong> — Tema (açık/koyu), titreşim geri bildirimi, toast bildirimleri ve tam ekran tercihlerini yönetin.</p>
+      <div class="tut-callout tut-callout-tip">
+        <span class="tut-callout-icon">💡</span>
+        <span>Her ayarın yanındaki ⓘ ikonuna dokunarak detaylı açıklamasını görebilirsiniz.</span>
+      </div>
+    `,
+    screen: 'settings',
+    highlight: '.settings-cats'
+  },
+
+  // STEP 17: Otomatik Kurtarma
   {
     id: 'auto-recovery',
     title: 'Otomatik Kurtarma',
@@ -415,7 +461,7 @@ const STEPS = [
     screen: 'none'
   },
 
-  // STEP 17: Bitiş
+  // STEP 18: Bitiş
   {
     id: 'finish',
     title: 'Hazırsınız!',
@@ -453,8 +499,9 @@ function getMenuHTML() {
       <div class="menu-sub">Saha Kronometresi</div>
       <div class="menu-btns">
         <button class="menu-btn menu-btn-primary"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg>Zaman Tut</button>
-        <button class="menu-btn menu-btn-secondary"><svg viewBox="0 0 24 24"><path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z"/></svg>Etiketleri Düzenle</button>
         <button class="menu-btn menu-btn-secondary"><svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>Geçmiş Veriler</button>
+        <button class="menu-btn menu-btn-secondary"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/></svg>Ayarlar</button>
+        <button class="menu-btn menu-btn-secondary"><svg viewBox="0 0 24 24"><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>Nasıl Kullanılır?</button>
       </div>
     </div>
   `;
@@ -494,6 +541,11 @@ function getSetupHTML() {
         <div class="inp-grp">
           <label>İş / Proses Adı</label>
           <input type="text" value="${EXAMPLE.job}" readonly>
+        </div>
+        <div class="nreq-params">
+          <div class="nreq-title">Ne Kadar Ölçüm Gerekli?</div>
+          <div class="nreq-row"><label>Güven Düzeyi</label><div class="nreq-pills"><button type="button" class="nreq-pill">%90</button><button type="button" class="nreq-pill sel">%95</button><button type="button" class="nreq-pill">%99</button></div></div>
+          <div class="nreq-row"><label>Hata Payı</label><div class="nreq-pills"><button type="button" class="nreq-pill">±%3</button><button type="button" class="nreq-pill sel">±%5</button><button type="button" class="nreq-pill">±%10</button></div></div>
         </div>
         <button type="button" class="btn-go">BAŞLAT</button>
       </form>
@@ -550,6 +602,7 @@ function getMeasureHTML() {
       </div>
       <div class="tag-strip" style="display:grid;grid-template-columns:1fr 1fr">${tagsHTML}</div>
       <div class="timer-area running">
+        <div class="nreq-live visible ok" style="pointer-events:none">5 tur ✓ Yeterli</div>
         <div class="timer-tempo-wrap">
           <div class="timer-ring">
             <svg class="timer-ring-svg" viewBox="0 0 200 200">
@@ -637,7 +690,7 @@ function getHistoryHTML() {
       <div class="hi-card">
         <div class="hi-card-top">
           <span class="hi-job">${EXAMPLE.job}</span>
-          <span class="hi-date">04.02.2026</span>
+          <span class="hi-date">${new Date().toLocaleDateString('tr-TR')}</span>
         </div>
         <div class="hi-card-row">${EXAMPLE.op} · 5 tur · Ort: 00:04.24</div>
       </div>
@@ -652,6 +705,39 @@ function getHistoryHTML() {
   `;
 }
 
+function getSettingsHTML() {
+  return `
+    <div class="tut-screen-content tut-settings">
+      <div class="hi-header">
+        <button class="te-back"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+        <h2>Ayarlar</h2>
+      </div>
+      <div class="settings-cats">
+        <button class="settings-cat-btn">
+          <div class="settings-cat-icon cat-measure"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg></div>
+          <div class="settings-cat-info"><h3>Ölçüm Ayarları</h3><p>Tempo aralığı, varsayılan tempo, otomatik kaydetme</p></div>
+          <div class="settings-cat-arrow"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+        </button>
+        <button class="settings-cat-btn">
+          <div class="settings-cat-icon cat-stats"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg></div>
+          <div class="settings-cat-info"><h3>İstatistik Ayarları</h3><p>IQR çarpanı, histogram, hareketli ortalama</p></div>
+          <div class="settings-cat-arrow"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+        </button>
+        <button class="settings-cat-btn">
+          <div class="settings-cat-icon cat-excel"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
+          <div class="settings-cat-info"><h3>Excel Çıktı Ayarları</h3><p>Ondalık hassasiyet, tarih formatı, dahil edilecek sayfalar</p></div>
+          <div class="settings-cat-arrow"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+        </button>
+        <button class="settings-cat-btn">
+          <div class="settings-cat-icon cat-ux"><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-1 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
+          <div class="settings-cat-info"><h3>Görünüm & UX</h3><p>Tema, titreşim, bildirim süresi, tam ekran</p></div>
+          <div class="settings-cat-arrow"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg></div>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 function getScreenHTML(screen) {
   switch (screen) {
     case 'menu': return getMenuHTML();
@@ -660,6 +746,7 @@ function getScreenHTML(screen) {
     case 'measure': return getMeasureHTML();
     case 'summary': return getSummaryHTML();
     case 'history': return getHistoryHTML();
+    case 'settings': return getSettingsHTML();
     default: return '';
   }
 }
@@ -671,7 +758,8 @@ function getScreenLabel(screen) {
     setup: 'Ölçüm Ayarları',
     measure: 'Ölçüm Ekranı',
     summary: 'Özet Ekranı',
-    history: 'Geçmiş Veriler'
+    history: 'Geçmiş Veriler',
+    settings: 'Ayarlar'
   };
   return labels[screen] || '';
 }

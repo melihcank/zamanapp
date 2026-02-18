@@ -3,6 +3,7 @@
 import { $, toast, vib, esc } from './utils.js';
 import { STEP_COLORS } from './config.js';
 import {
+  S,
   sequenceSteps, setSequenceSteps,
   currentStep, setCurrentStep,
   sequenceCycle, setSequenceCycle,
@@ -60,6 +61,10 @@ export function renderStepIndicator() {
 
 // Add new step
 export function addNewStep() {
+  if (S.started) {
+    toast('Ölçüm sırasında adım eklenemez', 't-wrn');
+    return;
+  }
   const newIdx = sequenceSteps.length;
   const color = STEP_COLORS[newIdx % STEP_COLORS.length];
   const newSteps = [...sequenceSteps, { name: 'Adım ' + (newIdx + 1), color }];

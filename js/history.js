@@ -68,7 +68,7 @@ export function renderHistory() {
       e.stopPropagation();
       const h = loadHistory()[+btn.dataset.idx];
       if (!h) return;
-      const fn = 'zaman_etudu_' + h.job.replace(/[^a-zA-Z0-9\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g, '_') + '_' + (h.dateISO || h.date).slice(0, 10) + '.xlsx';
+      const fn = 'zaman_etudu_' + h.job.replace(/[^a-zA-Z0-9 \-_\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g, '_') + '_' + (h.dateISO || h.date).slice(0, 10) + '.xlsx';
       exportExcel(h, fn);
     };
   });

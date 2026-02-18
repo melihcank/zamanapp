@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zaman-etudu-v82';
+const CACHE_NAME = 'zaman-etudu-v96';
 const ASSETS = [
   './',
   './index.html',
@@ -22,7 +22,8 @@ const ASSETS = [
   './js/export.js',
   './js/keyboard.js',
   './js/tutorial.js',
-  './js/settings.js'
+  './js/settings.js',
+  './js/xlsx.bundle.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -43,13 +44,6 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
-      // Cache CDN resources on first fetch
-      if (resp.ok && e.request.url.startsWith('https://cdn.jsdelivr.net/')) {
-        const clone = resp.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-      }
-      return resp;
-    }))
+    caches.match(e.request).then(cached => cached || fetch(e.request))
   );
 });

@@ -3,7 +3,7 @@
 import { $, toast, vib, ffull, esc, dimColor, tagIcon } from './utils.js';
 import { SVG_ICONS, STEP_COLORS } from './config.js';
 import { calcStats, detectOutliers } from './stats.js';
-import { loadHistory, saveHistory, loadTags, clearAutoRecovery } from './storage.js';
+import { loadTags, clearAutoRecovery } from './storage.js';
 import {
   S, tags, setTags, measurementMode, sequenceSteps,
   historyViewIdx, setHistoryViewIdx,
@@ -18,7 +18,7 @@ import {
 } from './state.js';
 import { screens, showScreen, pushPanel } from './nav.js';
 import { recalcLaps, refreshList } from './laps.js';
-import { updDisp, tick } from './timer.js';
+import { notifyPauseChange } from './timer.js';
 import { buildTagStrip } from './tags.js';
 import { initSequenceMode, renderStepIndicator } from './steps.js';
 import { getNow } from './utils.js';
@@ -50,9 +50,28 @@ export function rebuildSummary() {
     return sumFilterTags.has(l.tag);
   });
 
-  // Detect outliers on tag-filtered times
-  const tfTimes = tagFiltered.map(l => l.t);
-  const outlierSet = detectOutliers(tfTimes);
+  // Detect outliers: per-step in sequence mode, pooled in repeat mode
+  let outlierSet;
+  if (isSeqMode) {
+    outlierSet = new Set();
+    const stepCount = sequenceSteps.length || 4;
+    for (let si = 0; si < stepCount; si++) {
+      const stepIndices = [];
+      const stepTimes = [];
+      tagFiltered.forEach((l, i) => {
+        if (l.step === undefined) return;
+        if (l.step === si) {
+          stepIndices.push(i);
+          stepTimes.push(l.t);
+        }
+      });
+      const stepOutliers = detectOutliers(stepTimes);
+      stepOutliers.forEach(oi => outlierSet.add(stepIndices[oi]));
+    }
+  } else {
+    const tfTimes = tagFiltered.map(l => l.t);
+    outlierSet = detectOutliers(tfTimes);
+  }
 
   // Build set of excluded lap ids (outliers)
   const outlierIds = new Set();
@@ -186,7 +205,7 @@ export function rebuildSummary() {
         h += `<tr><td>Max</td><td>${ffull(cycleStats.max)}</td><td>${ffull(cycleStatsNT?.max)}</td></tr>`;
         h += `<tr><td>Std Sapma</td><td>${ffull(cycleStats.stdDev)}</td><td>${ffull(cycleStatsNT?.stdDev)}</td></tr>`;
         h += `<tr><td>CV%</td><td>${cycleStats.cv.toFixed(1)}%</td><td>${cycleStatsNT?.cv?.toFixed(1) || '—'}%</td></tr>`;
-        h += `<tr><td>%95 Güven Aralığı</td><td class="sct-ci">${ffull(cycleStats.ci95Low)} — ${ffull(cycleStats.ci95High)}</td><td class="sct-ci">${ffull(cycleStatsNT?.ci95Low)} — ${ffull(cycleStatsNT?.ci95High)}</td></tr>`;
+        h += `<tr><td>%${Math.round((cycleStats?.ciConf || 0.95) * 100)} Güven Aralığı</td><td class="sct-ci">${ffull(cycleStats.ci95Low)} — ${ffull(cycleStats.ci95High)}</td><td class="sct-ci">${ffull(cycleStatsNT?.ci95Low)} — ${ffull(cycleStatsNT?.ci95High)}</td></tr>`;
         h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${seqObsPerHour}</td><td>${seqNormPerHour}</td></tr>`;
         h += `</tbody></table>`;
       } else {
@@ -197,7 +216,7 @@ export function rebuildSummary() {
         h += `<tr><td>Max</td><td>${ffull(cycleStats.max)}</td></tr>`;
         h += `<tr><td>Std Sapma</td><td>${ffull(cycleStats.stdDev)}</td></tr>`;
         h += `<tr><td>CV%</td><td>${cycleStats.cv.toFixed(1)}%</td></tr>`;
-        h += `<tr><td>%95 Güven Aralığı</td><td class="sct-ci">${ffull(cycleStats.ci95Low)} — ${ffull(cycleStats.ci95High)}</td></tr>`;
+        h += `<tr><td>%${Math.round((cycleStats?.ciConf || 0.95) * 100)} Güven Aralığı</td><td class="sct-ci">${ffull(cycleStats.ci95Low)} — ${ffull(cycleStats.ci95High)}</td></tr>`;
         h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${seqObsPerHour}</td></tr>`;
         h += `</tbody></table>`;
       }
@@ -264,7 +283,7 @@ export function rebuildSummary() {
       h += `<tr><td>Max</td><td>${ffull(st.max)}</td><td>${ffull(stNT.max)}</td></tr>`;
       h += `<tr><td>Std Sapma</td><td>${ffull(st.stdDev)}</td><td>${ffull(stNT.stdDev)}</td></tr>`;
       h += `<tr><td>CV%</td><td>${st.cv.toFixed(1)}%</td><td>${stNT.cv.toFixed(1)}%</td></tr>`;
-      h += `<tr><td>%95 Güven Aralığı</td><td class="sct-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</td><td class="sct-ci">${ffull(stNT.ci95Low)} — ${ffull(stNT.ci95High)}</td></tr>`;
+      h += `<tr><td>%${Math.round((st?.ciConf || 0.95) * 100)} Güven Aralığı</td><td class="sct-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</td><td class="sct-ci">${ffull(stNT.ci95Low)} — ${ffull(stNT.ci95High)}</td></tr>`;
       h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${obsPerHour}</td><td>${normPerHour}</td></tr>`;
       h += `</tbody></table>`;
     } else {
@@ -277,7 +296,7 @@ export function rebuildSummary() {
       h += `<tr><td>Max</td><td>${ffull(st.max)}</td></tr>`;
       h += `<tr><td>Std Sapma</td><td>${ffull(st.stdDev)}</td></tr>`;
       h += `<tr><td>CV%</td><td>${st.cv.toFixed(1)}%</td></tr>`;
-      h += `<tr><td>%95 Güven Aralığı</td><td class="sct-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</td></tr>`;
+      h += `<tr><td>%${Math.round((st?.ciConf || 0.95) * 100)} Güven Aralığı</td><td class="sct-ci">${ffull(st.ci95Low)} — ${ffull(st.ci95High)}</td></tr>`;
       h += `<tr class="sct-section sct-highlight"><td>Saatlik Üretim</td><td>${obsPerHour}</td></tr>`;
       h += `</tbody></table>`;
     }
@@ -326,7 +345,7 @@ export function rebuildSummary() {
       nReqConfidence,
       nReqError
     };
-    const fn = 'zaman_etudu_' + S.job.replace(/[^a-zA-Z0-9\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+    const fn = 'zaman_etudu_' + S.job.replace(/[^a-zA-Z0-9 \-_\u00e7\u011f\u0131\u00f6\u015f\u00fc\u00c7\u011e\u0130\u00d6\u015e\u00dc]/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.xlsx';
     exportExcel(sess, fn);
   };
 
@@ -358,7 +377,7 @@ function sumRowHTML(l, excluded) {
   // For sequence mode, show step name; for repeat mode, show tag
   let labelHtml = '';
   if (l.mode === 'sequence' && l.stepName) {
-    const stepColor = STEP_COLORS[(l.step || 0) % STEP_COLORS.length];
+    const stepColor = STEP_COLORS[l.step % STEP_COLORS.length];
     labelHtml = `<span class="stg" style="color:${stepColor}">${esc(l.stepName)}</span>`;
     // Add anomaly indicator if present
     if (tg) {
@@ -596,7 +615,7 @@ export function resumeMeasurement() {
   showScreen('measure');
 
   // Update pause button to show "Devam Et"
-  if (window.updatePauseIcon) window.updatePauseIcon();
+  notifyPauseChange();
 
   toast('Ölçüm duraklatıldı. Devam Et butonuna basın.', 't-warn');
   vib(30);

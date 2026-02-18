@@ -9,21 +9,41 @@ import { loadHistory, saveHistory, loadTags, saveTags } from './storage.js';
 import { tags, setTags, sequenceSteps } from './state.js';
 import { renderHistory } from './history.js';
 
-// Load XLSX library dynamically
+// Load XLSX library dynamically (local bundle)
 function loadXLSX(cb) {
   if (typeof XLSX !== 'undefined') { cb(); return; }
   const s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+  s.src = './js/xlsx.bundle.js';
   s.onload = cb;
-  s.onerror = () => toast('Excel kütüphanesi yüklenemedi. İnternet bağlantısını kontrol edin.', 't-dng');
+  s.onerror = () => toast('Excel kütüphanesi yüklenemedi', 't-dng');
   document.head.appendChild(s);
 }
 
 // ============ HELPER FUNCTIONS ============
 
 // Convert ms to seconds with precision
-function toSec(ms, decimals = 3) {
+function toSec(ms, decimals) {
+  if (decimals === undefined) decimals = getSetting('excel', 'decimalPrecision') ?? 3;
   return ms != null ? +(ms / 1000).toFixed(decimals) : null;
+}
+
+// Format a number to configured decimal precision
+function dp(val, fallback) {
+  if (val == null) return null;
+  const d = getSetting('excel', 'decimalPrecision') ?? fallback ?? 3;
+  return +Number(val).toFixed(d);
+}
+
+// Format date according to settings
+function formatDate(dateInput) {
+  const fmt = getSetting('excel', 'dateFormat') ?? 'tr';
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  const pad = n => String(n).padStart(2, '0');
+  const DD = pad(d.getDate()), MM = pad(d.getMonth() + 1);
+  const YYYY = d.getFullYear(), HH = pad(d.getHours()), mm = pad(d.getMinutes());
+  if (fmt === 'iso') return `${YYYY}-${MM}-${DD} ${HH}:${mm}`;
+  if (fmt === 'eu')  return `${DD}/${MM}/${YYYY} ${HH}:${mm}`;
+  return `${DD}.${MM}.${YYYY} ${HH}:${mm}`;
 }
 
 // ============ STYLE CONSTANTS ============
@@ -197,13 +217,16 @@ function buildRepeatExcel(wb, session, sTags) {
   const reg = linearRegression(times);
   const regNT = linearRegression(normalTimes);
   const maWindow = getSetting('stats', 'movingAvgWindow');
+  const userPerc = getSetting('stats', 'percentiles');
+  const trendTh = getSetting('stats', 'trendThreshold');
   const ma = movingAvg(times, maWindow);
   const maNT = movingAvg(normalTimes, maWindow);
+  const sheets = getSetting('excel', 'includeSheets') ?? {};
 
   // ========== SHEET 1: ÖZET ==========
   const s1Data = [
     ['ZAMAN ETÜDÜ RAPORU - TEKRARLI ÖLÇÜM'],
-    ['Oluşturma Tarihi:', new Date().toLocaleString('tr-TR')],
+    ['Oluşturma Tarihi:', formatDate(new Date())],
     [],
     ['ÖLÇÜM BİLGİLERİ'],
     ['İş / Proses Adı', session.job || '-'],
@@ -219,7 +242,7 @@ function buildRepeatExcel(wb, session, sTags) {
     ['Mod (En sık)', toSec(findMode(times)), toSec(findMode(normalTimes)), 'sn'],
     ['Standart Sapma (σ)', toSec(st?.stdDev), toSec(stNT?.stdDev), 'sn'],
     ['Varyans (σ²)', toSec(st?.stdDev ? st.stdDev ** 2 : 0, 6), toSec(stNT?.stdDev ? stNT.stdDev ** 2 : 0, 6), 'sn²'],
-    ['Varyasyon Katsayısı (CV)', st?.cv?.toFixed(2) || 0, stNT?.cv?.toFixed(2) || 0, '%'],
+    ['Varyasyon Katsayısı (CV)', dp(st?.cv, 2) || 0, dp(stNT?.cv, 2) || 0, '%'],
     ['Minimum', toSec(st?.min), toSec(stNT?.min), 'sn'],
     ['Maksimum', toSec(st?.max), toSec(stNT?.max), 'sn'],
     ['Aralık (Range)', toSec(st?.range), toSec(stNT?.range), 'sn'],
@@ -230,38 +253,38 @@ function buildRepeatExcel(wb, session, sTags) {
     ['Q2 (Medyan)', toSec(q.q2), toSec(qNT.q2), 'sn'],
     ['Q3 (75. Persentil)', toSec(q.q3), toSec(qNT.q3), 'sn'],
     ['IQR (Çeyrekler Arası)', toSec(q.iqr), toSec(qNT.iqr), 'sn'],
-    ['10. Persentil', toSec(percentile(sorted, 0.10)), toSec(percentile(sortedNT, 0.10)), 'sn'],
-    ['90. Persentil', toSec(percentile(sorted, 0.90)), toSec(percentile(sortedNT, 0.90)), 'sn'],
-    ['Çarpıklık (Skewness)', st ? skewness(times, st.mean, st.stdDev).toFixed(3) : 0, stNT ? skewness(normalTimes, stNT.mean, stNT.stdDev).toFixed(3) : 0],
-    ['Basıklık (Kurtosis)', st ? kurtosis(times, st.mean, st.stdDev).toFixed(3) : 0, stNT ? kurtosis(normalTimes, stNT.mean, stNT.stdDev).toFixed(3) : 0],
+    ...userPerc.map(p => [`${p}. Persentil`, toSec(percentile(sorted, p / 100)), toSec(percentile(sortedNT, p / 100)), 'sn']),
+    ['Çarpıklık (Skewness)', st ? dp(skewness(times, st.mean, st.stdDev), 3) : 0, stNT ? dp(skewness(normalTimes, stNT.mean, stNT.stdDev), 3) : 0],
+    ['Basıklık (Kurtosis)', st ? dp(kurtosis(times, st.mean, st.stdDev), 3) : 0, stNT ? dp(kurtosis(normalTimes, stNT.mean, stNT.stdDev), 3) : 0],
     [],
     ['GÜVEN ARALIĞI & YETERLİLİK', 'Gözlem', 'Normal', ''],
-    ['%95 GA Alt Sınır', toSec(st?.ci95Low), toSec(stNT?.ci95Low), 'sn'],
-    ['%95 GA Üst Sınır', toSec(st?.ci95High), toSec(stNT?.ci95High), 'sn'],
+    [`%${confPct} GA Alt Sınır`, toSec(st?.ci95Low), toSec(stNT?.ci95Low), 'sn'],
+    [`%${confPct} GA Üst Sınır`, toSec(st?.ci95High), toSec(stNT?.ci95High), 'sn'],
     ['%99 GA Alt Sınır', toSec(st ? Math.max(0, st.mean - tCritical(st.n, 0.99) * st.se) : 0), toSec(stNT ? Math.max(0, stNT.mean - tCritical(stNT.n, 0.99) * stNT.se) : 0), 'sn'],
     ['%99 GA Üst Sınır', toSec(st ? st.mean + tCritical(st.n, 0.99) * st.se : 0), toSec(stNT ? stNT.mean + tCritical(stNT.n, 0.99) * stNT.se : 0), 'sn'],
     [`Gerekli Gözlem (±%${errPct}, %${confPct})`, st?.nReq || 0, stNT?.nReq || 0],
     ['Yeterli Gözlem?', st && st.n >= st.nReq ? 'EVET' : 'HAYIR', stNT && stNT.n >= stNT.nReq ? 'EVET' : 'HAYIR'],
     [],
     ['TREND ANALİZİ', 'Gözlem', 'Normal', ''],
-    ['Eğim (Slope)', reg.slope.toFixed(6), regNT.slope.toFixed(6), 'ms/tur'],
+    ['Eğim (Slope)', dp(reg.slope, 6), dp(regNT.slope, 6), 'ms/tur'],
     ['Kesişim (Intercept)', toSec(reg.intercept), toSec(regNT.intercept), 'sn'],
-    ['R² (Belirleyicilik)', reg.r2.toFixed(4), regNT.r2.toFixed(4)],
-    ['Trend Yönü', reg.slope > 1 ? 'Artış ↑' : reg.slope < -1 ? 'Azalış ↓' : 'Stabil →', regNT.slope > 1 ? 'Artış ↑' : regNT.slope < -1 ? 'Azalış ↓' : 'Stabil →'],
+    ['R² (Belirleyicilik)', dp(reg.r2, 4), dp(regNT.r2, 4)],
+    ['Trend Yönü', reg.r2 < trendTh ? 'Belirsiz (R² düşük)' : reg.slope > (st?.stdDev || 10) * 0.1 ? 'Artış ↑' : reg.slope < -(st?.stdDev || 10) * 0.1 ? 'Azalış ↓' : 'Stabil →', regNT.r2 < trendTh ? 'Belirsiz (R² düşük)' : regNT.slope > (stNT?.stdDev || 10) * 0.1 ? 'Artış ↑' : regNT.slope < -(stNT?.stdDev || 10) * 0.1 ? 'Azalış ↓' : 'Stabil →'],
     [],
     ['AYKIRI DEĞERLER', 'Gözlem', 'Normal', ''],
     ['Aykırı Sayısı (IQR)', outliers.size, outliersNT.size],
-    ['Aykırı Oranı', ((outliers.size / (st?.n || 1)) * 100).toFixed(1) + '%', ((outliersNT.size / (stNT?.n || 1)) * 100).toFixed(1) + '%']
+    ['Aykırı Oranı', dp((outliers.size / (st?.n || 1)) * 100, 1) + '%', dp((outliersNT.size / (stNT?.n || 1)) * 100, 1) + '%']
   ];
 
   const s1 = XLSX.utils.aoa_to_sheet(s1Data);
   s1['!cols'] = [{ wch: 30 }, { wch: 18 }, { wch: 18 }, { wch: 8 }];
+  const d = userPerc.length - 2; // row offset from dynamic percentile count
   applyStyles(s1, {
     titles: [[0, 4]],
     sections: [[3, 4]],
-    sectionRows: [[10, 4], [23, 4], [33, 4], [41, 4], [47, 4]],
-    kv: [[1, 1, 4, false], [4, 8, 4, false], [11, 21, 4, true], [24, 31, 4, true], [34, 39, 4, true], [42, 45, 4, false], [48, 49, 4, false]],
-    yesNo: [[39, 1], [39, 2]]
+    sectionRows: [[10, 4], [23, 4], [33 + d, 4], [41 + d, 4], [47 + d, 4]],
+    kv: [[1, 1, 4, false], [4, 8, 4, false], [11, 21, 4, true], [24, 31 + d, 4, true], [34 + d, 39 + d, 4, true], [42 + d, 45 + d, 4, false], [48 + d, 49 + d, 4, false]],
+    yesNo: [[39 + d, 1], [39 + d, 2]]
   });
   XLSX.utils.book_append_sheet(wb, s1, 'Özet');
 
@@ -301,8 +324,8 @@ function buildRepeatExcel(wb, session, sTags) {
       toSec(cumRepeat), ffull(cumRepeat),
       toSec(cumNTRepeat), ffull(cumNTRepeat),
       l.tag !== null ? l.tag : '', tagName, l.note || '',
-      outliers.has(i) ? 'EVET' : 'HAYIR', +devPct.toFixed(2), +zScore.toFixed(3), toSec(ma[i]), toSec(trendVal),
-      outliersNT.has(i) ? 'EVET' : 'HAYIR', +devPctNT.toFixed(2), +zScoreNT.toFixed(3), toSec(maNT[i]), toSec(trendValNT)
+      outliers.has(i) ? 'EVET' : 'HAYIR', dp(devPct, 2), dp(zScore, 3), toSec(ma[i]), toSec(trendVal),
+      outliersNT.has(i) ? 'EVET' : 'HAYIR', dp(devPctNT, 2), dp(zScoreNT, 3), toSec(maNT[i]), toSec(trendValNT)
     ]);
   });
 
@@ -326,6 +349,7 @@ function buildRepeatExcel(wb, session, sTags) {
   XLSX.utils.book_append_sheet(wb, s2, 'Ham Veri');
 
   // ========== SHEET 3: ETİKET ANALİZİ ==========
+  if (sheets.etiketAnalizi !== false) {
   const ta = tagAnalysis(session.laps, sTags, nReqOpts);
   const tagHeader = ['Etiket', 'Adet', 'Oran (%)', 'Toplam (sn)', 'Ortalama (sn)', 'Medyan (sn)',
      'Min (sn)', 'Max (sn)', 'Aralık (sn)', 'Std Sapma (sn)', 'CV (%)',
@@ -344,7 +368,7 @@ function buildRepeatExcel(wb, session, sTags) {
     s3Data.push([
       ts.name,
       ts.count,
-      +((ts.count / (st?.n || 1)) * 100).toFixed(1),
+      dp((ts.count / (st?.n || 1)) * 100, 1),
       toSec(ts.sum),
       toSec(ts.mean),
       toSec(ts.median),
@@ -352,7 +376,7 @@ function buildRepeatExcel(wb, session, sTags) {
       toSec(ts.max),
       toSec(ts.range),
       toSec(ts.stdDev),
-      +ts.cv.toFixed(2),
+      dp(ts.cv, 2),
       toSec(tQ.q1),
       toSec(tQ.q3),
       toSec(tQ.iqr),
@@ -362,7 +386,7 @@ function buildRepeatExcel(wb, session, sTags) {
   });
 
   s3Data.push(['TOPLAM', st?.n || 0, 100.0, toSec(st?.sum), toSec(st?.mean), toSec(st?.median),
-    toSec(st?.min), toSec(st?.max), toSec(st?.range), toSec(st?.stdDev), +(st?.cv?.toFixed(2) || 0),
+    toSec(st?.min), toSec(st?.max), toSec(st?.range), toSec(st?.stdDev), (dp(st?.cv, 2) || 0),
     toSec(q.q1), toSec(q.q3), toSec(q.iqr), toSec(st?.ci95Low), toSec(st?.ci95High)]);
 
   // Normal süreler için etiket analizi
@@ -377,7 +401,7 @@ function buildRepeatExcel(wb, session, sTags) {
     s3Data.push([
       ts.name,
       ts.count,
-      +((ts.count / (st?.n || 1)) * 100).toFixed(1),
+      dp((ts.count / (st?.n || 1)) * 100, 1),
       toSec(tNTStats?.sum),
       toSec(tNTStats?.mean),
       toSec(tNTStats?.median),
@@ -385,7 +409,7 @@ function buildRepeatExcel(wb, session, sTags) {
       toSec(tNTStats?.max),
       toSec(tNTStats?.range),
       toSec(tNTStats?.stdDev),
-      +(tNTStats?.cv?.toFixed(2) || 0),
+      (dp(tNTStats?.cv, 2) || 0),
       toSec(tNTQ.q1),
       toSec(tNTQ.q3),
       toSec(tNTQ.iqr),
@@ -395,7 +419,7 @@ function buildRepeatExcel(wb, session, sTags) {
   });
 
   s3Data.push(['TOPLAM', stNT?.n || 0, 100.0, toSec(stNT?.sum), toSec(stNT?.mean), toSec(stNT?.median),
-    toSec(stNT?.min), toSec(stNT?.max), toSec(stNT?.range), toSec(stNT?.stdDev), +(stNT?.cv?.toFixed(2) || 0),
+    toSec(stNT?.min), toSec(stNT?.max), toSec(stNT?.range), toSec(stNT?.stdDev), (dp(stNT?.cv, 2) || 0),
     toSec(qNT.q1), toSec(qNT.q3), toSec(qNT.iqr), toSec(stNT?.ci95Low), toSec(stNT?.ci95High)]);
 
   const s3 = XLSX.utils.aoa_to_sheet(s3Data);
@@ -416,8 +440,10 @@ function buildRepeatExcel(wb, session, sTags) {
   addZebraStripes(s3, s3t2 + 3, s3t2 + 2 + tCnt, NC3);
   styleTotalRow(s3, s3t2 + 3 + tCnt, NC3);
   XLSX.utils.book_append_sheet(wb, s3, 'Etiket Analizi');
+  }
 
   // ========== SHEET 4: DAĞILIM ANALİZİ ==========
+  if (sheets.dagilimAnalizi !== false) {
   const bins = freqDist(times);
   const freqHeader = ['Aralık Başı (sn)', 'Aralık Sonu (sn)', 'Frekans', 'Oran (%)', 'Kümülatif Frekans', 'Kümülatif (%)'];
   const s4Data = [
@@ -433,9 +459,9 @@ function buildRepeatExcel(wb, session, sTags) {
       toSec(b.binStart),
       toSec(b.binEnd),
       b.count,
-      +b.freq.toFixed(2),
+      dp(b.freq, 2),
       cumFreq,
-      +((cumFreq / (st?.n || 1)) * 100).toFixed(2)
+      dp((cumFreq / (st?.n || 1)) * 100, 2)
     ]);
   });
 
@@ -450,15 +476,15 @@ function buildRepeatExcel(wb, session, sTags) {
       toSec(b.binStart),
       toSec(b.binEnd),
       b.count,
-      +b.freq.toFixed(2),
+      dp(b.freq, 2),
       cumFreqNT,
-      +((cumFreqNT / (stNT?.n || 1)) * 100).toFixed(2)
+      dp((cumFreqNT / (stNT?.n || 1)) * 100, 2)
     ]);
   });
 
   s4Data.push([], ['PERSENTİL TABLOSU'], []);
   s4Data.push(['Persentil', 'Gözlemlenen (sn)', 'Normal (sn)']);
-  [5, 10, 25, 50, 75, 90, 95].forEach(p => {
+  userPerc.forEach(p => {
     s4Data.push([
       p + '%',
       toSec(percentile(sorted, p / 100)),
@@ -481,6 +507,7 @@ function buildRepeatExcel(wb, session, sTags) {
   const s4 = XLSX.utils.aoa_to_sheet(s4Data);
   s4['!cols'] = [{ wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 18 }, { wch: 14 }];
   const bLen = bins.length, bLenNT = binsNT.length, bOff = bLen + bLenNT;
+  const pLen = userPerc.length;
   styleReportTitle(s4, 0, 6);
   styleColumnHeaders(s4, 2, 0, 5);
   addTableBorders(s4, 2, 0, 2 + bLen, 5); addZebraStripes(s4, 3, 2 + bLen, 6);
@@ -489,21 +516,23 @@ function buildRepeatExcel(wb, session, sTags) {
   addTableBorders(s4, 6 + bLen, 0, 6 + bLen + bLenNT, 5); addZebraStripes(s4, 7 + bLen, 6 + bLen + bLenNT, 6);
   styleSubSectionHeader(s4, 8 + bOff, 6);
   styleColumnHeaders(s4, 10 + bOff, 0, 2);
-  addTableBorders(s4, 10 + bOff, 0, 17 + bOff, 2); addZebraStripes(s4, 11 + bOff, 17 + bOff, 3);
-  styleSubSectionHeader(s4, 19 + bOff, 6);
-  styleColumnHeaders(s4, 21 + bOff, 0, 2);
-  addTableBorders(s4, 21 + bOff, 0, 29 + bOff, 2); addZebraStripes(s4, 22 + bOff, 29 + bOff, 3);
+  addTableBorders(s4, 10 + bOff, 0, 10 + bOff + pLen, 2); addZebraStripes(s4, 11 + bOff, 10 + bOff + pLen, 3);
+  styleSubSectionHeader(s4, 12 + bOff + pLen, 6);
+  styleColumnHeaders(s4, 14 + bOff + pLen, 0, 2);
+  addTableBorders(s4, 14 + bOff + pLen, 0, 22 + bOff + pLen, 2); addZebraStripes(s4, 15 + bOff + pLen, 22 + bOff + pLen, 3);
   XLSX.utils.book_append_sheet(wb, s4, 'Dağılım Analizi');
+  }
 
   // ========== SHEET 5: TREND ANALİZİ ==========
+  if (sheets.trendAnalizi !== false) {
   const s5Data = [
     ['TREND ANALİZİ'],
     [],
     ['REGRESYON ANALİZİ', 'Gözlem', 'Normal'],
-    ['Eğim (ms/tur)', reg.slope.toFixed(4), regNT.slope.toFixed(4)],
+    ['Eğim (ms/tur)', dp(reg.slope, 4), dp(regNT.slope, 4)],
     ['Kesişim (sn)', toSec(reg.intercept), toSec(regNT.intercept)],
-    ['R²', reg.r2.toFixed(4), regNT.r2.toFixed(4)],
-    ['Trend', reg.slope > 1 ? 'Artış' : reg.slope < -1 ? 'Azalış' : 'Stabil', regNT.slope > 1 ? 'Artış' : regNT.slope < -1 ? 'Azalış' : 'Stabil'],
+    ['R²', dp(reg.r2, 4), dp(regNT.r2, 4)],
+    ['Trend', reg.r2 < trendTh ? 'Belirsiz' : reg.slope > (st?.stdDev || 10) * 0.1 ? 'Artış' : reg.slope < -(st?.stdDev || 10) * 0.1 ? 'Azalış' : 'Stabil', regNT.r2 < trendTh ? 'Belirsiz' : regNT.slope > (stNT?.stdDev || 10) * 0.1 ? 'Artış' : regNT.slope < -(stNT?.stdDev || 10) * 0.1 ? 'Azalış' : 'Stabil'],
     [],
     ['TUR BAZLI TREND VERİSİ'],
     ['Tur', 'Gözlem (sn)', 'Normal (sn)', 'Har. Ort. Göz. (sn)', 'Har. Ort. Nor. (sn)',
@@ -538,8 +567,10 @@ function buildRepeatExcel(wb, session, sTags) {
   addZebraStripes(s5, 10, 9 + session.laps.length, 9);
   addAutoFilter(s5, 9, 0, 9 + session.laps.length, 8);
   XLSX.utils.book_append_sheet(wb, s5, 'Trend Analizi');
+  }
 
   // ========== SHEET 6: AYKIRI DEĞER ANALİZİ ==========
+  if (sheets.aykiriDegerler !== false) {
   const outlierListHeader = ['Tur No', 'Süre (sn)', 'Süre (mm:ss.cc)', 'Etiket', 'Sapma Yönü', 'Z-Skor'];
   const s6Data = [
     ['AYKIRI DEĞER ANALİZİ - Gözlem Süreleri (IQR Yöntemi)'],
@@ -550,7 +581,7 @@ function buildRepeatExcel(wb, session, sTags) {
     [],
     ['ÖZET'],
     ['Toplam Aykırı Değer', outliers.size],
-    ['Aykırı Oranı', ((outliers.size / (st?.n || 1)) * 100).toFixed(1) + '%'],
+    ['Aykırı Oranı', dp((outliers.size / (st?.n || 1)) * 100, 1) + '%'],
     [],
     ['AYKIRI DEĞER LİSTESİ'],
     outlierListHeader
@@ -561,7 +592,7 @@ function buildRepeatExcel(wb, session, sTags) {
       const tagName = l.tag !== null && sTags[l.tag] ? sTags[l.tag].name : 'Etiketsiz';
       const zScore = st?.stdDev ? (l.t - st.mean) / st.stdDev : 0;
       const dir = l.t < q.q1 - iqrK * q.iqr ? 'Düşük ↓' : 'Yüksek ↑';
-      s6Data.push([i + 1, toSec(l.t), ffull(l.t), tagName, dir, +zScore.toFixed(2)]);
+      s6Data.push([i + 1, toSec(l.t), ffull(l.t), tagName, dir, dp(zScore, 2)]);
     }
   });
 
@@ -578,7 +609,7 @@ function buildRepeatExcel(wb, session, sTags) {
     s6Data.push(['Ortalama', toSec(cleanStats?.mean), 'sn']);
     s6Data.push(['Medyan', toSec(cleanStats?.median), 'sn']);
     s6Data.push(['Std Sapma', toSec(cleanStats?.stdDev), 'sn']);
-    s6Data.push(['CV%', cleanStats?.cv?.toFixed(2) || 0]);
+    s6Data.push(['CV%', dp(cleanStats?.cv, 2) || 0]);
     s6Data.push(['Min', toSec(cleanStats?.min), 'sn']);
     s6Data.push(['Max', toSec(cleanStats?.max), 'sn']);
   }
@@ -592,7 +623,7 @@ function buildRepeatExcel(wb, session, sTags) {
   s6Data.push([]);
   s6Data.push(['ÖZET']);
   s6Data.push(['Toplam Aykırı Değer', outliersNT.size]);
-  s6Data.push(['Aykırı Oranı', ((outliersNT.size / (stNT?.n || 1)) * 100).toFixed(1) + '%']);
+  s6Data.push(['Aykırı Oranı', dp((outliersNT.size / (stNT?.n || 1)) * 100, 1) + '%']);
   s6Data.push([]);
   s6Data.push(['AYKIRI DEĞER LİSTESİ']);
   s6Data.push(outlierListHeader);
@@ -603,7 +634,7 @@ function buildRepeatExcel(wb, session, sTags) {
       const nt = l.nt || l.t;
       const zScore = stNT?.stdDev ? (nt - stNT.mean) / stNT.stdDev : 0;
       const dir = nt < qNT.q1 - iqrK * qNT.iqr ? 'Düşük ↓' : 'Yüksek ↑';
-      s6Data.push([i + 1, toSec(nt), ffull(nt), tagName, dir, +zScore.toFixed(2)]);
+      s6Data.push([i + 1, toSec(nt), ffull(nt), tagName, dir, dp(zScore, 2)]);
     }
   });
 
@@ -619,7 +650,7 @@ function buildRepeatExcel(wb, session, sTags) {
     s6Data.push(['Ortalama', toSec(cleanNTStats?.mean), 'sn']);
     s6Data.push(['Medyan', toSec(cleanNTStats?.median), 'sn']);
     s6Data.push(['Std Sapma', toSec(cleanNTStats?.stdDev), 'sn']);
-    s6Data.push(['CV%', cleanNTStats?.cv?.toFixed(2) || 0]);
+    s6Data.push(['CV%', dp(cleanNTStats?.cv, 2) || 0]);
     s6Data.push(['Min', toSec(cleanNTStats?.min), 'sn']);
     s6Data.push(['Max', toSec(cleanNTStats?.max), 'sn']);
   }
@@ -657,8 +688,10 @@ function buildRepeatExcel(wb, session, sTags) {
     styleKVRows(s6, oNTListEnd + 3, oNTListEnd + 9, 3, true);
   }
   XLSX.utils.book_append_sheet(wb, s6, 'Aykırı Değerler');
+  }
 
   // ========== SHEET 7: TEMPO ANALİZİ ==========
+  if (sheets.tempoAnalizi !== false) {
   const tempoGroups = {};
   const tempoGroupsNT = {};
   session.laps.forEach(l => {
@@ -682,13 +715,13 @@ function buildRepeatExcel(wb, session, sTags) {
     s7Data.push([
       +tempo,
       tStats?.n || 0,
-      +((tStats?.n / (st?.n || 1)) * 100).toFixed(1),
+      dp((tStats?.n / (st?.n || 1)) * 100, 1),
       toSec(tStats?.sum),
       toSec(tStats?.mean),
       toSec(tStats?.min),
       toSec(tStats?.max),
       toSec(tStats?.stdDev),
-      +(tStats?.cv?.toFixed(2) || 0)
+      (dp(tStats?.cv, 2) || 0)
     ]);
   });
 
@@ -701,13 +734,13 @@ function buildRepeatExcel(wb, session, sTags) {
     s7Data.push([
       +tempo,
       tNTStats?.n || 0,
-      +((tNTStats?.n / (stNT?.n || 1)) * 100).toFixed(1),
+      dp((tNTStats?.n / (stNT?.n || 1)) * 100, 1),
       toSec(tNTStats?.sum),
       toSec(tNTStats?.mean),
       toSec(tNTStats?.min),
       toSec(tNTStats?.max),
       toSec(tNTStats?.stdDev),
-      +(tNTStats?.cv?.toFixed(2) || 0)
+      (dp(tNTStats?.cv, 2) || 0)
     ]);
   });
 
@@ -717,8 +750,8 @@ function buildRepeatExcel(wb, session, sTags) {
   session.laps.forEach((l, i) => {
     const tempo = l.tempo || 100;
     const nt = l.nt || l.t;
-    const effect = tempo !== 100 ? ((l.t - nt) / l.t) * 100 : 0;
-    s7Data.push([i + 1, tempo, toSec(l.t), toSec(nt), +effect.toFixed(2)]);
+    const effect = tempo !== 100 && l.t > 0 ? ((l.t - nt) / l.t) * 100 : 0;
+    s7Data.push([i + 1, tempo, toSec(l.t), toSec(nt), dp(effect, 2)]);
   });
 
   const s7 = XLSX.utils.aoa_to_sheet(s7Data);
@@ -738,8 +771,10 @@ function buildRepeatExcel(wb, session, sTags) {
   addZebraStripes(s7, s7d + 3, s7d + 2 + session.laps.length, 5);
   addAutoFilter(s7, s7d + 2, 0, s7d + 2 + session.laps.length, 4);
   XLSX.utils.book_append_sheet(wb, s7, 'Tempo Analizi');
+  }
 
   // ========== SHEET 8: NOTLAR ==========
+  if (sheets.notlar !== false) {
   const notesData = session.laps.filter(l => l.note);
   const s8Data = [
     ['NOTLAR'],
@@ -767,8 +802,10 @@ function buildRepeatExcel(wb, session, sTags) {
     addZebraStripes(s8, 3, 2 + notesData.length, 6);
   }
   XLSX.utils.book_append_sheet(wb, s8, 'Notlar');
+  }
 
   // ========== SHEET 9: KONFİGÜRASYON ==========
+  if (sheets.konfigurasyon !== false) {
   const s9Data = [
     ['KONFİGÜRASYON'],
     [],
@@ -784,7 +821,7 @@ function buildRepeatExcel(wb, session, sTags) {
   s9Data.push(['Güven Düzeyi', `%${confPct}`]);
   s9Data.push(['Hata Payı', `±%${errPct}`]);
   s9Data.push([], ['VERSİYON BİLGİSİ']);
-  s9Data.push(['Export Versiyonu', '4.0']);
+  s9Data.push(['Export Versiyonu', '5.0']);
   s9Data.push(['Uygulama', 'Zaman Etüdü PWA']);
 
   const s9 = XLSX.utils.aoa_to_sheet(s9Data);
@@ -802,7 +839,8 @@ function buildRepeatExcel(wb, session, sTags) {
   styleSubSectionHeader(s9, s9m + 7, 3); // VERSİYON
   styleKVRows(s9, s9m + 8, s9m + 9, 3, false);
   XLSX.utils.book_append_sheet(wb, s9, 'Konfigürasyon');
-  buildGlossarySheet(wb, 'repeat');
+  }
+  if (sheets.terimlerSozlugu !== false) buildGlossarySheet(wb, 'repeat');
 }
 
 // ============ GLOSSARY SHEET (SHARED) ============
@@ -810,6 +848,7 @@ function buildRepeatExcel(wb, session, sTags) {
 function buildGlossarySheet(wb, mode) {
   const isSeq = mode === 'sequence';
   const NC = 4;
+  const iqrK = getSetting('stats', 'iqrMultiplier');
   const trend = isSeq ? 'Çevrim Trend' : 'Trend Analizi';
   const etiket = isSeq ? 'Anomali Analizi' : 'Etiket Analizi';
 
@@ -971,7 +1010,7 @@ function buildGlossarySheet(wb, mode) {
       'Güven aralığının alt ve üst sınır değerleri. Gerçek ortalama bu iki değer arasındadır.',
       'Özet' + (isSeq ? ', Anomali Analizi' : ', Etiket Analizi')],
     ['Güven Aralığı', 'Gerekli ' + (isSeq ? 'Çevrim' : 'Gözlem') + ' (nReq)',
-      'Seçilen güven düzeyi ve hata payı için istatistiksel olarak gereken minimum ölçüm sayısı. Formül: n\' = (z/e × √(nΣx² − (Σx)²) / Σx)²',
+      'Seçilen güven düzeyi ve hata payı için istatistiksel olarak gereken minimum ölçüm sayısı. Formül: n\' = (z/e × s/x̄)²',
       'Özet, Konfigürasyon'],
     ['Güven Aralığı', 'Güven Düzeyi',
       'nReq hesabında kullanılan olasılık seviyesi. %90 (z=1.645), %95 (z=1.96), %99 (z=2.576) seçenekleri mevcuttur.',
@@ -1184,13 +1223,34 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   const confPct = Math.round((session.nReqConfidence || 0.95) * 100);
   const errPct = Math.round((session.nReqError || 0.05) * 100);
   const stepCount = sSteps.length || 4;
+
+  // Normalize step for legacy data without step field
+  session.laps.forEach((l, i) => {
+    if (l.step === undefined) {
+      l.step = i % stepCount;
+      l.stepName = l.stepName || sSteps[l.step]?.name || ('Adım ' + (l.step + 1));
+      l.cycle = l.cycle || Math.floor(i / stepCount) + 1;
+    }
+  });
+
   const completeCycles = Math.floor(session.laps.length / stepCount);
   const times = session.laps.map(l => l.t);
   const normalTimes = session.laps.map(l => l.nt || l.t);
   const st = calcStats(times, nReqOpts);
   const stNT = calcStats(normalTimes, nReqOpts);
-  const outliers = detectOutliers(times);
-  const outliersNT = detectOutliers(normalTimes);
+  // Per-step outlier detection (summary.js ile tutarlı)
+  const outliers = new Set();
+  const outliersNT = new Set();
+  for (let si = 0; si < stepCount; si++) {
+    const sIdx = [];
+    const sT = [];
+    const sNT = [];
+    session.laps.forEach((l, i) => {
+      if (l.step === si) { sIdx.push(i); sT.push(l.t); sNT.push(l.nt || l.t); }
+    });
+    detectOutliers(sT).forEach(oi => outliers.add(sIdx[oi]));
+    detectOutliers(sNT).forEach(oi => outliersNT.add(sIdx[oi]));
+  }
 
   // Calculate cycle times
   const cycleTimes = [];
@@ -1217,11 +1277,14 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   const cycleOutliersNT = detectOutliers(cycleNormalTimes);
   const cycleSorted = [...cycleTimes].sort((a, b) => a - b);
   const cycleSortedNT = [...cycleNormalTimes].sort((a, b) => a - b);
+  const userPerc = getSetting('stats', 'percentiles');
+  const trendTh = getSetting('stats', 'trendThreshold');
+  const sheets = getSetting('excel', 'includeSheets') ?? {};
 
   // ========== SHEET 1: ÖZET ==========
   const s1Data = [
     ['ZAMAN ETÜDÜ RAPORU - ARDIŞIK İŞLEM'],
-    ['Oluşturma Tarihi:', new Date().toLocaleString('tr-TR')],
+    ['Oluşturma Tarihi:', formatDate(new Date())],
     [],
     ['ÖLÇÜM BİLGİLERİ'],
     ['İş / Proses Adı', session.job || '-'],
@@ -1242,7 +1305,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     ['Mod (En sık)', toSec(findMode(cycleTimes)), toSec(findMode(cycleNormalTimes)), 'sn'],
     ['Standart Sapma (σ)', toSec(cycleStats?.stdDev), toSec(cycleStatsNT?.stdDev), 'sn'],
     ['Varyans (σ²)', toSec(cycleStats?.stdDev ? cycleStats.stdDev ** 2 : 0, 6), toSec(cycleStatsNT?.stdDev ? cycleStatsNT.stdDev ** 2 : 0, 6), 'sn²'],
-    ['Varyasyon Katsayısı (CV)', cycleStats?.cv?.toFixed(2) || 0, cycleStatsNT?.cv?.toFixed(2) || 0, '%'],
+    ['Varyasyon Katsayısı (CV)', dp(cycleStats?.cv, 2) || 0, dp(cycleStatsNT?.cv, 2) || 0, '%'],
     ['Minimum', toSec(cycleStats?.min), toSec(cycleStatsNT?.min), 'sn'],
     ['Maksimum', toSec(cycleStats?.max), toSec(cycleStatsNT?.max), 'sn'],
     ['Aralık (Range)', toSec(cycleStats?.range), toSec(cycleStatsNT?.range), 'sn'],
@@ -1253,38 +1316,38 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     ['Q2 (Medyan)', toSec(cycleQ.q2), toSec(cycleQNT.q2), 'sn'],
     ['Q3 (75. Persentil)', toSec(cycleQ.q3), toSec(cycleQNT.q3), 'sn'],
     ['IQR (Çeyrekler Arası)', toSec(cycleQ.iqr), toSec(cycleQNT.iqr), 'sn'],
-    ['Çarpıklık (Skewness)', cycleStats ? skewness(cycleTimes, cycleStats.mean, cycleStats.stdDev).toFixed(3) : 0, cycleStatsNT ? skewness(cycleNormalTimes, cycleStatsNT.mean, cycleStatsNT.stdDev).toFixed(3) : 0],
-    ['Basıklık (Kurtosis)', cycleStats ? kurtosis(cycleTimes, cycleStats.mean, cycleStats.stdDev).toFixed(3) : 0, cycleStatsNT ? kurtosis(cycleNormalTimes, cycleStatsNT.mean, cycleStatsNT.stdDev).toFixed(3) : 0],
-    ['10. Persentil', toSec(percentile(cycleSorted, 0.10)), toSec(percentile(cycleSortedNT, 0.10)), 'sn'],
-    ['90. Persentil', toSec(percentile(cycleSorted, 0.90)), toSec(percentile(cycleSortedNT, 0.90)), 'sn'],
+    ['Çarpıklık (Skewness)', cycleStats ? dp(skewness(cycleTimes, cycleStats.mean, cycleStats.stdDev), 3) : 0, cycleStatsNT ? dp(skewness(cycleNormalTimes, cycleStatsNT.mean, cycleStatsNT.stdDev), 3) : 0],
+    ['Basıklık (Kurtosis)', cycleStats ? dp(kurtosis(cycleTimes, cycleStats.mean, cycleStats.stdDev), 3) : 0, cycleStatsNT ? dp(kurtosis(cycleNormalTimes, cycleStatsNT.mean, cycleStatsNT.stdDev), 3) : 0],
+    ...userPerc.map(p => [`${p}. Persentil`, toSec(percentile(cycleSorted, p / 100)), toSec(percentile(cycleSortedNT, p / 100)), 'sn']),
     [],
     ['GÜVEN ARALIĞI & YETERLİLİK', 'Gözlem', 'Normal', ''],
-    ['%95 GA Alt Sınır', toSec(cycleStats?.ci95Low), toSec(cycleStatsNT?.ci95Low), 'sn'],
-    ['%95 GA Üst Sınır', toSec(cycleStats?.ci95High), toSec(cycleStatsNT?.ci95High), 'sn'],
+    [`%${confPct} GA Alt Sınır`, toSec(cycleStats?.ci95Low), toSec(cycleStatsNT?.ci95Low), 'sn'],
+    [`%${confPct} GA Üst Sınır`, toSec(cycleStats?.ci95High), toSec(cycleStatsNT?.ci95High), 'sn'],
     ['%99 GA Alt Sınır', toSec(cycleStats ? Math.max(0, cycleStats.mean - tCritical(cycleStats.n, 0.99) * cycleStats.se) : 0), toSec(cycleStatsNT ? Math.max(0, cycleStatsNT.mean - tCritical(cycleStatsNT.n, 0.99) * cycleStatsNT.se) : 0), 'sn'],
     ['%99 GA Üst Sınır', toSec(cycleStats ? cycleStats.mean + tCritical(cycleStats.n, 0.99) * cycleStats.se : 0), toSec(cycleStatsNT ? cycleStatsNT.mean + tCritical(cycleStatsNT.n, 0.99) * cycleStatsNT.se : 0), 'sn'],
     [`Gerekli Çevrim (±%${errPct}, %${confPct})`, cycleStats?.nReq || 0, cycleStatsNT?.nReq || 0],
     ['Yeterli Çevrim?', cycleStats && completeCycles >= cycleStats.nReq ? 'EVET' : 'HAYIR', cycleStatsNT && completeCycles >= cycleStatsNT.nReq ? 'EVET' : 'HAYIR'],
     [],
     ['TREND ANALİZİ', 'Gözlem', 'Normal', ''],
-    ['Eğim (Slope)', cycleReg.slope.toFixed(4), cycleRegNT.slope.toFixed(4), 'ms/çevrim'],
+    ['Eğim (Slope)', dp(cycleReg.slope, 4), dp(cycleRegNT.slope, 4), 'ms/çevrim'],
     ['Kesişim (Intercept)', toSec(cycleReg.intercept), toSec(cycleRegNT.intercept), 'sn'],
-    ['R² (Belirleyicilik)', cycleReg.r2.toFixed(4), cycleRegNT.r2.toFixed(4)],
-    ['Trend Yönü', cycleReg.slope > 10 ? 'Artış ↑' : cycleReg.slope < -10 ? 'Azalış ↓' : 'Stabil →', cycleRegNT.slope > 10 ? 'Artış ↑' : cycleRegNT.slope < -10 ? 'Azalış ↓' : 'Stabil →'],
+    ['R² (Belirleyicilik)', dp(cycleReg.r2, 4), dp(cycleRegNT.r2, 4)],
+    ['Trend Yönü', cycleReg.r2 < trendTh ? 'Belirsiz (R² düşük)' : cycleReg.slope > (cycleStats?.stdDev || 100) * 0.1 ? 'Artış ↑' : cycleReg.slope < -(cycleStats?.stdDev || 100) * 0.1 ? 'Azalış ↓' : 'Stabil →', cycleRegNT.r2 < trendTh ? 'Belirsiz (R² düşük)' : cycleRegNT.slope > (cycleStatsNT?.stdDev || 100) * 0.1 ? 'Artış ↑' : cycleRegNT.slope < -(cycleStatsNT?.stdDev || 100) * 0.1 ? 'Azalış ↓' : 'Stabil →'],
     [],
     ['AYKIRI DEĞERLER', 'Gözlem', 'Normal', ''],
     ['Aykırı Çevrim Sayısı (IQR)', cycleOutliers.size, cycleOutliersNT.size],
-    ['Aykırı Oranı', ((cycleOutliers.size / (cycleStats?.n || 1)) * 100).toFixed(1) + '%', ((cycleOutliersNT.size / (cycleStatsNT?.n || 1)) * 100).toFixed(1) + '%']
+    ['Aykırı Oranı', dp((cycleOutliers.size / (cycleStats?.n || 1)) * 100, 1) + '%', dp((cycleOutliersNT.size / (cycleStatsNT?.n || 1)) * 100, 1) + '%']
   ];
 
   const s1 = XLSX.utils.aoa_to_sheet(s1Data);
   s1['!cols'] = [{ wch: 30 }, { wch: 18 }, { wch: 18 }, { wch: 8 }];
+  const d = userPerc.length - 2; // row offset from dynamic percentile count
   applyStyles(s1, {
     titles: [[0, 4]],
     sections: [[3, 4], [9, 4]],
-    sectionRows: [[15, 4], [28, 4], [38, 4], [46, 4], [52, 4]],
-    kv: [[1, 1, 4, false], [4, 7, 4, false], [10, 13, 4, false], [16, 26, 4, true], [29, 36, 4, true], [39, 44, 4, true], [47, 50, 4, false], [53, 54, 4, false]],
-    yesNo: [[44, 1], [44, 2]]
+    sectionRows: [[15, 4], [28, 4], [38 + d, 4], [46 + d, 4], [52 + d, 4]],
+    kv: [[1, 1, 4, false], [4, 7, 4, false], [10, 13, 4, false], [16, 26, 4, true], [29, 36 + d, 4, true], [39 + d, 44 + d, 4, true], [47 + d, 50 + d, 4, false], [53 + d, 54 + d, 4, false]],
+    yesNo: [[44 + d, 1], [44 + d, 2]]
   });
   XLSX.utils.book_append_sheet(wb, s1, 'Özet');
 
@@ -1311,7 +1374,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   session.laps.forEach((l, i) => {
     cumSeq += l.t;
     cumNTSeq += l.nt || l.t;
-    const stepIdx = l.step !== undefined ? l.step : i % stepCount;
+    const stepIdx = l.step;
     const stepName = l.stepName || sSteps[stepIdx]?.name || `Adım ${stepIdx + 1}`;
     const anomaly = l.tag !== null && sTags[l.tag] ? sTags[l.tag].name : '';
     const tempo = l.tempo || 100;
@@ -1333,8 +1396,8 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
       toSec(cumSeq), ffull(cumSeq),
       toSec(cumNTSeq), ffull(cumNTSeq),
       l.tag !== null ? l.tag : '', anomaly, l.note || '',
-      outliers.has(i) ? 'EVET' : 'HAYIR', +devPct.toFixed(2), +zScore.toFixed(3), toSec(lapMA[i]), toSec(trendVal),
-      outliersNT.has(i) ? 'EVET' : 'HAYIR', +devPctNT.toFixed(2), +zScoreNT.toFixed(3), toSec(lapMANT[i]), toSec(trendValNT)
+      outliers.has(i) ? 'EVET' : 'HAYIR', dp(devPct, 2), dp(zScore, 3), toSec(lapMA[i]), toSec(trendVal),
+      outliersNT.has(i) ? 'EVET' : 'HAYIR', dp(devPctNT, 2), dp(zScoreNT, 3), toSec(lapMANT[i]), toSec(trendValNT)
     ]);
   });
 
@@ -1359,6 +1422,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   XLSX.utils.book_append_sheet(wb, s2, 'Ham Veri');
 
   // ========== SHEET 3: ÇEVRİM ANALİZİ ==========
+  if (sheets.cevrimAnalizi !== false) {
   const s3Data = [
     ['ÇEVRİM ANALİZİ'],
     [],
@@ -1386,9 +1450,9 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
 
     const row = [
       c + 1, toSec(ct), ffull(ct), toSec(cnt), ffull(cnt),
-      toSec(devMs), +devPct.toFixed(2), +zScore.toFixed(2),
+      toSec(devMs), dp(devPct, 2), dp(zScore, 2),
       cycleOutliers.has(c) ? 'EVET' : 'HAYIR',
-      toSec(devMsNT), +devPctNT.toFixed(2), +zScoreNT.toFixed(2),
+      toSec(devMsNT), dp(devPctNT, 2), dp(zScoreNT, 2),
       cycleOutliersNT.has(c) ? 'EVET' : 'HAYIR'
     ];
 
@@ -1418,8 +1482,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   for (let i = 3; i <= 2 + completeCycles; i++) { styleYesNo(s3, i, 8); styleYesNo(s3, i, 12); }
   highlightOutlierRows(s3, cycleOutliers, 3, s3NC);
   XLSX.utils.book_append_sheet(wb, s3, 'Çevrim Analizi');
+  }
 
   // ========== SHEET 4: ADIM ANALİZİ ==========
+  if (sheets.adimAnalizi !== false) {
   const stepAnalysisHeader = ['Adım', 'Adet', 'Toplam (sn)', 'Ortalama (sn)',
      'Medyan (sn)', 'Min (sn)', 'Max (sn)', 'Aralık (sn)',
      'Std Sapma (sn)', 'CV (%)', 'Q1 (sn)', 'Q3 (sn)', 'IQR (sn)',
@@ -1431,7 +1497,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   ];
 
   for (let i = 0; i < stepCount; i++) {
-    const stepLaps = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === i);
+    const stepLaps = session.laps.filter(l => l.step === i);
     const stepTimes = stepLaps.map(l => l.t);
     const stats = calcStats(stepTimes, nReqOpts);
     const stepQ = quartiles(stepTimes);
@@ -1443,9 +1509,9 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
       s4Data.push([
         stepName, stats.n, toSec(stats.sum), toSec(stats.mean),
         toSec(stats.median), toSec(stats.min), toSec(stats.max), toSec(stats.range),
-        toSec(stats.stdDev), +stats.cv.toFixed(2), toSec(stepQ.q1), toSec(stepQ.q3), toSec(stepQ.iqr),
+        toSec(stats.stdDev), dp(stats.cv, 2), toSec(stepQ.q1), toSec(stepQ.q3), toSec(stepQ.iqr),
         toSec(stats.ci95Low), toSec(stats.ci95High),
-        +ratio.toFixed(1), stepReg.slope.toFixed(4)
+        dp(ratio, 1), dp(stepReg.slope, 4)
       ]);
     }
   }
@@ -1457,7 +1523,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   s4Data.push([], ['ADIM ANALİZİ (Normal Süreler)'], [], stepAnalysisHeader);
 
   for (let i = 0; i < stepCount; i++) {
-    const stepLaps = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === i);
+    const stepLaps = session.laps.filter(l => l.step === i);
     const stepNT = stepLaps.map(l => l.nt || l.t);
     const ntStats = calcStats(stepNT, nReqOpts);
     const stepNTQ = quartiles(stepNT);
@@ -1469,9 +1535,9 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
       s4Data.push([
         stepName, ntStats.n, toSec(ntStats.sum), toSec(ntStats.mean),
         toSec(ntStats.median), toSec(ntStats.min), toSec(ntStats.max), toSec(ntStats.range),
-        toSec(ntStats.stdDev), +ntStats.cv.toFixed(2), toSec(stepNTQ.q1), toSec(stepNTQ.q3), toSec(stepNTQ.iqr),
+        toSec(ntStats.stdDev), dp(ntStats.cv, 2), toSec(stepNTQ.q1), toSec(stepNTQ.q3), toSec(stepNTQ.iqr),
         toSec(ntStats.ci95Low), toSec(ntStats.ci95High),
-        +ratioNT.toFixed(1), stepNTReg.slope.toFixed(4)
+        dp(ratioNT, 1), dp(stepNTReg.slope, 4)
       ]);
     }
   }
@@ -1497,8 +1563,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   addZebraStripes(s4, s4nt + 3, s4nt + 2 + stepCount, s4NC);
   styleTotalRow(s4, s4nt + 4 + stepCount, s4NC);
   XLSX.utils.book_append_sheet(wb, s4, 'Adım Analizi');
+  }
 
   // ========== SHEET 5: ADIM KARŞILAŞTIRMA ==========
+  if (sheets.adimKarsilastirma !== false) {
   const compHeader = ['Çevrim \\ Adım'];
   for (let s = 0; s < stepCount; s++) {
     compHeader.push(sSteps[s]?.name || `Adım ${s + 1}`);
@@ -1531,7 +1599,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   const stdRow = ['Std Sapma'];
 
   for (let s = 0; s < stepCount; s++) {
-    const stepTimes = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === s).map(l => l.t);
+    const stepTimes = session.laps.filter(l => l.step === s).map(l => l.t);
     const stepStats = calcStats(stepTimes, nReqOpts);
     avgRow.push(toSec(stepStats?.mean));
     medRow.push(toSec(stepStats?.median));
@@ -1569,7 +1637,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   const stdRowNT = ['Std Sapma'];
 
   for (let s = 0; s < stepCount; s++) {
-    const stepNT = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === s).map(l => l.nt || l.t);
+    const stepNT = session.laps.filter(l => l.step === s).map(l => l.nt || l.t);
     const stepNTStats = calcStats(stepNT, nReqOpts);
     avgRowNT.push(toSec(stepNTStats?.mean));
     medRowNT.push(toSec(stepNTStats?.median));
@@ -1606,8 +1674,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   const s5sumNT = s5nt + 4 + completeCycles;
   for (let sr = s5sumNT; sr < s5sumNT + 5; sr++) styleTotalRow(s5, sr, s5NC);
   XLSX.utils.book_append_sheet(wb, s5, 'Adım Karşılaştırma');
+  }
 
   // ========== SHEET 6: ANOMALİ ANALİZİ ==========
+  if (sheets.anomaliAnalizi !== false) {
   const anomalyLaps = session.laps.filter(l => l.tag !== null && l.tag !== undefined);
   const anomalyHeader = ['Anomali Türü', 'Adet', 'Oran (%)', 'Toplam (sn)', 'Ortalama (sn)', 'Medyan (sn)',
     'Min (sn)', 'Max (sn)', 'Aralık (sn)', 'Std Sapma (sn)', 'CV (%)',
@@ -1627,10 +1697,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     if (tagLaps.length > 0) {
       s6Data.push([
         t.name, tagLaps.length,
-        +((tagLaps.length / session.laps.length) * 100).toFixed(1),
+        dp((tagLaps.length / session.laps.length) * 100, 1),
         toSec(tagStats?.sum), toSec(tagStats?.mean), toSec(tagStats?.median),
         toSec(tagStats?.min), toSec(tagStats?.max), toSec(tagStats?.range),
-        toSec(tagStats?.stdDev), +(tagStats?.cv?.toFixed(2) || 0),
+        toSec(tagStats?.stdDev), (dp(tagStats?.cv, 2) || 0),
         toSec(tagQ.q1), toSec(tagQ.q3), toSec(tagQ.iqr),
         toSec(tagStats?.ci95Low), toSec(tagStats?.ci95High)
       ]);
@@ -1649,10 +1719,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     if (tagLaps.length > 0) {
       s6Data.push([
         t.name, tagLaps.length,
-        +((tagLaps.length / session.laps.length) * 100).toFixed(1),
+        dp((tagLaps.length / session.laps.length) * 100, 1),
         toSec(tagNTStats?.sum), toSec(tagNTStats?.mean), toSec(tagNTStats?.median),
         toSec(tagNTStats?.min), toSec(tagNTStats?.max), toSec(tagNTStats?.range),
-        toSec(tagNTStats?.stdDev), +(tagNTStats?.cv?.toFixed(2) || 0),
+        toSec(tagNTStats?.stdDev), (dp(tagNTStats?.cv, 2) || 0),
         toSec(tagNTQ.q1), toSec(tagNTQ.q3), toSec(tagNTQ.iqr),
         toSec(tagNTStats?.ci95Low), toSec(tagNTStats?.ci95High)
       ]);
@@ -1664,7 +1734,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
 
   session.laps.forEach((l, i) => {
     if (l.tag !== null && l.tag !== undefined && sTags[l.tag]) {
-      const stepName = l.stepName || sSteps[l.step]?.name || `Adım ${(l.step || 0) + 1}`;
+      const stepName = l.stepName || sSteps[l.step]?.name || `Adım ${l.step + 1}`;
       s6Data.push([
         i + 1, l.cycle || Math.floor(i / stepCount) + 1, stepName,
         sTags[l.tag].name, toSec(l.t), toSec(l.nt || l.t), l.note || ''
@@ -1684,8 +1754,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   styleSubSectionHeader(s6, seq6NTRow + 2, 16);
   styleColumnHeaders(s6, seq6NTRow + 3, 0, 15);
   XLSX.utils.book_append_sheet(wb, s6, 'Anomali Analizi');
+  }
 
   // ========== SHEET 7: ÇEVRİM TREND ==========
+  if (sheets.cevrimTrend !== false) {
   const cycleMaWin = Math.min(3, getSetting('stats', 'movingAvgWindow'));
   const cycleMa = movingAvg(cycleTimes, cycleMaWin);
   const cycleMaNT = movingAvg(cycleNormalTimes, cycleMaWin);
@@ -1693,11 +1765,11 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     ['ÇEVRİM TREND ANALİZİ'],
     [],
     ['REGRESYON', 'Gözlem', 'Normal'],
-    ['Eğim (ms/çevrim)', cycleReg.slope.toFixed(4), cycleRegNT.slope.toFixed(4)],
+    ['Eğim (ms/çevrim)', dp(cycleReg.slope, 4), dp(cycleRegNT.slope, 4)],
     ['Kesişim (sn)', toSec(cycleReg.intercept), toSec(cycleRegNT.intercept)],
-    ['R²', cycleReg.r2.toFixed(4), cycleRegNT.r2.toFixed(4)],
-    ['Trend Yönü', cycleReg.slope > 10 ? 'Artış (yavaşlama)' : cycleReg.slope < -10 ? 'Azalış (hızlanma)' : 'Stabil',
-      cycleRegNT.slope > 10 ? 'Artış (yavaşlama)' : cycleRegNT.slope < -10 ? 'Azalış (hızlanma)' : 'Stabil'],
+    ['R²', dp(cycleReg.r2, 4), dp(cycleRegNT.r2, 4)],
+    ['Trend Yönü', cycleReg.r2 < trendTh ? 'Belirsiz' : cycleReg.slope > (cycleStats?.stdDev || 100) * 0.1 ? 'Artış (yavaşlama)' : cycleReg.slope < -(cycleStats?.stdDev || 100) * 0.1 ? 'Azalış (hızlanma)' : 'Stabil',
+      cycleRegNT.r2 < trendTh ? 'Belirsiz' : cycleRegNT.slope > (cycleStatsNT?.stdDev || 100) * 0.1 ? 'Artış (yavaşlama)' : cycleRegNT.slope < -(cycleStatsNT?.stdDev || 100) * 0.1 ? 'Azalış (hızlanma)' : 'Stabil'],
     [],
     ['ÇEVRİM BAZLI VERİ'],
     ['Çevrim', 'Gözlem (sn)', 'Normal (sn)', `Har. Ort. Göz. (${cycleMaWin})`, `Har. Ort. Nor. (${cycleMaWin})`,
@@ -1726,8 +1798,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   addZebraStripes(s7, 10, 9 + completeCycles, 9);
   addAutoFilter(s7, 9, 0, 9 + completeCycles, 8);
   XLSX.utils.book_append_sheet(wb, s7, 'Çevrim Trend');
+  }
 
   // ========== SHEET 8: DAĞILIM ANALİZİ ==========
+  if (sheets.dagilimAnalizi !== false) {
   const cycleBins = freqDist(cycleTimes);
   const cycleFreqHeader = ['Aralık Başı (sn)', 'Aralık Sonu (sn)', 'Frekans', 'Oran (%)', 'Küm. Frekans', 'Küm. (%)'];
   const dData = [
@@ -1742,8 +1816,8 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     dCumFreq += b.count;
     dData.push([
       toSec(b.binStart), toSec(b.binEnd), b.count,
-      +b.freq.toFixed(2), dCumFreq,
-      +((dCumFreq / (cycleStats?.n || 1)) * 100).toFixed(2)
+      dp(b.freq, 2), dCumFreq,
+      dp((dCumFreq / (cycleStats?.n || 1)) * 100, 2)
     ]);
   });
 
@@ -1756,14 +1830,14 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     dCumFreqNT += b.count;
     dData.push([
       toSec(b.binStart), toSec(b.binEnd), b.count,
-      +b.freq.toFixed(2), dCumFreqNT,
-      +((dCumFreqNT / (cycleStatsNT?.n || 1)) * 100).toFixed(2)
+      dp(b.freq, 2), dCumFreqNT,
+      dp((dCumFreqNT / (cycleStatsNT?.n || 1)) * 100, 2)
     ]);
   });
 
   dData.push([], ['PERSENTİL TABLOSU (Çevrim)'], []);
   dData.push(['Persentil', 'Gözlemlenen (sn)', 'Normal (sn)']);
-  [5, 10, 25, 50, 75, 90, 95].forEach(p => {
+  userPerc.forEach(p => {
     dData.push([
       p + '%',
       toSec(percentile(cycleSorted, p / 100)),
@@ -1787,7 +1861,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   const stepDistHeader = ['Adım', 'n', 'Q1 (sn)', 'Medyan (sn)', 'Q3 (sn)', 'IQR (sn)', 'Çarpıklık', 'Basıklık'];
   dData.push([], ['ADIM BAZLI DAĞILIM ÖZETİ (Gözlem)'], [], stepDistHeader);
   for (let si = 0; si < stepCount; si++) {
-    const stepLaps = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === si);
+    const stepLaps = session.laps.filter(l => l.step === si);
     const stepTimes = stepLaps.map(l => l.t);
     const stepQ = quartiles(stepTimes);
     const stepSt = calcStats(stepTimes, nReqOpts);
@@ -1795,15 +1869,15 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     dData.push([
       stepName, stepTimes.length,
       toSec(stepQ.q1), toSec(stepQ.q2), toSec(stepQ.q3), toSec(stepQ.iqr),
-      stepSt ? skewness(stepTimes, stepSt.mean, stepSt.stdDev).toFixed(3) : '—',
-      stepSt ? kurtosis(stepTimes, stepSt.mean, stepSt.stdDev).toFixed(3) : '—'
+      stepSt ? dp(skewness(stepTimes, stepSt.mean, stepSt.stdDev), 3) : '—',
+      stepSt ? dp(kurtosis(stepTimes, stepSt.mean, stepSt.stdDev), 3) : '—'
     ]);
   }
 
   // Normal süreler adım dağılım özeti
   dData.push([], ['ADIM BAZLI DAĞILIM ÖZETİ (Normal)'], [], stepDistHeader);
   for (let si = 0; si < stepCount; si++) {
-    const stepLaps = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === si);
+    const stepLaps = session.laps.filter(l => l.step === si);
     const stepNTimes = stepLaps.map(l => l.nt || l.t);
     const stepNTQ = quartiles(stepNTimes);
     const stepNTSt = calcStats(stepNTimes, nReqOpts);
@@ -1811,8 +1885,8 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     dData.push([
       stepName, stepNTimes.length,
       toSec(stepNTQ.q1), toSec(stepNTQ.q2), toSec(stepNTQ.q3), toSec(stepNTQ.iqr),
-      stepNTSt ? skewness(stepNTimes, stepNTSt.mean, stepNTSt.stdDev).toFixed(3) : '—',
-      stepNTSt ? kurtosis(stepNTimes, stepNTSt.mean, stepNTSt.stdDev).toFixed(3) : '—'
+      stepNTSt ? dp(skewness(stepNTimes, stepNTSt.mean, stepNTSt.stdDev), 3) : '—',
+      stepNTSt ? dp(kurtosis(stepNTimes, stepNTSt.mean, stepNTSt.stdDev), 3) : '—'
     ]);
   }
 
@@ -1827,11 +1901,12 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   styleSectionHeader(dSheet, dnt, 6);
   styleColumnHeaders(dSheet, dnt + 2, 0, 5);
   addTableBorders(dSheet, dnt + 2, 0, dnt + 2 + cbLenNT, 5); addZebraStripes(dSheet, dnt + 3, dnt + 2 + cbLenNT, 6);
+  const seqPLen = userPerc.length;
   const dpt = dnt + 4 + cbLenNT;
   styleSubSectionHeader(dSheet, dpt, 8);
   styleColumnHeaders(dSheet, dpt + 2, 0, 2);
-  addTableBorders(dSheet, dpt + 2, 0, dpt + 9, 2);
-  const dbp = dpt + 11;
+  addTableBorders(dSheet, dpt + 2, 0, dpt + 2 + seqPLen, 2);
+  const dbp = dpt + 4 + seqPLen;
   styleSubSectionHeader(dSheet, dbp, 8);
   styleColumnHeaders(dSheet, dbp + 2, 0, 2);
   addTableBorders(dSheet, dbp + 2, 0, dbp + 10, 2);
@@ -1845,8 +1920,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   styleColumnHeaders(dSheet, dsdNT + 2, 0, 7);
   addTableBorders(dSheet, dsdNT + 2, 0, dsdNT + 2 + stepCount, 7);
   XLSX.utils.book_append_sheet(wb, dSheet, 'Dağılım Analizi');
+  }
 
   // ========== SHEET 9: AYKIRI DEĞER ANALİZİ ==========
+  if (sheets.aykiriDegerler !== false) {
   const cycleOutlierHeader = ['Çevrim No', 'Süre (sn)', 'Süre (mm:ss.cc)', 'Sapma Yönü', 'Z-Skor'];
   const oData = [
     ['AYKIRI DEĞER ANALİZİ - Gözlem Süreleri'],
@@ -1856,7 +1933,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     [`Üst Sınır (Q3 + ${seqIqrK}*IQR)`, toSec(cycleQ.q3 + seqIqrK * cycleQ.iqr), 'sn'],
     [],
     ['Aykırı Çevrim Sayısı', cycleOutliers.size],
-    ['Aykırı Oranı', ((cycleOutliers.size / (cycleStats?.n || 1)) * 100).toFixed(1) + '%'],
+    ['Aykırı Oranı', dp((cycleOutliers.size / (cycleStats?.n || 1)) * 100, 1) + '%'],
     [],
     ['AYKIRI ÇEVRİMLER'],
     cycleOutlierHeader
@@ -1867,7 +1944,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
       const ct = cycleTimes[c];
       const zScore = cycleStats?.stdDev ? (ct - cycleStats.mean) / cycleStats.stdDev : 0;
       const dir = ct < cycleQ.q1 - seqIqrK * cycleQ.iqr ? 'Düşük ↓' : 'Yüksek ↑';
-      oData.push([c + 1, toSec(ct), ffull(ct), dir, +zScore.toFixed(2)]);
+      oData.push([c + 1, toSec(ct), ffull(ct), dir, dp(zScore, 2)]);
     }
   }
   if (cycleOutliers.size === 0) oData.push(['Aykırı çevrim bulunamadı']);
@@ -1881,7 +1958,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     oData.push(['Ortalama', toSec(cleanCycleStats?.mean), 'sn']);
     oData.push(['Medyan', toSec(cleanCycleStats?.median), 'sn']);
     oData.push(['Std Sapma', toSec(cleanCycleStats?.stdDev), 'sn']);
-    oData.push(['CV%', cleanCycleStats?.cv?.toFixed(2) || 0]);
+    oData.push(['CV%', dp(cleanCycleStats?.cv, 2) || 0]);
     oData.push(['Min', toSec(cleanCycleStats?.min), 'sn']);
     oData.push(['Max', toSec(cleanCycleStats?.max), 'sn']);
   }
@@ -1894,7 +1971,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   oData.push([`Üst Sınır (Q3 + ${seqIqrK}*IQR)`, toSec(cycleQNT.q3 + seqIqrK * cycleQNT.iqr), 'sn']);
   oData.push([]);
   oData.push(['Aykırı Çevrim Sayısı', cycleOutliersNT.size]);
-  oData.push(['Aykırı Oranı', ((cycleOutliersNT.size / (cycleStatsNT?.n || 1)) * 100).toFixed(1) + '%']);
+  oData.push(['Aykırı Oranı', dp((cycleOutliersNT.size / (cycleStatsNT?.n || 1)) * 100, 1) + '%']);
   oData.push([]);
   oData.push(['AYKIRI ÇEVRİMLER']);
   oData.push(cycleOutlierHeader);
@@ -1904,7 +1981,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
       const cnt = cycleNormalTimes[c];
       const zScore = cycleStatsNT?.stdDev ? (cnt - cycleStatsNT.mean) / cycleStatsNT.stdDev : 0;
       const dir = cnt < cycleQNT.q1 - seqIqrK * cycleQNT.iqr ? 'Düşük ↓' : 'Yüksek ↑';
-      oData.push([c + 1, toSec(cnt), ffull(cnt), dir, +zScore.toFixed(2)]);
+      oData.push([c + 1, toSec(cnt), ffull(cnt), dir, dp(zScore, 2)]);
     }
   }
   if (cycleOutliersNT.size === 0) oData.push(['Aykırı çevrim bulunamadı']);
@@ -1917,7 +1994,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     oData.push(['Ortalama', toSec(cleanCycleNTStats?.mean), 'sn']);
     oData.push(['Medyan', toSec(cleanCycleNTStats?.median), 'sn']);
     oData.push(['Std Sapma', toSec(cleanCycleNTStats?.stdDev), 'sn']);
-    oData.push(['CV%', cleanCycleNTStats?.cv?.toFixed(2) || 0]);
+    oData.push(['CV%', dp(cleanCycleNTStats?.cv, 2) || 0]);
     oData.push(['Min', toSec(cleanCycleNTStats?.min), 'sn']);
     oData.push(['Max', toSec(cleanCycleNTStats?.max), 'sn']);
   }
@@ -1926,7 +2003,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   oData.push([], ['ADIM BAZLI AYKIRI DEĞER ÖZETİ'], []);
   oData.push(['Adım', 'Toplam', 'Aykırı (Göz.)', 'Oran Göz. (%)', 'Aykırı (Nor.)', 'Oran Nor. (%)']);
   for (let si = 0; si < stepCount; si++) {
-    const stepLaps = session.laps.filter(l => (l.step !== undefined ? l.step : 0) === si);
+    const stepLaps = session.laps.filter(l => l.step === si);
     const stepTimes = stepLaps.map(l => l.t);
     const stepNTimes = stepLaps.map(l => l.nt || l.t);
     const stepOutliers = detectOutliers(stepTimes);
@@ -1935,9 +2012,9 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     oData.push([
       stepName, stepTimes.length,
       stepOutliers.size,
-      stepTimes.length ? ((stepOutliers.size / stepTimes.length) * 100).toFixed(1) + '%' : '—',
+      stepTimes.length ? dp((stepOutliers.size / stepTimes.length) * 100, 1) + '%' : '—',
       stepOutliersNT.size,
-      stepNTimes.length ? ((stepOutliersNT.size / stepNTimes.length) * 100).toFixed(1) + '%' : '—'
+      stepNTimes.length ? dp((stepOutliersNT.size / stepNTimes.length) * 100, 1) + '%' : '—'
     ]);
   }
 
@@ -1969,8 +2046,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     styleKVRows(oSheet, seqONTListEnd + 3, seqONTListEnd + 9, 3, true);
   }
   XLSX.utils.book_append_sheet(wb, oSheet, 'Aykırı Değerler');
+  }
 
   // ========== SHEET 10: TEMPO ANALİZİ ==========
+  if (sheets.tempoAnalizi !== false) {
   const tempoGroups = {};
   const tempoGroupsNT = {};
   session.laps.forEach(l => {
@@ -1993,9 +2072,9 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     const tStats = calcStats(tTimes, nReqOpts);
     tpData.push([
       +tempo, tStats?.n || 0,
-      +((tStats?.n / (st?.n || 1)) * 100).toFixed(1),
+      dp((tStats?.n / (st?.n || 1)) * 100, 1),
       toSec(tStats?.sum), toSec(tStats?.mean), toSec(tStats?.min),
-      toSec(tStats?.max), toSec(tStats?.stdDev), +(tStats?.cv?.toFixed(2) || 0)
+      toSec(tStats?.max), toSec(tStats?.stdDev), (dp(tStats?.cv, 2) || 0)
     ]);
   });
 
@@ -2007,9 +2086,9 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     const tNTStats = calcStats(tNTimes, nReqOpts);
     tpData.push([
       +tempo, tNTStats?.n || 0,
-      +((tNTStats?.n / (stNT?.n || 1)) * 100).toFixed(1),
+      dp((tNTStats?.n / (stNT?.n || 1)) * 100, 1),
       toSec(tNTStats?.sum), toSec(tNTStats?.mean), toSec(tNTStats?.min),
-      toSec(tNTStats?.max), toSec(tNTStats?.stdDev), +(tNTStats?.cv?.toFixed(2) || 0)
+      toSec(tNTStats?.max), toSec(tNTStats?.stdDev), (dp(tNTStats?.cv, 2) || 0)
     ]);
   });
 
@@ -2018,10 +2097,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   session.laps.forEach((l, i) => {
     const tempo = l.tempo || 100;
     const nt = l.nt || l.t;
-    const effect = tempo !== 100 ? ((l.t - nt) / l.t) * 100 : 0;
-    const stepName = l.stepName || sSteps[l.step || 0]?.name || `Adım ${(l.step || 0) + 1}`;
+    const effect = tempo !== 100 && l.t > 0 ? ((l.t - nt) / l.t) * 100 : 0;
+    const stepName = l.stepName || sSteps[l.step]?.name || `Adım ${l.step + 1}`;
     const cycle = l.cycle || Math.floor(i / stepCount) + 1;
-    tpData.push([i + 1, cycle, stepName, tempo, toSec(l.t), toSec(nt), +effect.toFixed(2)]);
+    tpData.push([i + 1, cycle, stepName, tempo, toSec(l.t), toSec(nt), dp(effect, 2)]);
   });
 
   const tpSheet = XLSX.utils.aoa_to_sheet(tpData);
@@ -2041,8 +2120,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   addZebraStripes(tpSheet, tpD + 3, tpD + 2 + session.laps.length, 7);
   addAutoFilter(tpSheet, tpD + 2, 0, tpD + 2 + session.laps.length, 6);
   XLSX.utils.book_append_sheet(wb, tpSheet, 'Tempo Analizi');
+  }
 
   // ========== SHEET 11: NOTLAR ==========
+  if (sheets.notlar !== false) {
   const notesLaps = session.laps.filter(l => l.note);
   const nData = [
     ['NOTLAR'],
@@ -2054,7 +2135,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     session.laps.forEach((l, i) => {
       if (l.note) {
         const anomaly = l.tag !== null && sTags[l.tag] ? sTags[l.tag].name : '';
-        const stepName = l.stepName || sSteps[l.step || 0]?.name || `Adım ${(l.step || 0) + 1}`;
+        const stepName = l.stepName || sSteps[l.step]?.name || `Adım ${l.step + 1}`;
         const cycle = l.cycle || Math.floor(i / stepCount) + 1;
         nData.push([i + 1, cycle, stepName, toSec(l.t), ffull(l.t), anomaly, l.tempo || 100, l.note]);
       }
@@ -2072,8 +2153,10 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
     addZebraStripes(nSheet, 3, 2 + notesLaps.length, 8);
   }
   XLSX.utils.book_append_sheet(wb, nSheet, 'Notlar');
+  }
 
   // ========== SHEET 12: KONFİGÜRASYON ==========
+  if (sheets.konfigurasyon !== false) {
   const cfgData = [
     ['KONFİGÜRASYON'],
     [],
@@ -2094,7 +2177,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   cfgData.push(['Güven Düzeyi', `%${confPct}`]);
   cfgData.push(['Hata Payı', `±%${errPct}`]);
   cfgData.push([], ['VERSİYON BİLGİSİ']);
-  cfgData.push(['Export Versiyonu', '4.0']);
+  cfgData.push(['Export Versiyonu', '5.0']);
   cfgData.push(['Uygulama', 'Zaman Etüdü PWA']);
 
   const cfgSheet = XLSX.utils.aoa_to_sheet(cfgData);
@@ -2117,7 +2200,8 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
   styleSubSectionHeader(cfgSheet, cf2 + 7, 3); // VERSİYON
   styleKVRows(cfgSheet, cf2 + 8, cf2 + 9, 3, false);
   XLSX.utils.book_append_sheet(wb, cfgSheet, 'Konfigürasyon');
-  buildGlossarySheet(wb, 'sequence');
+  }
+  if (sheets.terimlerSozlugu !== false) buildGlossarySheet(wb, 'sequence');
 }
 
 // Find mode (most frequent value rounded to 10ms)
@@ -2214,6 +2298,16 @@ function validateImportData(data) {
 
       if (typeof lap.t !== 'number' || lap.t < 0) {
         return { valid: false, error: `Kayıt #${i + 1}, Tur #${j + 1}: Geçersiz süre değeri` };
+      }
+    }
+
+    // Sequence mode: validate step fields
+    if (record.mode === 'sequence') {
+      for (let j = 0; j < record.laps.length; j++) {
+        const lap = record.laps[j];
+        if (lap.step !== undefined && (typeof lap.step !== 'number' || lap.step < 0)) {
+          return { valid: false, error: `Kayıt #${i + 1}, Tur #${j + 1}: Geçersiz adım değeri` };
+        }
       }
     }
   }

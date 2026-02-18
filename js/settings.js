@@ -21,7 +21,33 @@ const DEFAULTS = {
     defaultConfidence: 0.95,     // Güven düzeyi varsayılanı
     defaultErrorMargin: 0.05     // Hata payı varsayılanı
   }
-  // Future categories: excel, ux
+  ,excel: {
+    decimalPrecision: 3,
+    dateFormat: 'tr',
+    includeSheets: {
+      ozet: true,
+      hamVeri: true,
+      etiketAnalizi: true,
+      dagilimAnalizi: true,
+      trendAnalizi: true,
+      aykiriDegerler: true,
+      tempoAnalizi: true,
+      notlar: true,
+      konfigurasyon: true,
+      terimlerSozlugu: true,
+      cevrimAnalizi: true,
+      adimAnalizi: true,
+      adimKarsilastirma: true,
+      anomaliAnalizi: true,
+      cevrimTrend: true
+    }
+  }
+  ,ux: {
+    theme: 'dark',
+    vibration: true,
+    toastDuration: 2000,
+    fullscreen: true
+  }
 };
 
 // Info texts for each setting (shown in info modal)
@@ -69,6 +95,34 @@ const INFO_TEXTS = {
   defaultErrorMargin: {
     title: 'Hata Payı Varsayılanı',
     text: 'Yeni bir ölçüm başlatıldığında kurulum ekranında önceden seçili gelecek hata payıdır. ±%5 standart zaman etütleri için en yaygın değerdir. ±%3 daha yüksek hassasiyet ister ve daha fazla ölçüm gerektirir. ±%10 hızlı bir ön etüt veya kaba tahmin için uygundur. Bu ayar gerekli ölçüm sayısı (n) hesaplamasını doğrudan etkiler — dar hata payı = daha fazla ölçüm gereksinimi.'
+  }
+  ,excelDecimalPrecision: {
+    title: 'Ondalık Hassasiyet',
+    text: 'Excel çıktısındaki tüm sayısal değerlerin kaç ondalık basamakla gösterileceğini belirler.\n\n• 1 basamak: 0.5 — Kaba değerlendirme\n• 2 basamak: 0.51 — Standart raporlama\n• 3 basamak: 0.512 — Varsayılan, iyi denge\n• 4-6 basamak: Yüksek hassasiyet\n\nZaman (sn), yüzde, istatistik ve diğer tüm sayısal sütunları etkiler.'
+  },
+  excelDateFormat: {
+    title: 'Tarih Formatı',
+    text: 'Excel raporundaki tarih gösterim biçimini belirler.\n\n• GG.AA.YYYY SS:DD — Türkiye standardı (varsayılan)\n• YYYY-AA-GG SS:DD — ISO 8601 uluslararası format\n• GG/AA/YYYY SS:DD — Avrupa/İngiltere formatı\n\nRapor başlığı ve konfigürasyon sayfasındaki tarihleri etkiler.'
+  },
+  excelIncludeSheets: {
+    title: 'Dahil Edilecek Sayfalar',
+    text: 'Excel dosyasına hangi sayfaların dahil edileceğini seçin.\n\n• Mavi sayfalar dahil, gri sayfalar hariç\n• "Özet" ve "Ham Veri" her zaman dahildir (zorunlu)\n• Daha az sayfa = daha küçük dosya boyutu\n\nArdışık mod sayfaları sadece ardışık ölçümlerde oluşturulur.'
+  }
+  ,uxTheme: {
+    title: 'Tema',
+    text: 'Uygulamanın renk temasını değiştirir. Koyu tema (varsayılan) karanlık ortamlarda göz yorgunluğunu azaltır ve OLED ekranlarda pil tasarrufu sağlar. Açık tema ise aydınlık ortamlarda daha iyi okunabilirlik sunar. Tema değişikliği anında uygulanır ve sayfa yenilemelerinde korunur.'
+  },
+  uxVibration: {
+    title: 'Titreşim Geri Bildirimi',
+    text: 'Tur kaydı ve buton etkileşimlerinde cihazın kısa bir titreşim vermesini sağlar. Gürültülü ortamlarda dokunsal geri bildirim, turun başarıyla kaydedildiğini hissetmenize yardımcı olur. Titreşim desteklemeyen cihazlarda bu ayarın etkisi yoktur. Kapatıldığında hiçbir etkileşimde titreşim olmaz.'
+  },
+  uxToastDuration: {
+    title: 'Toast Bildirim Süresi',
+    text: 'Ekranın altında beliren kısa bilgi mesajlarının (toast) ne kadar süre görünür kalacağını belirler. 1 saniye hızlı bir onay için yeterlidir, 5 saniye ise mesajı okumak için daha fazla zaman tanır. Varsayılan 2 saniye çoğu kullanım için dengeli bir süredir. Bildirimler süre dolmadan otomatik kaybolur.'
+  },
+  uxFullscreen: {
+    title: 'Tam Ekran Modu',
+    text: 'Uygulama açıldığında ilk dokunuşta tam ekran moduna geçer. Tam ekran, tarayıcı araç çubuğunu gizleyerek ölçüm alanını genişletir ve yanlışlıkla geri tuşuna basma riskini azaltır. Kapatıldığında uygulama normal tarayıcı görünümünde kalır. Tam ekrandan çıkmak için tarayıcınızın geri tuşunu veya kaydırma hareketini kullanabilirsiniz.'
   }
 };
 
@@ -129,7 +183,12 @@ function deepMerge(defaults, saved) {
     if (result[cat] && typeof result[cat] === 'object') {
       for (const key in saved[cat]) {
         if (key in result[cat]) {
-          result[cat][key] = saved[cat][key];
+          // Deep merge nested objects (e.g. includeSheets)
+          if (result[cat][key] && typeof result[cat][key] === 'object' && typeof saved[cat][key] === 'object' && !Array.isArray(result[cat][key])) {
+            Object.assign(result[cat][key], saved[cat][key]);
+          } else {
+            result[cat][key] = saved[cat][key];
+          }
         }
       }
     }

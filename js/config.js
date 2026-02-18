@@ -31,6 +31,7 @@ export const SVG_ICONS = {
 
 export const ICON_KEYS = ['clock','warn','tool','gear','pause','stop','play','star','bolt','fire','box','person','hand','truck','build','flag','eye','speed','refresh','tag'];
 
+// Fallback default — actual values are rebuilt from settings by tempo.js:rebuildTempoValues()
 export const TEMPO_VALUES = [150,145,140,135,130,125,120,115,110,105,100,95,90,85,80,75,70,65,60,55,50];
 
 export const DEFAULT_TAGS = [

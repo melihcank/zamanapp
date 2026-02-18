@@ -101,7 +101,7 @@ export function renderCard(lap, isNew) {
 
   // Step badge for sequence mode
   const stepBadge = (lap.mode === 'sequence' && lap.stepName)
-    ? `<span class="lap-badge" style="background:${dimColor(STEP_COLORS[lap.step % STEP_COLORS.length])};color:${STEP_COLORS[lap.step % STEP_COLORS.length]}">${esc(lap.stepName)}</span>`
+    ? `<span class="lap-badge" data-step style="background:${dimColor(STEP_COLORS[lap.step % STEP_COLORS.length])};color:${STEP_COLORS[lap.step % STEP_COLORS.length]}">${esc(lap.stepName)}</span>`
     : '';
 
   // Anomaly tag badge (shown in both modes)
@@ -133,10 +133,20 @@ export function renderCard(lap, isNew) {
 export function updCard(card, lap) {
   const tag = lap.tag !== null ? tags[lap.tag] : null;
   const s = card.querySelector('.lap-stripe');
-  if (s) s.style.background = tag ? tag.color : '#555';
+  if (s) {
+    // In sequence mode, step color takes priority; tag only adds badge
+    if (lap.mode === 'sequence' && lap.step !== undefined) {
+      s.style.background = STEP_COLORS[lap.step % STEP_COLORS.length];
+    } else {
+      s.style.background = tag ? tag.color : '#555';
+    }
+  }
   const top = card.querySelector('.lap-info-top');
-  const old = top.querySelector('.lap-badge');
-  if (old) old.remove();
+  // Remove only tag badges, keep step badges intact
+  top.querySelectorAll('.lap-badge').forEach(b => {
+    const isStepBadge = b.hasAttribute('data-step');
+    if (!isStepBadge) b.remove();
+  });
   if (tag) {
     const b = document.createElement('span');
     b.className = 'lap-badge';

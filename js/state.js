@@ -3,6 +3,11 @@
 import { STEP_COLORS } from './config.js';
 import { loadTags } from './storage.js';
 
+// Timer state machine:
+// idle:    started=false, running=false, paused=false
+// running: started=true,  running=true,  paused=false
+// paused:  started=true,  running=false,  paused=true
+
 // Main application state
 export const S = {
   op: '',
@@ -11,7 +16,6 @@ export const S = {
   paused: false,
   started: false,
   startTime: 0,
-  elapsed: 0,
   pauseStart: 0,
   totalPaused: 0,      // Duraklatma süresi
   deletedTime: 0,      // Silinen turların toplam süresi
@@ -96,7 +100,6 @@ export function resetAllState() {
   S.deletedTime = 0;
   S.lastLapTime = 0;
   S.pauseStart = 0;
-  S.elapsed = 0;
   S.resumeFromTime = 0;
   S.defaultTag = 0;
 

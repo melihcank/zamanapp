@@ -32,9 +32,7 @@ export function loadHistory() {
 }
 
 export function saveHistory(h) {
-  try {
-    localStorage.setItem('zt_hist', JSON.stringify(h));
-  } catch (e) {}
+  localStorage.setItem('zt_hist', JSON.stringify(h));
 }
 
 // Otomatik kurtarma - ölçüm sırasında veri kaybını önler
@@ -45,7 +43,6 @@ export function saveAutoRecovery(data) {
       savedAt: Date.now()
     }));
   } catch (e) {
-    console.warn('Otomatik kayıt başarısız:', e);
   }
 }
 
@@ -61,17 +58,4 @@ export function loadAutoRecovery() {
 
 export function clearAutoRecovery() {
   localStorage.removeItem('zt_recovery');
-}
-
-// Settings storage
-export function loadAppSettings() {
-  try {
-    return JSON.parse(localStorage.getItem('zt_settings'));
-  } catch (e) {
-    return null;
-  }
-}
-
-export function saveAppSettings(settings) {
-  localStorage.setItem('zt_settings', JSON.stringify(settings));
 }
