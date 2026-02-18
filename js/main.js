@@ -19,42 +19,31 @@ import { initKeyboard } from './keyboard.js';
 import { renderStdTimeList, initStdTimeEvents } from './stdtime.js';
 import { initTutorial } from './tutorial.js';
 
-// Fullscreen - module scope for applySettings access
-let fsRequested = false;
-function reqFS() {
+// Fullscreen - debounce-based approach (no brittle flag state)
+let lastFsAttempt = 0;
+function reqFS(e) {
+  if (e && e.type === 'touchend') e.preventDefault();
   if (document.fullscreenElement || document.webkitFullscreenElement) return;
-  if (fsRequested) return;
-  fsRequested = true;
+  const now = Date.now();
+  if (now - lastFsAttempt < 1500) return;
+  lastFsAttempt = now;
   goFS();
-  // Fallback: if requestFullscreen() rejects silently, reset after 1s
-  setTimeout(() => {
-    if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
-      fsRequested = false;
-    }
-  }, 1000);
 }
 function addFsListeners() {
   document.addEventListener('click', reqFS);
-  document.addEventListener('touchend', reqFS);
+  document.addEventListener('touchend', reqFS, { passive: false });
 }
 function removeFsListeners() {
   document.removeEventListener('click', reqFS);
   document.removeEventListener('touchend', reqFS);
-  fsRequested = false;
+  lastFsAttempt = 0;
 }
-// Manage fullscreen lifecycle: remove listeners on enter, re-arm on exit
+// Reset debounce when fullscreen exits so next click can re-enter immediately
 document.addEventListener('fullscreenchange', onFsChange);
 document.addEventListener('webkitfullscreenchange', onFsChange);
 function onFsChange() {
-  const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
-  if (isFS) {
-    // Fullscreen entered — stop listening for clicks until exit
-    document.removeEventListener('click', reqFS);
-    document.removeEventListener('touchend', reqFS);
-  } else if (getSetting('ux', 'fullscreen') !== false) {
-    // Fullscreen exited (Escape, back button, gesture) — re-arm
-    fsRequested = false;
-    addFsListeners();
+  if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
+    lastFsAttempt = 0;
   }
 }
 
@@ -379,8 +368,8 @@ function init() {
       b.classList.add('sel');
       // Açık seçilince anında tam ekrana geç
       if (b.dataset.val === 'true') {
+        lastFsAttempt = Date.now();
         goFS();
-        fsRequested = true;
         addFsListeners();
       }
     };
@@ -415,7 +404,7 @@ function init() {
     loadUxSettings();
     applySettings();
     // Varsayılan: fullscreen açık → tam ekrana geç
-    if (settings.ux.fullscreen) { goFS(); fsRequested = true; addFsListeners(); }
+    if (settings.ux.fullscreen) { lastFsAttempt = Date.now(); goFS(); addFsListeners(); }
     toast('Varsayılan ayarlara sıfırlandı', 't-ok');
   };
 
@@ -946,8 +935,8 @@ function applySettings() {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f5f5f5' : '#1a1a1a');
 
   // Fullscreen listener yönetimi
-  if ((s.ux || {}).fullscreen !== false && !fsRequested) addFsListeners();
-  else if ((s.ux || {}).fullscreen === false) removeFsListeners();
+  if ((s.ux || {}).fullscreen !== false) addFsListeners();
+  else removeFsListeners();
 }
 
 // Start (or restart) autoSave periodic timer
