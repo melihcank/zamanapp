@@ -17,7 +17,9 @@ export const screens = {
   tagEditor: null,
   history: null,
   measure: null,
-  summary: null
+  summary: null,
+  stdTimeList: null,
+  stdTimeCalc: null
 };
 
 // Initialize screens (call after DOM loaded)
@@ -35,6 +37,8 @@ export function initScreens() {
   screens.history = $('historyScreen');
   screens.measure = $('measureScreen');
   screens.summary = $('summaryScreen');
+  screens.stdTimeList = $('stdTimeListScreen');
+  screens.stdTimeCalc = $('stdTimeCalcScreen');
 }
 
 // Show a specific screen

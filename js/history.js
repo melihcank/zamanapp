@@ -41,7 +41,9 @@ export function renderHistory() {
     card.style.cursor = 'pointer';
     const avg = h.laps.length ? h.laps.reduce((a, l) => a + l.t, 0) / h.laps.length : 0;
     const modeBadge = h.mode === 'sequence' ? '<span style="display:inline-block;padding:1px 5px;background:var(--inf-d);color:var(--inf);border-radius:var(--r-pill);font-size:clamp(7px,2vw,9px);font-weight:700;margin-left:4px">ARDIŞIK</span>' : '';
-    card.innerHTML = `<div class="hi-card-top"><span class="hi-job">${esc(h.job)}${modeBadge}</span><div class="hi-card-acts"><span class="hi-date">${h.date}</span><button class="hi-xl" data-idx="${idx}" title="Excel İndir"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg></button><button class="hi-del" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></div><div class="hi-card-row">${esc(h.op)} &middot; <span>${h.laps.length}</span> ${h.mode === 'sequence' ? 'kayıt' : 'tur'} &middot; Ort: <span>${ffull(avg)}</span></div>`;
+    const stData = h.standardTime;
+    const stBadge = stData ? `<span class="st-badge">SZ: ${ffull(stData.result)}</span>` : '';
+    card.innerHTML = `<div class="hi-card-top"><span class="hi-job">${esc(h.job)}${modeBadge}${stBadge}</span><div class="hi-card-acts"><span class="hi-date">${h.date}</span><button class="hi-xl" data-idx="${idx}" title="Excel İndir"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zM6 20V4h7v5h5v11H6z"/></svg></button><button class="hi-del" data-idx="${idx}"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div></div><div class="hi-card-row">${esc(h.op)} &middot; <span>${h.laps.length}</span> ${h.mode === 'sequence' ? 'kayıt' : 'tur'} &middot; Ort: <span>${ffull(avg)}</span></div>`;
     list.appendChild(card);
   });
 

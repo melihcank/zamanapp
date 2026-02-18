@@ -100,6 +100,12 @@ export function calcStats(times, opts = {}) {
   return { n, sum, mean, median, stdDev, cv, min, max, range, ci95Low, ci95High, se, nReq, ciConf };
 }
 
+// Standard time calculation: NT mean × (1 + allowance%)
+export function calcStandardTime(ntMean, totalAllowancePct) {
+  if (!ntMean || ntMean <= 0) return 0;
+  return Math.round(ntMean * (1 + totalAllowancePct / 100));
+}
+
 // Tag analysis for summary
 export function tagAnalysis(laps, tgs, opts = {}) {
   const res = [];

@@ -3,7 +3,7 @@
 
 import { $, toast, ffull, fmt, fms } from './utils.js';
 import { TEMPO_VALUES } from './config.js';
-import { calcStats, tagAnalysis, detectOutliers, percentile, quartiles, tCritical, freqDist, movingAvg, linearRegression, skewness, kurtosis, findMode } from './stats.js';
+import { calcStats, calcStandardTime, tagAnalysis, detectOutliers, percentile, quartiles, tCritical, freqDist, movingAvg, linearRegression, skewness, kurtosis, findMode } from './stats.js';
 import { getSetting } from './settings.js';
 import { loadHistory, saveHistory, loadTags, saveTags } from './storage.js';
 import { tags, setTags, sequenceSteps } from './state.js';
@@ -178,6 +178,99 @@ function applyStyles(ws, d) {
   if (d.outliers) d.outliers.forEach(a => highlightOutlierRows(ws, a[0], a[1], a[2]));
 }
 
+// ============ STANDARD TIME SHEET ============
+
+function buildStandardTimeSheet(wb, session) {
+  const st = session.standardTime;
+  if (!st) return;
+  const isSeq = session.mode === 'sequence';
+  const data = [];
+  const sty = { titles: [], sections: [], colHeaders: [], kv: [], zebra: [], borders: [], totals: [] };
+
+  // Title
+  data.push(['STANDART ZAMAN HESAPLAMASI']);
+  sty.titles.push([0, 4]);
+  data.push([]);
+
+  // Measurement info
+  data.push(['İş / Parça', session.job]);
+  data.push(['Operatör', session.op]);
+  data.push(['Tarih', formatDate(session.dateISO || new Date())]);
+  data.push(['Mod', isSeq ? 'Ardışık (Sequence)' : 'Tekrarlı (Repeat)']);
+  data.push(['Tur/Kayıt Sayısı', session.laps.length]);
+  sty.kv.push([2, 6, 2, false]);
+  data.push([]);
+
+  // Allowances section
+  const secRow = data.length;
+  data.push(['PAY KALEMLERİ']);
+  sty.sections.push([secRow, 4]);
+
+  const hdrRow = data.length;
+  data.push(['Pay Kalemi', 'Oran (%)']);
+  sty.colHeaders.push([hdrRow, 0, 1]);
+
+  const alStart = data.length;
+  st.allowances.forEach(a => {
+    data.push([a.name, dp(a.percent, 1)]);
+  });
+  const alEnd = data.length - 1;
+  if (alEnd >= alStart) {
+    sty.zebra.push([alStart, alEnd, 2]);
+    sty.borders.push([hdrRow, 0, alEnd, 1]);
+  }
+
+  // Total row
+  const totRow = data.length;
+  data.push(['TOPLAM', dp(st.totalAllowance, 1)]);
+  sty.totals.push([totRow, 2]);
+  data.push([]);
+
+  // Result section
+  const resSecRow = data.length;
+  data.push(['SONUÇ']);
+  sty.sections.push([resSecRow, 4]);
+
+  if (isSeq && st.resultPerStep) {
+    const stHdr = data.length;
+    data.push(['Adım', 'NT Ort (sn)', 'SZ (sn)']);
+    sty.colHeaders.push([stHdr, 0, 2]);
+
+    const stStart = data.length;
+    st.resultPerStep.forEach(s => {
+      data.push([s.stepName, toSec(s.ntMean), toSec(s.st)]);
+    });
+    const stEnd = data.length - 1;
+    if (stEnd >= stStart) {
+      sty.zebra.push([stStart, stEnd, 3]);
+      sty.borders.push([stHdr, 0, stEnd, 2]);
+    }
+
+    const cycRow = data.length;
+    data.push(['Çevrim Toplamı', '', toSec(st.cycleST)]);
+    sty.totals.push([cycRow, 3]);
+  } else {
+    const normalTimes = session.laps.map(l => l.nt || l.t);
+    const stats = calcStats(normalTimes);
+    const resStart = data.length;
+    data.push(['NT Ortalaması', toSec(stats ? stats.mean : 0), 'sn']);
+    data.push(['Toplam Pay', dp(st.totalAllowance, 1), '%']);
+    data.push(['Standart Zaman', toSec(st.result), 'sn']);
+    data.push(['Standart Zaman', dp(st.result / 60000, 3), 'dk']);
+    sty.kv.push([resStart, resStart + 3, 3, true]);
+  }
+
+  data.push([]);
+  data.push(['Formül: Standart Zaman = NT Ortalaması × (1 + Toplam Pay / 100)']);
+  data.push(['Hesaplama Tarihi', st.savedAt ? formatDate(st.savedAt) : '—']);
+
+  // Build worksheet
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+  applyStyles(ws, sty);
+  XLSX.utils.book_append_sheet(wb, ws, 'Standart Süre');
+}
+
 // ============ MAIN EXPORT FUNCTION ============
 
 export function exportExcel(session, fn) {
@@ -191,6 +284,12 @@ export function exportExcel(session, fn) {
       buildSequenceExcel(wb, session, sTags, sSteps);
     } else {
       buildRepeatExcel(wb, session, sTags);
+    }
+
+    // Standard Time sheet
+    const stSheets = getSetting('excel', 'includeSheets') || {};
+    if (session.standardTime && stSheets.standartSure !== false) {
+      buildStandardTimeSheet(wb, session);
     }
 
     XLSX.writeFile(wb, fn);

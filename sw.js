@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zaman-etudu-v96';
+const CACHE_NAME = 'zaman-etudu-v97';
 const ASSETS = [
   './',
   './index.html',
@@ -23,6 +23,7 @@ const ASSETS = [
   './js/keyboard.js',
   './js/tutorial.js',
   './js/settings.js',
+  './js/stdtime.js',
   './js/xlsx.bundle.js'
 ];
 

@@ -16,6 +16,7 @@ import { renderHistory, initHistoryEvents, updateHistoryLaps } from './history.j
 import { showSummary, rebuildSummary, initSummaryEvents, resetAll } from './summary.js';
 import { initExportEvents } from './export.js';
 import { initKeyboard } from './keyboard.js';
+import { renderStdTimeList, initStdTimeEvents } from './stdtime.js';
 import { initTutorial } from './tutorial.js';
 
 // Fullscreen - module scope for applySettings access
@@ -51,17 +52,20 @@ function init() {
   initExportEvents();
   initKeyboard();
   initTutorial();
+  initStdTimeEvents();
 
   // Load settings & apply tempo values
   applySettings();
 
   // Menu navigation
   $('goMeasure').onclick = () => showScreen('modeSelect');
+  $('goStdTime').onclick = () => { renderStdTimeList(); showScreen('stdTimeList'); };
   $('goHistory').onclick = () => { renderHistory(); showScreen('history'); };
   $('goSettings').onclick = () => showScreen('settings');
   $('modeBack').onclick = () => showScreen('menu');
   $('teBack').onclick = () => showScreen('settingsMeasure');
   $('hiBack').onclick = () => showScreen('menu');
+  $('stlBack').onclick = () => showScreen('menu');
 
   // Settings navigation
   $('settingsBack').onclick = () => showScreen('menu');

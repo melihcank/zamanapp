@@ -39,7 +39,8 @@ const DEFAULTS = {
       adimAnalizi: true,
       adimKarsilastirma: true,
       anomaliAnalizi: true,
-      cevrimTrend: true
+      cevrimTrend: true,
+      standartSure: true
     }
   }
   ,ux: {
@@ -123,6 +124,10 @@ const INFO_TEXTS = {
   uxFullscreen: {
     title: 'Tam Ekran Modu',
     text: 'Uygulama açıldığında ilk dokunuşta tam ekran moduna geçer. Tam ekran, tarayıcı araç çubuğunu gizleyerek ölçüm alanını genişletir ve yanlışlıkla geri tuşuna basma riskini azaltır. Kapatıldığında uygulama normal tarayıcı görünümünde kalır. Tam ekrandan çıkmak için tarayıcınızın geri tuşunu veya kaydırma hareketini kullanabilirsiniz.'
+  }
+  ,excelStandartSure: {
+    title: 'Standart Süre Sayfası',
+    text: 'Excel raporuna standart zaman hesaplama sayfası ekler. Bu sayfa pay kalemlerini, toplam payı ve hesaplanan standart zamanı içerir. Standart zaman = Normal Süre Ortalaması × (1 + Toplam Pay%). Sadece standart zaman hesabı kaydedilmiş ölçümler için oluşturulur.'
   }
 };
 
