@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zaman-etudu-v105';
+const CACHE_NAME = 'zaman-etudu-v107';
 const ASSETS = [
   './',
   './index.html',
