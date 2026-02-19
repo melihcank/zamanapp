@@ -43,11 +43,11 @@ export function renderStdTimeList() {
       ? '<span style="display:inline-block;padding:2px 6px;background:var(--inf-d);color:var(--inf);border-radius:var(--r-pill);font-size:clamp(9px,2.5vw,11px);font-weight:700;margin-left:4px">ARDIŞIK</span>'
       : '';
     const stData = h.standardTime;
-    const stBadge = stData
-      ? `<span class="st-badge">SZ: ${ffull(stData.result)}</span>`
+    const stRow = stData
+      ? `<div class="st-list-card-row st-row">Standart Zaman: <span class="st-badge">${ffull(stData.result)}</span></div>`
       : '';
     const lapLabel = h.mode === 'sequence' ? 'kayıt' : 'tur';
-    card.innerHTML = `<div class="st-list-card-top"><span class="st-list-job">${esc(h.job)}${modeBadge}${stBadge}</span><span class="st-list-date">${h.date}</span></div><div class="st-list-card-row">${esc(h.op)} &middot; <span>${h.laps.length}</span> ${lapLabel} &middot; NT Ort: <span>${ffull(avg)}</span></div>`;
+    card.innerHTML = `<div class="st-list-card-top"><span class="st-list-job">${esc(h.job)}${modeBadge}</span><span class="st-list-date">${h.date}</span></div><div class="st-list-card-row">${esc(h.op)} &middot; <span>${h.laps.length}</span> ${lapLabel} &middot; NT Ort: <span>${ffull(avg)}</span></div>${stRow}`;
     list.appendChild(card);
   });
 

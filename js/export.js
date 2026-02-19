@@ -670,6 +670,7 @@ function buildRepeatExcel(wb, session, sTags) {
 
   // ========== SHEET 6: AYKIRI DEĞER ANALİZİ ==========
   if (sheets.aykiriDegerler !== false) {
+  const iqrK = getSetting('stats', 'iqrMultiplier');
   const outlierListHeader = ['Tur No', 'Süre (sn)', 'Süre (mm:ss.cc)', 'Etiket', 'Sapma Yönü', 'Z-Skor'];
   const s6Data = [
     ['AYKIRI DEĞER ANALİZİ - Gözlem Süreleri (IQR Yöntemi)'],
@@ -2023,6 +2024,7 @@ function buildSequenceExcel(wb, session, sTags, sSteps) {
 
   // ========== SHEET 9: AYKIRI DEĞER ANALİZİ ==========
   if (sheets.aykiriDegerler !== false) {
+  const seqIqrK = getSetting('stats', 'iqrMultiplier');
   const cycleOutlierHeader = ['Çevrim No', 'Süre (sn)', 'Süre (mm:ss.cc)', 'Sapma Yönü', 'Z-Skor'];
   const oData = [
     ['AYKIRI DEĞER ANALİZİ - Gözlem Süreleri'],
